@@ -13,11 +13,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '@/src/store/authStore';
-import { Button, Card, EmptyState, Loading, Input } from '@/src/components';
-import api from '@/src/utils/api';
-import { Tournament } from '@/src/types';
-import { getStatusLabel, getCategoryLabel, getFormatLabel } from '@/src/utils/helpers';
+import { useAuthStore } from '../../src/store/authStore';
+import { Button, Card, EmptyState, Loading, Input } from '../../src/components';
+import api from '../../src/utils/api';
+import { Tournament } from '../../src/types';
+import { getStatusLabel, getCategoryLabel, getFormatLabel } from '../../src/utils/helpers';
 
 const CATEGORIES = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 const FORMATS = [

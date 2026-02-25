@@ -1,7 +1,7 @@
 import React from 'react';
 import { Tabs } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '@/src/store/authStore';
+import { useAuthStore } from '../../src/store/authStore';
 import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 

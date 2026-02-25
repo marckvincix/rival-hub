@@ -10,11 +10,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '@/src/store/authStore';
-import { Card, Button, EmptyState, Loading } from '@/src/components';
-import api from '@/src/utils/api';
-import { Tournament, Match } from '@/src/types';
-import { formatDate, getStatusLabel } from '@/src/utils/helpers';
+import { useAuthStore } from '../../src/store/authStore';
+import { Card, Button, EmptyState, Loading } from '../../src/components';
+import api from '../../src/utils/api';
+import { Tournament, Match } from '../../src/types';
+import { formatDate, getStatusLabel } from '../../src/utils/helpers';
 
 export default function DashboardScreen() {
   const router = useRouter();
