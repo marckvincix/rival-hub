@@ -1,7 +1,67 @@
 import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
 import { User } from '../types';
 import api from '../utils/api';
+
+// Safe storage wrapper that handles errors gracefully
+const safeStorage = {
+  async getItem(key: string): Promise<string | null> {
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          return window.localStorage.getItem(key);
+        }
+      } else {
+        // Dynamic import for mobile
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        if (AsyncStorage) {
+          return await AsyncStorage.getItem(key);
+        }
+      }
+    } catch (error) {
+      console.log('Storage getItem error (using memory fallback):', key);
+    }
+    return null;
+  },
+
+  async setItem(key: string, value: string): Promise<void> {
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.setItem(key, value);
+          return;
+        }
+      } else {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        if (AsyncStorage) {
+          await AsyncStorage.setItem(key, value);
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('Storage setItem error (using memory fallback):', key);
+    }
+  },
+
+  async removeItem(key: string): Promise<void> {
+    try {
+      if (Platform.OS === 'web') {
+        if (typeof window !== 'undefined' && window.localStorage) {
+          window.localStorage.removeItem(key);
+          return;
+        }
+      } else {
+        const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+        if (AsyncStorage) {
+          await AsyncStorage.removeItem(key);
+          return;
+        }
+      }
+    } catch (error) {
+      console.log('Storage removeItem error:', key);
+    }
+  }
+};
 
 interface AuthState {
   user: User | null;
@@ -27,7 +87,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/api/auth/login', { email, password });
       const { session_token, ...userData } = response.data;
       
-      await AsyncStorage.setItem('session_token', session_token);
+      await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
       
       set({
@@ -46,7 +106,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/api/auth/register', { email, password, name });
       const { session_token, ...userData } = response.data;
       
-      await AsyncStorage.setItem('session_token', session_token);
+      await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
       
       set({
@@ -65,7 +125,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const response = await api.post('/api/auth/session', { session_id: sessionId });
       const { session_token, ...userData } = response.data;
       
-      await AsyncStorage.setItem('session_token', session_token);
+      await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
       
       set({
@@ -86,7 +146,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       // Ignore logout errors
     }
     
-    await AsyncStorage.removeItem('session_token');
+    try {
+      await safeStorage.removeItem('session_token');
+    } catch (error) {
+      // Ignore storage errors
+    }
     delete api.defaults.headers.common['Authorization'];
     
     set({
@@ -99,7 +163,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   checkAuth: async () => {
     try {
-      const token = await AsyncStorage.getItem('session_token');
+      let token: string | null = null;
+      
+      try {
+        token = await safeStorage.getItem('session_token');
+      } catch (storageError) {
+        console.log('Storage access error, continuing without stored token');
+      }
       
       if (!token) {
         set({ isLoading: false, isAuthenticated: false });
@@ -117,7 +187,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isLoading: false
       });
     } catch (error) {
-      await AsyncStorage.removeItem('session_token');
+      try {
+        await safeStorage.removeItem('session_token');
+      } catch (storageError) {
+        // Ignore storage errors
+      }
       delete api.defaults.headers.common['Authorization'];
       
       set({
