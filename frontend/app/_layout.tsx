@@ -1,8 +1,8 @@
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useAuthStore } from '../src/store/authStore';
-import { Loading } from '../src/components';
+import { useAuthStore } from '@/src/store/authStore';
+import { Loading } from '@/src/components';
 
 export default function RootLayout() {
   const { isLoading, checkAuth } = useAuthStore();
