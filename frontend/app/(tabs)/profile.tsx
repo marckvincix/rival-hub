@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuthStore } from '../../src/store/authStore';
-import { Button, Card } from '../../src/components';
+import { useAuthStore } from '@/src/store/authStore';
+import { Button, Card } from '@/src/components';
 
 export default function ProfileScreen() {
   const router = useRouter();

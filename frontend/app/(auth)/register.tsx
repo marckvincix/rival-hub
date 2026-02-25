@@ -12,8 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input } from '../../src/components';
-import { useAuthStore } from '../../src/store/authStore';
+import { Button, Input } from '@/src/components';
+import { useAuthStore } from '@/src/store/authStore';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
