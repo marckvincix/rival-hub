@@ -99,27 +99,16 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems: 'center',
     paddingHorizontal: 20,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
-  tabIconContainer: {
-    marginBottom: 4,
+  tabItemActive: {
+    backgroundColor: '#F0F0F0',
   },
   tabLabel: {
     fontSize: 12,
     fontWeight: '600',
     color: '#000',
-  },
-  proTabItem: {
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  proTabLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
+    marginTop: 4,
   },
 });
