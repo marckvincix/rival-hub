@@ -16,27 +16,23 @@ export default function AuthCallback() {
 
     const processAuth = async () => {
       const sessionId = params.session_id as string;
-      
       if (!sessionId) {
         router.replace('/(auth)/login');
         return;
       }
-
       try {
         await exchangeSession(sessionId);
         router.replace('/(tabs)');
       } catch (error) {
-        console.error('Auth callback error:', error);
         router.replace('/(auth)/login');
       }
     };
-
     processAuth();
   }, []);
 
   return (
     <View style={styles.container}>
-      <Loading message="Autenticazione in corso..." />
+      <Loading message="Autenticazione..." />
     </View>
   );
 }
@@ -44,6 +40,6 @@ export default function AuthCallback() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
   }
 });

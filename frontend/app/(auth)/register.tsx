@@ -30,34 +30,18 @@ export default function RegisterScreen() {
 
   const validate = () => {
     const newErrors: {name?: string; email?: string; password?: string; confirmPassword?: string} = {};
-    
-    if (!name.trim()) {
-      newErrors.name = 'Nome richiesto';
-    }
-    
-    if (!email.trim()) {
-      newErrors.email = 'Email richiesta';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email non valida';
-    }
-    
-    if (!password) {
-      newErrors.password = 'Password richiesta';
-    } else if (password.length < 6) {
-      newErrors.password = 'Minimo 6 caratteri';
-    }
-    
-    if (password !== confirmPassword) {
-      newErrors.confirmPassword = 'Le password non coincidono';
-    }
-    
+    if (!name.trim()) newErrors.name = 'Nome richiesto';
+    if (!email.trim()) newErrors.email = 'Email richiesta';
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email non valida';
+    if (!password) newErrors.password = 'Password richiesta';
+    else if (password.length < 6) newErrors.password = 'Minimo 6 caratteri';
+    if (password !== confirmPassword) newErrors.confirmPassword = 'Le password non coincidono';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleRegister = async () => {
     if (!validate()) return;
-    
     try {
       setLoading(true);
       await register(email, password, name);
@@ -71,12 +55,9 @@ export default function RegisterScreen() {
 
   const handleGoogleLogin = async () => {
     try {
-      // REMINDER: DO NOT HARDCODE THE URL, OR ADD ANY FALLBACKS OR REDIRECT URLS, THIS BREAKS THE AUTH
       const callbackUrl = Linking.createURL('(auth)/callback');
       const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(callbackUrl)}`;
-      
       const result = await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
-      
       if (result.type === 'success' && result.url) {
         const url = result.url;
         const hashIndex = url.indexOf('#');
@@ -84,15 +65,13 @@ export default function RegisterScreen() {
           const hash = url.substring(hashIndex + 1);
           const params = new URLSearchParams(hash);
           const sessionId = params.get('session_id');
-          
           if (sessionId) {
             router.push({ pathname: '/(auth)/callback', params: { session_id: sessionId } });
           }
         }
       }
     } catch (error) {
-      console.error('Google login error:', error);
-      Alert.alert('Errore', 'Errore durante il login con Google');
+      Alert.alert('Errore', 'Errore durante la registrazione con Google');
     }
   };
 
@@ -111,20 +90,20 @@ export default function RegisterScreen() {
             style={styles.backButton} 
             onPress={() => router.back()}
           >
-            <Ionicons name="arrow-back" size={24} color="#1F2937" />
+            <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
 
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Ionicons name="football" size={48} color="#1E40AF" />
+              <Ionicons name="football" size={48} color="#FFF" />
             </View>
-            <Text style={styles.title}>Crea un Account</Text>
-            <Text style={styles.subtitle}>Inizia a gestire i tuoi tornei oggi</Text>
+            <Text style={styles.title}>Crea Account</Text>
+            <Text style={styles.subtitle}>Inizia a gestire i tuoi tornei</Text>
           </View>
 
           {/* Google Login */}
           <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
-            <Ionicons name="logo-google" size={20} color="#1F2937" />
+            <Ionicons name="logo-google" size={20} color="#000" />
             <Text style={styles.googleButtonText}>Registrati con Google</Text>
           </TouchableOpacity>
 
@@ -198,7 +177,7 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
   },
   keyboardView: {
     flex: 1,
@@ -207,10 +186,11 @@ const styles = StyleSheet.create({
     padding: 24,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
+    width: 48,
+    height: 48,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,
@@ -223,36 +203,36 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 24,
-    backgroundColor: '#EEF2FF',
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 16,
   },
   title: {
     fontSize: 28,
-    fontWeight: '800',
-    color: '#1F2937',
+    fontWeight: '700',
+    color: '#000',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#666',
   },
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: '#FFF',
+    borderWidth: 2,
+    borderColor: '#000',
     borderRadius: 12,
     paddingVertical: 14,
     marginBottom: 24,
   },
   googleButtonText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '700',
+    color: '#000',
     marginLeft: 12,
   },
   divider: {
@@ -262,13 +242,14 @@ const styles = StyleSheet.create({
   },
   dividerLine: {
     flex: 1,
-    height: 1,
-    backgroundColor: '#E5E7EB',
+    height: 2,
+    backgroundColor: '#000',
   },
   dividerText: {
     paddingHorizontal: 16,
     fontSize: 14,
-    color: '#9CA3AF',
+    color: '#666',
+    fontWeight: '600',
   },
   form: {
     marginBottom: 24,
@@ -280,12 +261,13 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#666',
   },
   footerLink: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1E40AF',
+    fontWeight: '700',
+    color: '#000',
     marginLeft: 4,
+    textDecorationLine: 'underline',
   },
 });
