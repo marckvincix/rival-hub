@@ -165,7 +165,7 @@ export default function TournamentPublicPage() {
         {activeTab === 'matches' && (
           <View style={styles.tabContent}>
             {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
-              Object.entries(matchesByRound).map(([round, roundMatches]) => (
+              sortedRounds.map(([round, roundMatches]) => (
                 <View key={round} style={styles.matchesGroup}>
                   <Text style={styles.matchesGroupTitle}>{round}</Text>
                   {roundMatches.map((match) => (
