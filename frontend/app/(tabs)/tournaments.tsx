@@ -740,7 +740,6 @@ const styles = StyleSheet.create({
   matchPillTeam: { fontSize: 15, color: '#000' },
   matchPillScore: { fontSize: 15, fontWeight: '700', color: '#000', marginHorizontal: 8 },
   warningText: { fontSize: 13, color: '#999', textAlign: 'center', marginTop: 8 },
-  warningText: { fontSize: 13, color: '#999', textAlign: 'center', marginTop: 8 },
   resultsTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 16 },
   resultCard: { borderWidth: 2, borderColor: '#000', padding: 16, borderRadius: 12, marginBottom: 12 },
   resultRound: { fontSize: 12, color: '#666', marginBottom: 12, fontWeight: '600' },
