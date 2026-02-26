@@ -495,7 +495,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </SafeAreaView>
       </Modal>
 
-      {/* Add Match Modal */}
+      {/* Add Match Modal - Redesigned */}
       <Modal visible={showAddMatchModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddMatchModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -503,25 +503,151 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <Text style={styles.modalTitle}>Nuova Partita</Text>
             <View style={{ width: 60 }} />
           </View>
-          <ScrollView style={styles.modalContent}>
-            <Text style={styles.inputLabel}>Squadra Casa</Text>
-            <View style={styles.teamSelector}>
-              {teams.map((team) => (
-                <TouchableOpacity key={team.id} style={[styles.teamSelectorItem, newMatchData.home_team_id === team.id && styles.teamSelectorItemActive]} onPress={() => setNewMatchData({ ...newMatchData, home_team_id: team.id })}>
-                  <Text style={[styles.teamSelectorText, newMatchData.home_team_id === team.id && styles.teamSelectorTextActive]}>{team.name}</Text>
+          <ScrollView style={styles.newMatchContent} showsVerticalScrollIndicator={false}>
+            {/* Squadra Casa */}
+            <Text style={styles.newMatchLabel}>Squadra Casa</Text>
+            <TouchableOpacity 
+              style={styles.newMatchDropdown} 
+              onPress={() => { setShowHomeDropdown(!showHomeDropdown); setShowAwayDropdown(false); }}
+            >
+              <Text style={newMatchData.home_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
+                {newMatchData.home_team_id ? teams.find(t => t.id === newMatchData.home_team_id)?.name : 'Seleziona la squadra'}
+              </Text>
+              <Ionicons name="chevron-down" size={22} color="#000" />
+            </TouchableOpacity>
+            {showHomeDropdown && (
+              <View style={styles.dropdownList}>
+                {teams.map((team) => (
+                  <TouchableOpacity 
+                    key={team.id} 
+                    style={styles.dropdownItem}
+                    onPress={() => { setNewMatchData({ ...newMatchData, home_team_id: team.id }); setShowHomeDropdown(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>{team.name}</Text>
+                    {newMatchData.home_team_id === team.id && <Ionicons name="checkmark" size={20} color="#000" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Squadra Trasferta */}
+            <Text style={styles.newMatchLabel}>Squadra Trasferta</Text>
+            <TouchableOpacity 
+              style={styles.newMatchDropdown}
+              onPress={() => { setShowAwayDropdown(!showAwayDropdown); setShowHomeDropdown(false); }}
+            >
+              <Text style={newMatchData.away_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
+                {newMatchData.away_team_id ? teams.find(t => t.id === newMatchData.away_team_id)?.name : 'Seleziona la squadra'}
+              </Text>
+              <Ionicons name="chevron-down" size={22} color="#000" />
+            </TouchableOpacity>
+            {showAwayDropdown && (
+              <View style={styles.dropdownList}>
+                {teams.filter(t => t.id !== newMatchData.home_team_id).map((team) => (
+                  <TouchableOpacity 
+                    key={team.id} 
+                    style={styles.dropdownItem}
+                    onPress={() => { setNewMatchData({ ...newMatchData, away_team_id: team.id }); setShowAwayDropdown(false); }}
+                  >
+                    <Text style={styles.dropdownItemText}>{team.name}</Text>
+                    {newMatchData.away_team_id === team.id && <Ionicons name="checkmark" size={20} color="#000" />}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+
+            {/* Giornata */}
+            <Text style={styles.newMatchLabel}>Giornata</Text>
+            <View style={styles.giornataContainer}>
+              {existingRounds.map((round) => (
+                <TouchableOpacity 
+                  key={round} 
+                  style={styles.giornataRow}
+                  onPress={() => setNewMatchData({ ...newMatchData, round })}
+                >
+                  <Text style={styles.giornataText}>{round}</Text>
+                  {newMatchData.round === round ? (
+                    <Ionicons name="checkmark" size={22} color="#000" />
+                  ) : (
+                    <Ionicons name="checkmark" size={22} color="#666" />
+                  )}
                 </TouchableOpacity>
               ))}
-            </View>
-            <Text style={styles.inputLabel}>Squadra Trasferta</Text>
-            <View style={styles.teamSelector}>
-              {teams.map((team) => (
-                <TouchableOpacity key={team.id} style={[styles.teamSelectorItem, newMatchData.away_team_id === team.id && styles.teamSelectorItemActive]} onPress={() => setNewMatchData({ ...newMatchData, away_team_id: team.id })}>
-                  <Text style={[styles.teamSelectorText, newMatchData.away_team_id === team.id && styles.teamSelectorTextActive]}>{team.name}</Text>
+              {/* New Giornata Row */}
+              <View style={styles.newGiornataRow}>
+                <TextInput
+                  style={styles.newGiornataInput}
+                  placeholder={`Giornata ${nextRoundNumber}`}
+                  placeholderTextColor="#999"
+                  value={newMatchData.round && !existingRounds.includes(newMatchData.round) ? newMatchData.round : ''}
+                  onChangeText={(text) => setNewMatchData({ ...newMatchData, round: text })}
+                />
+                <TouchableOpacity 
+                  style={styles.newGiornataAddBtn}
+                  onPress={() => setNewMatchData({ ...newMatchData, round: `Giornata ${nextRoundNumber}` })}
+                >
+                  <Ionicons name="add" size={24} color="#000" />
                 </TouchableOpacity>
-              ))}
+              </View>
             </View>
-            <Input label="Giornata/Round" placeholder="es. Giornata 1" value={newMatchData.round} onChangeText={(text) => setNewMatchData({ ...newMatchData, round: text })} />
-            <Button title="Crea Partita" onPress={handleAddMatch} fullWidth size="large" />
+
+            {/* Data e Orario - Side by Side */}
+            <View style={styles.dateTimeRow}>
+              <View style={styles.dateTimeCol}>
+                <Text style={styles.newMatchLabel}>Data</Text>
+                <View style={styles.newMatchInputWithIcon}>
+                  <TextInput
+                    style={styles.inputFieldText}
+                    placeholder="GG/MM/AAAA"
+                    placeholderTextColor="#999"
+                    value={newMatchData.date}
+                    onChangeText={(text) => setNewMatchData({ ...newMatchData, date: text })}
+                  />
+                  <Ionicons name="calendar-outline" size={22} color="#000" />
+                </View>
+              </View>
+              <View style={styles.dateTimeCol}>
+                <Text style={styles.newMatchLabel}>Orario</Text>
+                <View style={styles.newMatchInputWithIcon}>
+                  <TextInput
+                    style={styles.inputFieldText}
+                    placeholder="00-00"
+                    placeholderTextColor="#999"
+                    value={newMatchData.time}
+                    onChangeText={(text) => setNewMatchData({ ...newMatchData, time: text })}
+                  />
+                  <Ionicons name="time-outline" size={22} color="#000" />
+                </View>
+              </View>
+            </View>
+
+            {/* Luogo */}
+            <Text style={styles.newMatchLabel}>Luogo</Text>
+            <View style={styles.newMatchInputWithIcon}>
+              <TextInput
+                style={styles.inputFieldText}
+                placeholder="Nome"
+                placeholderTextColor="#999"
+                value={newMatchData.venue_name}
+                onChangeText={(text) => setNewMatchData({ ...newMatchData, venue_name: text })}
+              />
+              <Ionicons name="football-outline" size={22} color="#000" />
+            </View>
+            <View style={[styles.newMatchInputWithIcon, { marginTop: 12 }]}>
+              <TextInput
+                style={styles.inputFieldText}
+                placeholder="Indirizzo"
+                placeholderTextColor="#999"
+                value={newMatchData.venue_address}
+                onChangeText={(text) => setNewMatchData({ ...newMatchData, venue_address: text })}
+              />
+              <Ionicons name="location-outline" size={22} color="#000" />
+            </View>
+
+            {/* Crea Button */}
+            <View style={{ marginTop: 32, marginBottom: 40 }}>
+              <Button title="Crea Partita" onPress={handleAddMatch} fullWidth size="large" />
+            </View>
           </ScrollView>
         </SafeAreaView>
       </Modal>
