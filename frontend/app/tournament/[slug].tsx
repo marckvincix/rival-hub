@@ -90,6 +90,14 @@ export default function TournamentPublicPage() {
     return acc;
   }, {} as Record<string, Match[]>);
 
+  // Sort rounds in reverse order (most recent first)
+  const sortedRounds = Object.entries(matchesByRound).sort((a, b) => {
+    // Extract number from round name (e.g., "Giornata 5" -> 5)
+    const numA = parseInt(a[0].replace(/\D/g, '')) || 0;
+    const numB = parseInt(b[0].replace(/\D/g, '')) || 0;
+    return numB - numA; // Descending order
+  });
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
