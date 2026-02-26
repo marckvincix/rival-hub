@@ -21,7 +21,7 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Ionicons name={icon} size={48} color="#9CA3AF" />
+        <Ionicons name={icon} size={48} color="#000" />
       </View>
       <Text style={styles.title}>{title}</Text>
       {description && <Text style={styles.description}>{description}</Text>}
@@ -48,7 +48,9 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#FFF',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 24,
@@ -56,13 +58,13 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
     textAlign: 'center',
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: '#6B7280',
+    color: '#666',
     textAlign: 'center',
     marginBottom: 24,
   }

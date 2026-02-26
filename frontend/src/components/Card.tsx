@@ -21,7 +21,7 @@ export const Card: React.FC<CardProps> = ({ children, title, onPress, style }) =
       {title && (
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
-          {onPress && <Ionicons name="chevron-forward" size={20} color="#6B7280" />}
+          {onPress && <Ionicons name="chevron-forward" size={20} color="#000" />}
         </View>
       )}
       {children}
@@ -31,15 +31,12 @@ export const Card: React.FC<CardProps> = ({ children, title, onPress, style }) =
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FFF',
     borderRadius: 16,
+    borderWidth: 2,
+    borderColor: '#000',
     padding: 16,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
   },
   header: {
     flexDirection: 'row',
@@ -50,6 +47,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
   }
 });

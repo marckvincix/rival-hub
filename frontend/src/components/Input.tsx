@@ -16,7 +16,7 @@ export const Input: React.FC<InputProps> = ({ label, error, style, ...props }) =
           error && styles.inputError,
           style
         ]}
-        placeholderTextColor="#9CA3AF"
+        placeholderTextColor="#999"
         {...props}
       />
       {error && <Text style={styles.error}>{error}</Text>}
@@ -30,19 +30,19 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#374151',
-    marginBottom: 6,
+    fontWeight: '700',
+    color: '#000',
+    marginBottom: 8,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#D1D5DB',
+    borderWidth: 2,
+    borderColor: '#000',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 14,
     fontSize: 16,
-    color: '#1F2937',
-    backgroundColor: '#FFFFFF',
+    color: '#000',
+    backgroundColor: '#FFF',
   },
   inputError: {
     borderColor: '#DC2626',
@@ -51,5 +51,6 @@ const styles = StyleSheet.create({
     color: '#DC2626',
     fontSize: 12,
     marginTop: 4,
+    fontWeight: '600',
   }
 });

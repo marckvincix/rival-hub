@@ -24,27 +24,31 @@ export const Button: React.FC<ButtonProps> = ({
   fullWidth = false
 }) => {
   const getBackgroundColor = () => {
-    if (disabled) return '#9CA3AF';
+    if (disabled) return '#999';
     switch (variant) {
-      case 'primary': return '#1E40AF';
-      case 'secondary': return '#059669';
-      case 'outline': return 'transparent';
-      case 'danger': return '#DC2626';
-      default: return '#1E40AF';
+      case 'primary': return '#000';
+      case 'secondary': return '#000';
+      case 'outline': return '#FFF';
+      case 'danger': return '#000';
+      default: return '#000';
     }
   };
 
   const getTextColor = () => {
-    if (variant === 'outline') return '#1E40AF';
-    return '#FFFFFF';
+    if (variant === 'outline') return '#000';
+    return '#FFF';
+  };
+
+  const getBorderColor = () => {
+    return '#000';
   };
 
   const getPadding = () => {
     switch (size) {
-      case 'small': return { paddingVertical: 8, paddingHorizontal: 16 };
-      case 'medium': return { paddingVertical: 12, paddingHorizontal: 24 };
-      case 'large': return { paddingVertical: 16, paddingHorizontal: 32 };
-      default: return { paddingVertical: 12, paddingHorizontal: 24 };
+      case 'small': return { paddingVertical: 10, paddingHorizontal: 16 };
+      case 'medium': return { paddingVertical: 14, paddingHorizontal: 24 };
+      case 'large': return { paddingVertical: 18, paddingHorizontal: 32 };
+      default: return { paddingVertical: 14, paddingHorizontal: 24 };
     }
   };
 
@@ -64,8 +68,8 @@ export const Button: React.FC<ButtonProps> = ({
         getPadding(),
         {
           backgroundColor: getBackgroundColor(),
-          borderWidth: variant === 'outline' ? 2 : 0,
-          borderColor: '#1E40AF',
+          borderWidth: 2,
+          borderColor: getBorderColor(),
           width: fullWidth ? '100%' : undefined
         }
       ]}
@@ -108,6 +112,6 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   text: {
-    fontWeight: '600',
+    fontWeight: '700',
   }
 });

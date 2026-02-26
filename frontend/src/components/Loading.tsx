@@ -8,7 +8,7 @@ interface LoadingProps {
 export const Loading: React.FC<LoadingProps> = ({ message }) => {
   return (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#1E40AF" />
+      <ActivityIndicator size="large" color="#000" />
       {message && <Text style={styles.message}>{message}</Text>}
     </View>
   );
@@ -19,11 +19,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFF',
   },
   message: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6B7280',
+    color: '#000',
+    fontWeight: '600',
   }
 });

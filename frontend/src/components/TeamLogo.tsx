@@ -23,14 +23,14 @@ export const TeamLogo: React.FC<TeamLogoProps> = ({ logo, name, size = 'medium' 
     return (
       <Image
         source={{ uri: logo }}
-        style={[styles.image, { width: dimension, height: dimension }]}
+        style={[styles.image, { width: dimension, height: dimension, borderRadius: dimension / 4 }]}
         resizeMode="cover"
       />
     );
   }
 
   return (
-    <View style={[styles.placeholder, { width: dimension, height: dimension }]}>
+    <View style={[styles.placeholder, { width: dimension, height: dimension, borderRadius: dimension / 4 }]}>
       <Text style={[styles.initial, { fontSize: dimension / 2.5 }]}>
         {name.charAt(0).toUpperCase()}
       </Text>
@@ -40,17 +40,19 @@ export const TeamLogo: React.FC<TeamLogoProps> = ({ logo, name, size = 'medium' 
 
 const styles = StyleSheet.create({
   image: {
-    borderRadius: 8,
-    backgroundColor: '#F3F4F6',
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#FFF',
   },
   placeholder: {
-    borderRadius: 8,
-    backgroundColor: '#1E40AF',
+    borderWidth: 2,
+    borderColor: '#000',
+    backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'center',
   },
   initial: {
-    color: '#FFFFFF',
+    color: '#FFF',
     fontWeight: '700',
   }
 });
