@@ -764,4 +764,87 @@ const styles = StyleSheet.create({
   teamSelectorItemActive: { backgroundColor: '#000' },
   teamSelectorText: { fontSize: 15, color: '#000', fontWeight: '600' },
   teamSelectorTextActive: { color: '#FFF' },
+  // New Match Modal Styles
+  newMatchContent: { flex: 1, padding: 24 },
+  newMatchLabel: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 10, marginTop: 20 },
+  newMatchDropdown: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    borderWidth: 1.5, 
+    borderColor: '#000', 
+    borderRadius: 28, 
+    paddingHorizontal: 20, 
+    paddingVertical: 16,
+    backgroundColor: '#FFF'
+  },
+  newMatchDropdownText: { fontSize: 16, color: '#000' },
+  newMatchDropdownPlaceholder: { fontSize: 16, color: '#999' },
+  dropdownList: { 
+    borderWidth: 1.5, 
+    borderColor: '#000', 
+    borderRadius: 16, 
+    marginTop: 8, 
+    backgroundColor: '#FFF',
+    overflow: 'hidden'
+  },
+  dropdownItem: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20, 
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE'
+  },
+  dropdownItemText: { fontSize: 16, color: '#000' },
+  giornataContainer: { 
+    borderWidth: 1.5, 
+    borderColor: '#000', 
+    borderRadius: 20, 
+    padding: 16,
+    backgroundColor: '#FFF'
+  },
+  giornataRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingVertical: 8
+  },
+  giornataText: { fontSize: 16, color: '#000' },
+  newGiornataRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1.5, 
+    borderColor: '#000', 
+    borderRadius: 28, 
+    marginTop: 12,
+    overflow: 'hidden'
+  },
+  newGiornataInput: { 
+    flex: 1, 
+    fontSize: 16, 
+    color: '#000', 
+    paddingHorizontal: 20, 
+    paddingVertical: 14
+  },
+  newGiornataAddBtn: { 
+    paddingHorizontal: 16, 
+    paddingVertical: 14, 
+    borderLeftWidth: 1.5, 
+    borderLeftColor: '#000'
+  },
+  dateTimeRow: { flexDirection: 'row', gap: 12 },
+  dateTimeCol: { flex: 1 },
+  newMatchInputWithIcon: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    borderWidth: 1.5, 
+    borderColor: '#000', 
+    borderRadius: 28, 
+    paddingHorizontal: 20, 
+    paddingVertical: 14,
+    backgroundColor: '#FFF'
+  },
+  inputFieldText: { flex: 1, fontSize: 16, color: '#000' },
 });
