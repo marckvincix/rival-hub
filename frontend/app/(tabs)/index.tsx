@@ -164,6 +164,9 @@ export default function DashboardScreen() {
           <Text style={styles.newTournamentText}>Nuovo torneo</Text>
         </TouchableOpacity>
 
+        {/* Spacer */}
+        <View style={{ height: 16 }} />
+
         {/* I tuoi tornei Section */}
         <View style={styles.tournamentsCard}>
           <View style={styles.tournamentsHeader}>
