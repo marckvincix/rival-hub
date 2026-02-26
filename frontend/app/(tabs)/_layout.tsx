@@ -56,11 +56,14 @@ export default function TabsLayout() {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      router.replace('/');
+      // Use setTimeout to avoid the maximum update depth error
+      setTimeout(() => {
+        router.replace('/');
+      }, 0);
     }
   }, [isAuthenticated, isLoading]);
 
-  if (!isAuthenticated) {
+  if (isLoading || !isAuthenticated) {
     return null;
   }
 
