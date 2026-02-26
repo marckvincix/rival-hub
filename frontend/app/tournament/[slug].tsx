@@ -164,13 +164,15 @@ export default function TournamentPublicPage() {
                     <View key={match.id} style={styles.matchCard}>
                       <View style={styles.matchTeams}>
                         <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
-                        <Text style={styles.matchTeamNameHome} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
-                        <View style={styles.matchResult}>
-                          {match.status === 'completed' ? (
-                            <Text style={styles.matchScore}>{match.home_goals} - {match.away_goals}</Text>
-                          ) : <Text style={styles.matchVs}>vs</Text>}
+                        <View style={styles.matchCenter}>
+                          <Text style={styles.matchTeamNameHome} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
+                          <View style={styles.matchResult}>
+                            {match.status === 'completed' ? (
+                              <Text style={styles.matchScore}>{match.home_goals} - {match.away_goals}</Text>
+                            ) : <Text style={styles.matchVs}>vs</Text>}
+                          </View>
+                          <Text style={styles.matchTeamNameAway} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
                         </View>
-                        <Text style={styles.matchTeamNameAway} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
                         <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                       </View>
                     </View>
