@@ -353,23 +353,47 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {teams.length < 2 && <Text style={styles.warningText}>Aggiungi almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
                 {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
-                  matches.map((match) => (
-                    <View key={match.id} style={styles.matchCard}>
-                      <Text style={styles.matchRound}>{match.round}</Text>
-                      <View style={styles.matchTeams}>
-                        <Text style={styles.matchTeamName}>{getTeamName(match.home_team_id)}</Text>
-                        <View style={styles.matchScore}>
-                          {match.status === 'completed' ? (
-                            <Text style={styles.scoreText}>{match.home_goals} - {match.away_goals}</Text>
-                          ) : <Text style={styles.vsText}>vs</Text>}
+                  (() => {
+                    // Group matches by round
+                    const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
+                      const round = match.round || 'Altro';
+                      if (!acc[round]) acc[round] = [];
+                      acc[round].push(match);
+                      return acc;
+                    }, {});
+                    // Sort rounds in ascending order (Giornata 1, 2, 3...)
+                    const sortedRounds = Object.entries(matchesByRound).sort((a, b) => {
+                      const numA = parseInt(a[0].replace(/\D/g, '')) || 0;
+                      const numB = parseInt(b[0].replace(/\D/g, '')) || 0;
+                      return numA - numB;
+                    });
+                    return sortedRounds.map(([round, roundMatches]) => (
+                      <View key={round} style={styles.matchDayGroup}>
+                        <View style={styles.matchDayHeader}>
+                          <Text style={styles.matchDayTitle}>{round}</Text>
+                          <TouchableOpacity onPress={() => {
+                            Alert.alert('Elimina Giornata', `Eliminare tutte le partite di ${round}?`, [
+                              { text: 'No' },
+                              { text: 'Sì', onPress: () => {
+                                roundMatches.forEach((m: any) => handleDeleteMatch(m.id));
+                              }}
+                            ]);
+                          }}>
+                            <Ionicons name="trash" size={22} color="#000" />
+                          </TouchableOpacity>
                         </View>
-                        <Text style={styles.matchTeamName}>{getTeamName(match.away_team_id)}</Text>
+                        {roundMatches.map((match: any) => (
+                          <View key={match.id} style={styles.matchPillCard}>
+                            <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
+                            <Text style={styles.matchPillScore}>
+                              {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
+                            </Text>
+                            <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                          </View>
+                        ))}
                       </View>
-                      <TouchableOpacity style={styles.deleteMatchBtn} onPress={() => Alert.alert('Elimina?', '', [{ text: 'No' }, { text: 'Sì', onPress: () => handleDeleteMatch(match.id) }])}>
-                        <Ionicons name="trash-outline" size={18} color="#000" />
-                      </TouchableOpacity>
-                    </View>
-                  ))
+                    ));
+                  })()
                 )}
               </View>
             )}
