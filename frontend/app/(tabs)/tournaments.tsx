@@ -275,6 +275,23 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     });
   }, [matches]);
 
+  // Get existing round names and next round number
+  const existingRounds = React.useMemo(() => {
+    const rounds = [...new Set(matches.map(m => m.round))].filter(Boolean);
+    return rounds.sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  }, [matches]);
+
+  const nextRoundNumber = React.useMemo(() => {
+    if (existingRounds.length === 0) return 1;
+    const lastRound = existingRounds[existingRounds.length - 1];
+    const num = parseInt(lastRound.replace(/\D/g, '')) || 0;
+    return num + 1;
+  }, [existingRounds]);
+
   const handleAddTeam = async () => {
     if (!newTeamName.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
     try {
@@ -288,12 +305,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleAddMatch = async () => {
     if (!newMatchData.home_team_id || !newMatchData.away_team_id) { Alert.alert('Errore', 'Seleziona entrambe le squadre'); return; }
     if (newMatchData.home_team_id === newMatchData.away_team_id) { Alert.alert('Errore', 'Squadre diverse'); return; }
+    if (!newMatchData.round) { Alert.alert('Errore', 'Seleziona una giornata'); return; }
     try {
-      const response = await api.post(`/api/tournaments/${tournament.id}/matches`, newMatchData);
+      const matchPayload = {
+        home_team_id: newMatchData.home_team_id,
+        away_team_id: newMatchData.away_team_id,
+        round: newMatchData.round,
+        date: newMatchData.date || undefined,
+        time: newMatchData.time || undefined,
+        venue_name: newMatchData.venue_name || undefined,
+        venue_address: newMatchData.venue_address || undefined,
+      };
+      const response = await api.post(`/api/tournaments/${tournament.id}/matches`, matchPayload);
       setMatches([...matches, response.data]);
       setShowAddMatchModal(false);
-      setNewMatchData({ home_team_id: '', away_team_id: '', round: 'Giornata 1' });
+      setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
+      setShowHomeDropdown(false);
+      setShowAwayDropdown(false);
     } catch (error: any) { Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere'); }
+  };
   };
 
   const handleDeleteTeam = async (teamId: string) => {
