@@ -11,10 +11,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { Card, Button, EmptyState, Loading } from '../../src/components';
+import { Loading } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Match } from '../../src/types';
-import { formatDate, getStatusLabel } from '../../src/utils/helpers';
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -35,7 +34,6 @@ export default function DashboardScreen() {
       const tournamentsData = response.data as Tournament[];
       setTournaments(tournamentsData);
 
-      // Calculate stats
       let totalTeams = 0;
       let pendingMatches = 0;
       
@@ -46,9 +44,7 @@ export default function DashboardScreen() {
           
           const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches`);
           pendingMatches += matchesRes.data.filter((m: Match) => m.status === 'scheduled').length;
-        } catch (e) {
-          // Ignore individual fetch errors
-        }
+        } catch (e) {}
       }
 
       setStats({
@@ -76,29 +72,36 @@ export default function DashboardScreen() {
     loadData();
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active': return 'In corso';
+      case 'completed': return 'Completato';
+      default: return 'Bozza';
+    }
+  };
+
   if (loading) {
-    return <Loading message="Caricamento dashboard..." />;
+    return <Loading message="Caricamento..." />;
   }
 
-  const statCards = [
-    { icon: 'trophy' as const, value: stats.totalTournaments, label: 'Tornei Totali', color: '#1E40AF' },
-    { icon: 'flash' as const, value: stats.activeTournaments, label: 'In Corso', color: '#059669' },
-    { icon: 'people' as const, value: stats.totalTeams, label: 'Squadre', color: '#7C3AED' },
-    { icon: 'time' as const, value: stats.pendingMatches, label: 'Partite da Giocare', color: '#EA580C' },
-  ];
+  const firstName = user?.name?.split(' ')[0] || 'Utente';
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView 
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
+        contentContainerStyle={styles.scrollContent}
       >
         {/* Header */}
         <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Ciao, {user?.name?.split(' ')[0] || 'Organizzatore'}</Text>
+          <View style={styles.avatarContainer}>
+            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
+          </View>
+          <View style={styles.headerTextContainer}>
+            <Text style={styles.greeting}>Ciao, {firstName}</Text>
             <Text style={styles.subtitle}>Gestisci i tuoi tornei</Text>
           </View>
           <View style={styles.planBadge}>
@@ -108,120 +111,101 @@ export default function DashboardScreen() {
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
-          {statCards.map((stat, index) => (
-            <View key={index} style={styles.statCard}>
-              <View style={[styles.statIcon, { backgroundColor: `${stat.color}15` }]}>
-                <Ionicons name={stat.icon} size={24} color={stat.color} />
+          {/* Row 1 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="trophy-outline" size={24} color="#000" />
               </View>
-              <Text style={styles.statValue}>{stat.value}</Text>
-              <Text style={styles.statLabel}>{stat.label}</Text>
+              <Text style={styles.statValue}>{stats.totalTournaments}</Text>
+              <View style={styles.statLabelContainer}>
+                <Text style={styles.statLabel}>Tornei</Text>
+              </View>
             </View>
-          ))}
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Azioni Rapide</Text>
-          <View style={styles.actionsRow}>
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => router.push('/(tabs)/tournaments')}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="add-circle" size={28} color="#1E40AF" />
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="flash" size={24} color="#000" />
               </View>
-              <Text style={styles.actionText}>Nuovo Torneo</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.actionButton}
-              onPress={() => {
-                if (tournaments.length > 0) {
-                  router.push(`/tournament/${tournaments[0].slug}`);
-                }
-              }}
-            >
-              <View style={[styles.actionIcon, { backgroundColor: '#ECFDF5' }]}>
-                <Ionicons name="eye" size={28} color="#059669" />
+              <Text style={styles.statValue}>{stats.activeTournaments}</Text>
+              <View style={styles.statLabelContainer}>
+                <Text style={styles.statLabel}>In corso</Text>
               </View>
-              <Text style={styles.actionText}>Vedi Pubblico</Text>
-            </TouchableOpacity>
+            </View>
+          </View>
+          {/* Row 2 */}
+          <View style={styles.statsRow}>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="people-outline" size={24} color="#000" />
+              </View>
+              <Text style={styles.statValue}>{stats.totalTeams}</Text>
+              <View style={styles.statLabelContainer}>
+                <Text style={styles.statLabel}>Squadre</Text>
+              </View>
+            </View>
+            <View style={styles.statCard}>
+              <View style={styles.statIconContainer}>
+                <Ionicons name="time-outline" size={24} color="#000" />
+              </View>
+              <Text style={styles.statValue}>{stats.pendingMatches}</Text>
+              <View style={styles.statLabelContainer}>
+                <Text style={styles.statLabel}>Da giocare</Text>
+              </View>
+            </View>
           </View>
         </View>
 
-        {/* Recent Tournaments */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>I Tuoi Tornei</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/tournaments')}>
-              <Text style={styles.seeAll}>Vedi tutti</Text>
+        {/* Nuovo Torneo Button */}
+        <TouchableOpacity 
+          style={styles.newTournamentButton}
+          onPress={() => router.push('/(tabs)/tournaments')}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+          <Text style={styles.newTournamentText}>Nuovo torneo</Text>
+        </TouchableOpacity>
+
+        {/* I tuoi tornei Section */}
+        <View style={styles.tournamentsCard}>
+          <View style={styles.tournamentsHeader}>
+            <Text style={styles.tournamentsTitle}>I tuoi tornei</Text>
+            <TouchableOpacity 
+              style={styles.viewAllButton}
+              onPress={() => router.push('/(tabs)/tournaments')}
+            >
+              <Text style={styles.viewAllText}>Vedi tutti</Text>
             </TouchableOpacity>
           </View>
 
           {tournaments.length === 0 ? (
-            <Card>
-              <EmptyState
-                icon="trophy-outline"
-                title="Nessun torneo"
-                description="Crea il tuo primo torneo per iniziare"
-                actionLabel="Crea Torneo"
-                onAction={() => router.push('/(tabs)/tournaments')}
-              />
-            </Card>
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyText}>Nessun torneo creato</Text>
+            </View>
           ) : (
             tournaments.slice(0, 3).map((tournament) => (
               <TouchableOpacity
                 key={tournament.id}
-                style={styles.tournamentCard}
+                style={styles.tournamentItem}
                 onPress={() => router.push(`/(tabs)/tournaments?id=${tournament.id}`)}
               >
                 <View style={styles.tournamentInfo}>
-                  <View style={styles.tournamentIcon}>
-                    <Ionicons name="trophy" size={24} color="#1E40AF" />
-                  </View>
-                  <View style={styles.tournamentDetails}>
-                    <Text style={styles.tournamentName}>{tournament.name}</Text>
-                    <Text style={styles.tournamentMeta}>
-                      {tournament.category} • {tournament.location || 'Nessun luogo'}
-                    </Text>
+                  <Text style={styles.tournamentName}>{tournament.name}</Text>
+                  <Text style={styles.tournamentMeta}>
+                    {tournament.category} - {tournament.location || 'Campo'}
+                  </Text>
+                  <View style={styles.statusBadge}>
+                    <Text style={styles.statusText}>{getStatusLabel(tournament.status)}</Text>
                   </View>
                 </View>
-                <View style={[
-                  styles.statusBadge,
-                  { backgroundColor: tournament.status === 'active' ? '#ECFDF5' : 
-                                     tournament.status === 'completed' ? '#F3F4F6' : '#FEF3C7' }
-                ]}>
-                  <Text style={[
-                    styles.statusText,
-                    { color: tournament.status === 'active' ? '#059669' : 
-                             tournament.status === 'completed' ? '#6B7280' : '#D97706' }
-                  ]}>
-                    {getStatusLabel(tournament.status)}
-                  </Text>
+                <View style={styles.tournamentActions}>
+                  <Ionicons name="chevron-forward" size={24} color="#FFF" />
+                  <TouchableOpacity onPress={() => router.push(`/tournament/${tournament.slug}`)}>
+                    <Ionicons name="eye-outline" size={20} color="#FFF" style={styles.eyeIcon} />
+                  </TouchableOpacity>
                 </View>
               </TouchableOpacity>
             ))
           )}
         </View>
-
-        {/* Plan Upgrade Banner */}
-        {user?.plan === 'free' && (
-          <View style={styles.upgradeBanner}>
-            <View style={styles.upgradeContent}>
-              <Ionicons name="star" size={32} color="#F59E0B" />
-              <View style={styles.upgradeText}>
-                <Text style={styles.upgradeTitle}>Passa a Pro</Text>
-                <Text style={styles.upgradeDesc}>Sblocca tornei e squadre illimitate</Text>
-              </View>
-            </View>
-            <Button
-              title="Upgrade"
-              onPress={() => router.push('/(tabs)/profile')}
-              variant="secondary"
-              size="small"
-            />
-          </View>
-        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -230,177 +214,195 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 20,
     backgroundColor: '#FFFFFF',
   },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 100,
+  },
+  // Header
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  avatarContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  avatarText: {
+    color: '#FFF',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  headerTextContainer: {
+    flex: 1,
+    marginLeft: 12,
+  },
   greeting: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
   },
   subtitle: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#666',
     marginTop: 2,
   },
   planBadge: {
-    backgroundColor: '#EEF2FF',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: '#10B981',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
   },
   planText: {
-    fontSize: 12,
+    color: '#FFF',
+    fontSize: 14,
     fontWeight: '700',
-    color: '#1E40AF',
   },
+  // Stats Grid
   statsGrid: {
+    marginBottom: 16,
+  },
+  statsRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 12,
+    gap: 12,
+    marginBottom: 12,
   },
   statCard: {
-    width: '50%',
-    padding: 8,
+    flex: 1,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
   },
-  statIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+  statIconContainer: {
+    width: 44,
+    height: 44,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 8,
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1F2937',
-  },
-  statLabel: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  section: {
-    padding: 20,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    fontSize: 18,
+    fontSize: 36,
     fontWeight: '700',
-    color: '#1F2937',
-  },
-  seeAll: {
-    fontSize: 14,
-    color: '#1E40AF',
-    fontWeight: '600',
-  },
-  actionsRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 16,
-    alignItems: 'center',
-  },
-  actionIcon: {
-    width: 56,
-    height: 56,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
+    color: '#000',
     marginBottom: 8,
   },
-  actionText: {
+  statLabelContainer: {
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 6,
+  },
+  statLabel: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#1F2937',
+    color: '#000',
+    fontWeight: '500',
   },
-  tournamentCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  tournamentInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  tournamentIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#EEF2FF',
+  // New Tournament Button
+  newTournamentButton: {
+    backgroundColor: '#000',
+    borderRadius: 16,
+    paddingVertical: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
+    marginBottom: 16,
   },
-  tournamentDetails: {
+  newTournamentText: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  // Tournaments Card
+  tournamentsCard: {
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 16,
+    overflow: 'hidden',
+  },
+  tournamentsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#FFF',
+  },
+  tournamentsTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+  },
+  viewAllButton: {
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  viewAllText: {
+    fontSize: 12,
+    color: '#000',
+    fontWeight: '500',
+  },
+  emptyState: {
+    padding: 32,
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  tournamentItem: {
+    backgroundColor: '#000',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: '#333',
+  },
+  tournamentInfo: {
     flex: 1,
   },
   tournamentName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#1F2937',
+    fontWeight: '700',
+    color: '#FFF',
     marginBottom: 2,
   },
   tournamentMeta: {
     fontSize: 13,
-    color: '#6B7280',
+    color: '#999',
+    marginBottom: 8,
   },
   statusBadge: {
-    paddingHorizontal: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    paddingHorizontal: 12,
     paddingVertical: 4,
-    borderRadius: 8,
   },
   statusText: {
     fontSize: 12,
+    color: '#000',
     fontWeight: '600',
   },
-  upgradeBanner: {
-    margin: 20,
-    padding: 16,
-    backgroundColor: '#FFFBEB',
-    borderRadius: 16,
-    flexDirection: 'row',
+  tournamentActions: {
     alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: '#FCD34D',
   },
-  upgradeContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  upgradeText: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  upgradeTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#92400E',
-  },
-  upgradeDesc: {
-    fontSize: 13,
-    color: '#B45309',
+  eyeIcon: {
+    marginTop: 8,
   },
 });
