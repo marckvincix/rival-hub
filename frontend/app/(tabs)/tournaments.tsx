@@ -369,47 +369,34 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {teams.length < 2 && <Text style={styles.warningText}>Aggiungi almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
                 {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
-                  (() => {
-                    // Group matches by round
-                    const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
-                      const round = match.round || 'Altro';
-                      if (!acc[round]) acc[round] = [];
-                      acc[round].push(match);
-                      return acc;
-                    }, {});
-                    // Sort rounds in ascending order (Giornata 1, 2, 3...)
-                    const sortedRounds = Object.entries(matchesByRound).sort((a, b) => {
-                      const numA = parseInt(a[0].replace(/\D/g, '')) || 0;
-                      const numB = parseInt(b[0].replace(/\D/g, '')) || 0;
-                      return numA - numB;
-                    });
-                    return sortedRounds.map(([round, roundMatches]) => (
-                      <View key={round} style={styles.matchDayGroup}>
-                        <View style={styles.matchDayHeader}>
-                          <Text style={styles.matchDayTitle}>{round}</Text>
-                          <TouchableOpacity onPress={() => {
-                            Alert.alert('Elimina Giornata', `Eliminare tutte le partite di ${round}?`, [
-                              { text: 'No' },
-                              { text: 'Sì', onPress: () => {
-                                roundMatches.forEach((m: any) => handleDeleteMatch(m.id));
-                              }}
-                            ]);
-                          }}>
-                            <Ionicons name="trash" size={22} color="#000" />
-                          </TouchableOpacity>
-                        </View>
-                        {roundMatches.map((match: any) => (
-                          <View key={match.id} style={styles.matchPillCard}>
-                            <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
-                            <Text style={styles.matchPillScore}>
-                              {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
-                            </Text>
-                            <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
-                          </View>
-                        ))}
+                  groupedMatches.map(([round, roundMatches]) => (
+                    <View key={round} style={styles.matchDayGroup}>
+                      <View style={styles.matchDayHeader}>
+                        <Text style={styles.matchDayTitle}>{round}</Text>
+                        <TouchableOpacity onPress={() => {
+                          Alert.alert('Elimina Giornata', `Eliminare tutte le partite di ${round}?`, [
+                            { text: 'No' },
+                            { text: 'Sì', onPress: async () => {
+                              for (const m of roundMatches) {
+                                await handleDeleteMatch(m.id);
+                              }
+                            }}
+                          ]);
+                        }}>
+                          <Ionicons name="trash" size={22} color="#000" />
+                        </TouchableOpacity>
                       </View>
-                    ));
-                  })()
+                      {roundMatches.map((match: any) => (
+                        <View key={match.id} style={styles.matchPillCard}>
+                          <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
+                          <Text style={styles.matchPillScore}>
+                            {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
+                          </Text>
+                          <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  ))
                 )}
               </View>
             )}
