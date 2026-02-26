@@ -12,9 +12,9 @@ function CustomTabBar() {
   const insets = useSafeAreaInsets();
 
   const isActive = (route: string) => {
-    if (route === '/') return pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
-    if (route === '/tournaments') return pathname.includes('tournaments');
-    if (route === '/profile') return pathname.includes('profile');
+    if (route === 'dashboard') return pathname === '/' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
+    if (route === 'tournaments') return pathname.includes('tournaments');
+    if (route === 'profile') return pathname.includes('profile');
     return false;
   };
 
@@ -22,33 +22,29 @@ function CustomTabBar() {
     <View style={[styles.tabBar, { paddingBottom: insets.bottom || 16 }]}>
       {/* Dashboard Tab */}
       <TouchableOpacity
-        style={styles.tabItem}
+        style={[styles.tabItem, isActive('dashboard') && styles.tabItemActive]}
         onPress={() => router.push('/(tabs)/')}
       >
-        <View style={styles.tabIconContainer}>
-          <Ionicons name="grid" size={24} color="#000" />
-        </View>
+        <Ionicons name="grid" size={24} color="#000" />
         <Text style={styles.tabLabel}>Dashboard</Text>
       </TouchableOpacity>
 
       {/* Tornei Tab */}
       <TouchableOpacity
-        style={styles.tabItem}
+        style={[styles.tabItem, isActive('tournaments') && styles.tabItemActive]}
         onPress={() => router.push('/(tabs)/tournaments')}
       >
-        <View style={styles.tabIconContainer}>
-          <Ionicons name="trophy-outline" size={24} color="#000" />
-        </View>
+        <Ionicons name="trophy-outline" size={24} color="#000" />
         <Text style={styles.tabLabel}>Tornei</Text>
       </TouchableOpacity>
 
       {/* PRO Tab */}
       <TouchableOpacity
-        style={styles.proTabItem}
+        style={[styles.tabItem, isActive('profile') && styles.tabItemActive]}
         onPress={() => router.push('/(tabs)/profile')}
       >
-        <Ionicons name="shield" size={24} color="#FFF" />
-        <Text style={styles.proTabLabel}>PRO</Text>
+        <Ionicons name="shield" size={24} color="#000" />
+        <Text style={styles.tabLabel}>PRO</Text>
       </TouchableOpacity>
     </View>
   );
