@@ -324,7 +324,6 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setShowAwayDropdown(false);
     } catch (error: any) { Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere'); }
   };
-  };
 
   const handleDeleteTeam = async (teamId: string) => {
     try { await api.delete(`/api/teams/${teamId}`); setTeams(teams.filter(t => t.id !== teamId)); } catch (e) { Alert.alert('Errore'); }
