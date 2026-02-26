@@ -346,11 +346,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     switch (status) { case 'active': return 'In corso'; case 'completed': return 'Completato'; default: return 'Bozza'; }
   };
 
-  const tabs = [
-    { id: 'teams', label: 'Squadre', icon: 'people' as const },
-    { id: 'matches', label: 'Partite', icon: 'football' as const },
-    { id: 'results', label: 'Risultati', icon: 'create' as const },
-    { id: 'settings', label: 'Impostazioni', icon: 'settings' as const }
+  const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' }[] = [
+    { id: 'teams', label: 'Squadre', icon: 'people' },
+    { id: 'matches', label: 'Partite', icon: 'football' },
+    { id: 'results', label: 'Risultati', icon: 'create' },
+    { id: 'settings', label: 'Impostazioni', icon: 'settings' }
   ];
 
   return (
