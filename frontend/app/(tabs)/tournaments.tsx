@@ -249,6 +249,22 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (error) {} finally { setLoading(false); }
   };
 
+  // Memoize grouped matches to prevent re-computation on every render
+  const groupedMatches = React.useMemo(() => {
+    const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
+      const round = match.round || 'Altro';
+      if (!acc[round]) acc[round] = [];
+      acc[round].push(match);
+      return acc;
+    }, {});
+    // Sort rounds in ascending order (Giornata 1, 2, 3...)
+    return Object.entries(matchesByRound).sort((a, b) => {
+      const numA = parseInt(a[0].replace(/\D/g, '')) || 0;
+      const numB = parseInt(b[0].replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  }, [matches]);
+
   const handleAddTeam = async () => {
     if (!newTeamName.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
     try {
