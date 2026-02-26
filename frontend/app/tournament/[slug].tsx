@@ -163,19 +163,15 @@ export default function TournamentPublicPage() {
                   {roundMatches.map((match) => (
                     <View key={match.id} style={styles.matchCard}>
                       <View style={styles.matchTeams}>
-                        <View style={styles.matchTeam}>
-                          <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
-                          <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
-                        </View>
+                        <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
+                        <Text style={styles.matchTeamNameHome} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
                         <View style={styles.matchResult}>
                           {match.status === 'completed' ? (
                             <Text style={styles.matchScore}>{match.home_goals} - {match.away_goals}</Text>
                           ) : <Text style={styles.matchVs}>vs</Text>}
                         </View>
-                        <View style={[styles.matchTeam, { justifyContent: 'flex-end' }]}>
-                          <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
-                          <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
-                        </View>
+                        <Text style={styles.matchTeamNameAway} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
+                        <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                       </View>
                     </View>
                   ))}
