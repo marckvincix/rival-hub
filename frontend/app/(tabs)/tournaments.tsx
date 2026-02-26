@@ -234,7 +234,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showAddMatchModal, setShowAddMatchModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
-  const [newMatchData, setNewMatchData] = useState({ home_team_id: '', away_team_id: '', round: 'Giornata 1' });
+  const [newMatchData, setNewMatchData] = useState({ 
+    home_team_id: '', 
+    away_team_id: '', 
+    round: '',
+    date: '',
+    time: '',
+    venue_name: '',
+    venue_address: ''
+  });
+  const [showHomeDropdown, setShowHomeDropdown] = useState(false);
+  const [showAwayDropdown, setShowAwayDropdown] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
