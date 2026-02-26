@@ -12,172 +12,112 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, Card } from '../../src/components';
+import { Button } from '../../src/components';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
 
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Sei sicuro di voler uscire?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        { 
-          text: 'Esci', 
-          style: 'destructive',
-          onPress: async () => {
-            await logout();
-            router.replace('/');
-          }
-        }
-      ]
-    );
-  };
-
-  const getPlanColor = () => {
-    switch (user?.plan) {
-      case 'pro': return '#7C3AED';
-      case 'club': return '#059669';
-      default: return '#6B7280';
-    }
+    Alert.alert('Logout', 'Sei sicuro di voler uscire?', [
+      { text: 'Annulla', style: 'cancel' },
+      { text: 'Esci', style: 'destructive', onPress: async () => {
+        await logout();
+        router.replace('/');
+      }}
+    ]);
   };
 
   const getPlanFeatures = () => {
     switch (user?.plan) {
-      case 'pro':
-        return [
-          'Tornei illimitati',
-          'Squadre illimitate',
-          'Statistiche complete',
-          'News e notifiche',
-          'Nessun branding'
-        ];
-      case 'club':
-        return [
-          'Tutto del Pro',
-          'Collaboratori multipli',
-          'Categorie età',
-          'URL personalizzato',
-          'Export PDF'
-        ];
-      default:
-        return [
-          '1 torneo attivo',
-          'Max 8 squadre',
-          'Statistiche base',
-          'Branding GoalManager'
-        ];
+      case 'pro': return ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Nessun branding'];
+      case 'club': return ['Tutto del Pro', 'Collaboratori multipli', 'Categorie età', 'Export PDF'];
+      default: return ['1 torneo attivo', 'Max 8 squadre', 'Statistiche base', 'Branding GoalManager'];
     }
   };
 
+  const firstName = user?.name?.split(' ')[0] || 'Utente';
+
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Profilo</Text>
         </View>
 
-        {/* User Info Card */}
+        {/* User Info */}
         <View style={styles.userCard}>
           <View style={styles.avatarContainer}>
             {user?.picture ? (
               <Image source={{ uri: user.picture }} style={styles.avatar} />
             ) : (
-              <View style={styles.avatarPlaceholder}>
-                <Text style={styles.avatarText}>
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
-                </Text>
-              </View>
+              <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
             )}
           </View>
           <Text style={styles.userName}>{user?.name || 'Utente'}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
-          <View style={[styles.planBadge, { backgroundColor: `${getPlanColor()}20` }]}>
-            <Ionicons 
-              name={user?.plan === 'club' ? 'diamond' : user?.plan === 'pro' ? 'star' : 'person'} 
-              size={16} 
-              color={getPlanColor()} 
-            />
-            <Text style={[styles.planBadgeText, { color: getPlanColor() }]}>
-              Piano {user?.plan?.toUpperCase() || 'FREE'}
-            </Text>
+          <View style={styles.planBadge}>
+            <Ionicons name={user?.plan === 'club' ? 'diamond' : user?.plan === 'pro' ? 'star' : 'person'} size={16} color="#FFF" />
+            <Text style={styles.planBadgeText}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
           </View>
         </View>
 
         {/* Current Plan */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Il tuo Piano</Text>
-          <Card>
+          <View style={styles.planCard}>
             <View style={styles.planHeader}>
-              <Text style={styles.planName}>
-                Piano {user?.plan?.toUpperCase() || 'FREE'}
-              </Text>
+              <Text style={styles.planName}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
               {user?.plan !== 'club' && (
-                <TouchableOpacity>
-                  <Text style={styles.upgradeLink}>Upgrade</Text>
-                </TouchableOpacity>
+                <View style={styles.upgradeBadge}>
+                  <Text style={styles.upgradeText}>Upgrade</Text>
+                </View>
               )}
             </View>
             <View style={styles.planFeatures}>
               {getPlanFeatures().map((feature, index) => (
                 <View key={index} style={styles.featureRow}>
-                  <Ionicons name="checkmark-circle" size={18} color="#059669" />
+                  <Ionicons name="checkmark" size={18} color="#000" />
                   <Text style={styles.featureText}>{feature}</Text>
                 </View>
               ))}
             </View>
-          </Card>
+          </View>
         </View>
 
         {/* Upgrade Options */}
         {user?.plan === 'free' && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Passa a un Piano Superiore</Text>
+            <Text style={styles.sectionTitle}>Passa a Pro</Text>
             
-            <Card>
-              <View style={styles.upgradeCard}>
-                <View style={styles.upgradeHeader}>
-                  <Ionicons name="star" size={24} color="#7C3AED" />
-                  <View style={styles.upgradeInfo}>
-                    <Text style={styles.upgradeName}>Piano Pro</Text>
-                    <Text style={styles.upgradePrice}>€9.99/mese o €79/anno</Text>
-                  </View>
+            <View style={styles.upgradeCard}>
+              <View style={styles.upgradeHeader}>
+                <View style={styles.upgradeIconContainer}>
+                  <Ionicons name="star" size={24} color="#FFF" />
                 </View>
-                <Text style={styles.upgradeDesc}>
-                  Tornei e squadre illimitate, statistiche complete, nessun branding
-                </Text>
-                <Button
-                  title="Scegli Pro"
-                  onPress={() => Alert.alert('Stripe', 'Integrazione Stripe in modalità test')}
-                  variant="primary"
-                  fullWidth
-                />
+                <View style={styles.upgradeInfo}>
+                  <Text style={styles.upgradeName}>Piano PRO</Text>
+                  <Text style={styles.upgradePrice}>€9.99/mese</Text>
+                </View>
               </View>
-            </Card>
+              <Text style={styles.upgradeDesc}>Tornei e squadre illimitate, statistiche complete</Text>
+              <Button title="Scegli Pro" onPress={() => Alert.alert('Stripe', 'Pagamento in modalità test')} fullWidth />
+            </View>
 
-            <Card>
-              <View style={styles.upgradeCard}>
-                <View style={styles.upgradeHeader}>
-                  <Ionicons name="diamond" size={24} color="#059669" />
-                  <View style={styles.upgradeInfo}>
-                    <Text style={styles.upgradeName}>Piano Club</Text>
-                    <Text style={styles.upgradePrice}>€19.99/mese o €149/anno</Text>
-                  </View>
+            <View style={styles.upgradeCard}>
+              <View style={styles.upgradeHeader}>
+                <View style={[styles.upgradeIconContainer, { backgroundColor: '#10B981' }]}>
+                  <Ionicons name="diamond" size={24} color="#FFF" />
                 </View>
-                <Text style={styles.upgradeDesc}>
-                  Tutto del Pro + collaboratori, categorie età, URL personalizzato, export PDF
-                </Text>
-                <Button
-                  title="Scegli Club"
-                  onPress={() => Alert.alert('Stripe', 'Integrazione Stripe in modalità test')}
-                  variant="secondary"
-                  fullWidth
-                />
+                <View style={styles.upgradeInfo}>
+                  <Text style={styles.upgradeName}>Piano CLUB</Text>
+                  <Text style={styles.upgradePrice}>€19.99/mese</Text>
+                </View>
               </View>
-            </Card>
+              <Text style={styles.upgradeDesc}>Tutto Pro + collaboratori, categorie età, export PDF</Text>
+              <Button title="Scegli Club" onPress={() => Alert.alert('Stripe', 'Pagamento in modalità test')} variant="outline" fullWidth />
+            </View>
           </View>
         )}
 
@@ -187,49 +127,43 @@ export default function ProfileScreen() {
           
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: '#EEF2FF' }]}>
-                <Ionicons name="notifications-outline" size={20} color="#1E40AF" />
+              <View style={styles.settingIcon}>
+                <Ionicons name="notifications-outline" size={20} color="#000" />
               </View>
               <Text style={styles.settingText}>Notifiche</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color="#000" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: '#ECFDF5' }]}>
-                <Ionicons name="help-circle-outline" size={20} color="#059669" />
+              <View style={styles.settingIcon}>
+                <Ionicons name="help-circle-outline" size={20} color="#000" />
               </View>
               <Text style={styles.settingText}>Supporto</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color="#000" />
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: '#FEF3C7' }]}>
-                <Ionicons name="document-text-outline" size={20} color="#D97706" />
+              <View style={styles.settingIcon}>
+                <Ionicons name="document-text-outline" size={20} color="#000" />
               </View>
               <Text style={styles.settingText}>Termini e Privacy</Text>
             </View>
-            <Ionicons name="chevron-forward" size={20} color="#9CA3AF" />
+            <Ionicons name="chevron-forward" size={20} color="#000" />
           </TouchableOpacity>
         </View>
 
         {/* Logout */}
         <View style={styles.section}>
-          <Button
-            title="Esci"
-            onPress={handleLogout}
-            variant="outline"
-            icon="log-out-outline"
-            fullWidth
-          />
+          <Button title="Esci" onPress={handleLogout} variant="outline" icon="log-out-outline" fullWidth />
         </View>
 
         {/* App Info */}
         <View style={styles.appInfo}>
-          <Ionicons name="football" size={24} color="#9CA3AF" />
+          <Ionicons name="football" size={24} color="#999" />
           <Text style={styles.appName}>GoalManager</Text>
           <Text style={styles.appVersion}>Versione 1.0.0</Text>
         </View>
@@ -241,25 +175,31 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#FFF',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
   },
   title: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
   },
   userCard: {
-    backgroundColor: '#FFFFFF',
     padding: 24,
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
   },
   avatarContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   avatar: {
@@ -267,50 +207,50 @@ const styles = StyleSheet.create({
     height: 80,
     borderRadius: 40,
   },
-  avatarPlaceholder: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#1E40AF',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   avatarText: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: '#FFF',
   },
   userName: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
     marginBottom: 4,
   },
   userEmail: {
     fontSize: 14,
-    color: '#6B7280',
+    color: '#666',
     marginBottom: 12,
   },
   planBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
+    backgroundColor: '#000',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
   },
   planBadgeText: {
-    fontSize: 13,
-    fontWeight: '600',
-    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
   },
   section: {
-    padding: 20,
+    padding: 16,
   },
   sectionTitle: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
     marginBottom: 12,
+  },
+  planCard: {
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 16,
+    padding: 16,
   },
   planHeader: {
     flexDirection: 'row',
@@ -319,14 +259,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   planName: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
   },
-  upgradeLink: {
-    fontSize: 14,
+  upgradeBadge: {
+    borderWidth: 1,
+    borderColor: '#000',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  upgradeText: {
+    fontSize: 12,
     fontWeight: '600',
-    color: '#1E40AF',
+    color: '#000',
   },
   planFeatures: {
     gap: 8,
@@ -337,40 +284,55 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 14,
-    color: '#4B5563',
+    color: '#000',
     marginLeft: 8,
   },
   upgradeCard: {
-    gap: 12,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
   },
   upgradeHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+  },
+  upgradeIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
   },
   upgradeInfo: {
-    marginLeft: 12,
+    flex: 1,
   },
   upgradeName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#000',
   },
   upgradePrice: {
-    fontSize: 13,
-    color: '#6B7280',
+    fontSize: 14,
+    color: '#666',
   },
   upgradeDesc: {
     fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
+    color: '#666',
+    marginBottom: 16,
   },
   settingItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: '#FFFFFF',
-    padding: 16,
+    borderWidth: 2,
+    borderColor: '#000',
     borderRadius: 12,
+    padding: 14,
     marginBottom: 8,
   },
   settingLeft: {
@@ -380,6 +342,8 @@ const styles = StyleSheet.create({
   settingIcon: {
     width: 40,
     height: 40,
+    borderWidth: 2,
+    borderColor: '#000',
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -387,21 +351,23 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 16,
-    color: '#1F2937',
+    fontWeight: '600',
+    color: '#000',
   },
   appInfo: {
     alignItems: 'center',
     padding: 24,
+    paddingBottom: 100,
   },
   appName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#9CA3AF',
+    color: '#999',
     marginTop: 8,
   },
   appVersion: {
     fontSize: 12,
-    color: '#9CA3AF',
+    color: '#999',
     marginTop: 4,
   },
 });
