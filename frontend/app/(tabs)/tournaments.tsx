@@ -1811,15 +1811,28 @@ function EventDropdown({
 }
 
 // Helper Component: Team Ratings Accordion
-function TeamRatingsAccordion({ teamName, teamLetter, players = [] }: { teamName: string; teamLetter: string; players?: any[] }) {
+function TeamRatingsAccordion({ 
+  teamName, 
+  teamLetter, 
+  players = [],
+  ratings = {},
+  onRatingChange
+}: { 
+  teamName: string; 
+  teamLetter: string; 
+  players?: any[];
+  ratings?: Record<string, number>;
+  onRatingChange?: (playerId: string, rating: number) => void;
+}) {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [playerRatings, setPlayerRatings] = useState<Record<string, number>>({});
   const [showRatingPicker, setShowRatingPicker] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
 
   const handleRatingChange = (playerId: string, rating: number) => {
-    setPlayerRatings(prev => ({ ...prev, [playerId]: rating }));
+    if (onRatingChange) {
+      onRatingChange(playerId, rating);
+    }
   };
 
   const openRatingPicker = (playerId: string, playerName: string) => {
