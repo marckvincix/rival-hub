@@ -214,6 +214,28 @@ class MatchEvent(BaseModel):
     note: Optional[str] = None
     created_at: datetime
 
+# Match Events Batch Save Model
+class MatchEventsBatchSave(BaseModel):
+    events: List[MatchEventCreate]
+    ratings: Dict[str, float] = {}  # player_id -> rating
+    home_goals: int = 0
+    away_goals: int = 0
+
+# Player Stats Response Model (for the stats modal)
+class PlayerStatsResponse(BaseModel):
+    player_id: str
+    full_name: str
+    role: str
+    photo: Optional[str] = None
+    goals: int = 0
+    assists: int = 0
+    yellow_cards: int = 0
+    red_cards: int = 0
+    appearances: int = 0
+    minutes_played: int = 0
+    average_rating: float = 0.0
+    ratings_count: int = 0
+
 # News Models
 class NewsCreate(BaseModel):
     title: str
