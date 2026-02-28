@@ -1245,19 +1245,25 @@ async def save_match_events_batch(
 @api_router.get("/matches/{match_id}/events")
 async def get_match_events(match_id: str):
     """Get all events for a match with player names"""
+    import logging
+    logging.info(f"Getting events for match {match_id}")
+    
     # Get all events for this match
     events = await db.match_events.find({"match_id": match_id}, {"_id": 0}).to_list(1000)
+    logging.info(f"Found {len(events)} events")
     
     # Enrich events with player names
     enriched_events = []
     for event in events:
         player = await db.players.find_one({"id": event.get("player_id")}, {"_id": 0})
-        enriched_event = {
-            **event,
-            "player_name": player.get("full_name", "Sconosciuto") if player else "Sconosciuto"
-        }
+        player_name = player.get("full_name", "Sconosciuto") if player else "Sconosciuto"
+        logging.info(f"Event {event.get('event_type')} - Player: {player_name}")
+        
+        enriched_event = dict(event)
+        enriched_event["player_name"] = player_name
         enriched_events.append(enriched_event)
     
+    logging.info(f"Returning {len(enriched_events)} enriched events")
     return enriched_events
 
 @api_router.get("/players/{player_id}/stats", response_model=PlayerStatsResponse)
