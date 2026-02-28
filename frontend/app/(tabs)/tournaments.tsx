@@ -1869,7 +1869,7 @@ function TeamRatingsAccordion({
             </View>
           ) : (
             players.map((player) => {
-              const hasRating = playerRatings[player.id] !== undefined;
+              const hasRating = ratings[player.id] !== undefined;
               return (
                 <View key={player.id} style={styles.playerRatingRow}>
                   <View style={styles.playerInfo}>
@@ -1891,7 +1891,7 @@ function TeamRatingsAccordion({
                   />
                   {/* Only show rating if assigned */}
                   {hasRating ? (
-                    <Text style={styles.ratingNumber}>{playerRatings[player.id]}</Text>
+                    <Text style={styles.ratingNumber}>{ratings[player.id]}</Text>
                   ) : (
                     <View style={styles.ratingPlaceholder} />
                   )}
