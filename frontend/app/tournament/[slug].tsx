@@ -360,4 +360,6 @@ const styles = StyleSheet.create({
   teamItemName: { fontSize: 13, fontWeight: '600', color: '#000', marginTop: 8, textAlign: 'center' },
   shareBar: { backgroundColor: '#000', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   shareBarText: { color: '#FFF', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  statsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 10 },
+  statsButtonText: { fontSize: 13, color: '#666', fontWeight: '500' },
 });
