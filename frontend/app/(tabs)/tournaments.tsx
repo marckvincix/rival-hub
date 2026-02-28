@@ -1661,6 +1661,10 @@ const styles = StyleSheet.create({
   matchSelectDash: { fontSize: 20, fontWeight: '700', color: '#000', marginHorizontal: 8 },
   matchSelectBadge: { alignSelf: 'center', marginTop: 12, paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: '#F0F0F0' },
   matchSelectBadgeText: { fontSize: 12, color: '#666' },
+  matchSelectFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 12 },
+  matchSelectBadgeInCorso: { paddingHorizontal: 12, paddingVertical: 4, borderRadius: 12, backgroundColor: '#E8F5E9', borderWidth: 1, borderColor: '#4CAF50' },
+  matchSelectBadgeTextInCorso: { fontSize: 12, color: '#2E7D32', fontWeight: '600' },
+  matchEditIcon: { flexDirection: 'row', alignItems: 'center', gap: 2 },
   // Result Modal Styles
   backBtnRound: { width: 48, height: 48, borderWidth: 2, borderColor: '#000', borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
   modalSubtitle: { fontSize: 14, color: '#666' },
