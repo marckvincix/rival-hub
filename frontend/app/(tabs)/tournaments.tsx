@@ -1650,15 +1650,13 @@ function EventDropdown({
 }
 
 // Helper Component: Team Ratings Accordion
-function TeamRatingsAccordion({ teamName, teamLetter }: { teamName: string; teamLetter: string }) {
+function TeamRatingsAccordion({ teamName, teamLetter, players = [] }: { teamName: string; teamLetter: string; players?: any[] }) {
   const [isExpanded, setIsExpanded] = useState(true);
-  // Mock players for demonstration
-  const mockPlayers = [
-    { name: 'Mario Rossi', role: 'Portiere', rating: 6 },
-    { name: 'Giuseppe Verdi', role: 'Difensore', rating: 6.5 },
-    { name: 'Marco Bianchi', role: 'Centrocampista', rating: 8 },
-    { name: 'Gino Ferrari', role: 'Attaccante', rating: 7.5 },
-  ];
+  const [playerRatings, setPlayerRatings] = useState<Record<string, number>>({});
+
+  const handleRatingChange = (playerId: string, rating: number) => {
+    setPlayerRatings(prev => ({ ...prev, [playerId]: rating }));
+  };
 
   return (
     <View style={styles.teamAccordion}>
@@ -1671,20 +1669,47 @@ function TeamRatingsAccordion({ teamName, teamLetter }: { teamName: string; team
       </TouchableOpacity>
       {isExpanded && (
         <View style={styles.playersList}>
-          {mockPlayers.map((player, idx) => (
-            <View key={idx} style={styles.playerRatingRow}>
-              <View style={styles.playerInfo}>
-                <Text style={styles.playerName}>{player.name}</Text>
-                <Text style={styles.playerRole}>{player.role}</Text>
-              </View>
-              <TouchableOpacity style={styles.votoBtn}>
-                <Ionicons name="add" size={14} color="#FFF" />
-                <Text style={styles.votoBtnText}>Voto</Text>
-              </TouchableOpacity>
-              <Ionicons name="checkbox-outline" size={20} color="#000" style={{ marginHorizontal: 8 }} />
-              <Text style={styles.ratingNumber}>{player.rating}</Text>
+          {players.length === 0 ? (
+            <View style={styles.noPlayersRatingRow}>
+              <Text style={styles.noPlayersRatingText}>Nessun giocatore in rosa</Text>
             </View>
-          ))}
+          ) : (
+            players.map((player) => (
+              <View key={player.id} style={styles.playerRatingRow}>
+                <View style={styles.playerInfo}>
+                  <Text style={styles.playerName}>{player.name}</Text>
+                  <Text style={styles.playerRole}>{player.role || '-'}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.votoBtn}
+                  onPress={() => {
+                    Alert.prompt && Alert.prompt(
+                      'Inserisci Voto',
+                      `Voto per ${player.name}`,
+                      (text) => {
+                        const val = parseFloat(text);
+                        if (!isNaN(val) && val >= 0 && val <= 10) {
+                          handleRatingChange(player.id, val);
+                        }
+                      },
+                      'plain-text',
+                      String(playerRatings[player.id] || '')
+                    );
+                  }}
+                >
+                  <Ionicons name="add" size={14} color="#FFF" />
+                  <Text style={styles.votoBtnText}>Voto</Text>
+                </TouchableOpacity>
+                <Ionicons 
+                  name={playerRatings[player.id] ? "checkbox" : "checkbox-outline"} 
+                  size={20} 
+                  color="#000" 
+                  style={{ marginHorizontal: 8 }} 
+                />
+                <Text style={styles.ratingNumber}>{playerRatings[player.id] || '-'}</Text>
+              </View>
+            ))
+          )}
         </View>
       )}
     </View>
