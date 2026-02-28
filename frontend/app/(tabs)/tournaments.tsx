@@ -496,6 +496,102 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     );
   };
 
+  // Load players for Extra modal
+  const loadPlayersForExtraModal = async (homeTeamId: string, awayTeamId: string) => {
+    try {
+      const [homeRes, awayRes] = await Promise.all([
+        api.get(`/api/teams/${homeTeamId}/players`),
+        api.get(`/api/teams/${awayTeamId}/players`)
+      ]);
+      const mapPlayers = (data: any[]) => data.map((p: any) => ({
+        id: p.id,
+        name: p.full_name,
+        number: p.number,
+        role: p.role,
+      }));
+      setHomeTeamPlayers(mapPlayers(homeRes.data));
+      setAwayTeamPlayers(mapPlayers(awayRes.data));
+    } catch (error) {
+      console.error('Error loading players for extra modal:', error);
+    }
+  };
+
+  // Open Extra modal and load players
+  const handleOpenExtraModal = async () => {
+    if (selectedMatch) {
+      await loadPlayersForExtraModal(selectedMatch.home_team_id, selectedMatch.away_team_id);
+      setExtraEvents({
+        home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
+        away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+      });
+      setShowExtraModal(true);
+    }
+  };
+
+  // Save extra events
+  const handleSaveExtraEvents = async () => {
+    if (!selectedMatch) return;
+    
+    const newEvents: any[] = [];
+    
+    // Process home team events
+    if (extraEvents.home.marcatore) {
+      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.marcatore);
+      if (player) newEvents.push({ team: 'home', type: 'goal', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.home.assist) {
+      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.assist);
+      if (player) newEvents.push({ team: 'home', type: 'assist', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.home.giallo) {
+      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.giallo);
+      if (player) newEvents.push({ team: 'home', type: 'yellow', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.home.rosso) {
+      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.rosso);
+      if (player) newEvents.push({ team: 'home', type: 'red', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.home.sostEsce && extraEvents.home.sostEntra) {
+      const playerOut = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEsce);
+      const playerIn = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEntra);
+      if (playerOut && playerIn) newEvents.push({ team: 'home', type: 'sub', player: playerIn.name, playerOut: playerOut.name });
+    }
+    
+    // Process away team events
+    if (extraEvents.away.marcatore) {
+      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.marcatore);
+      if (player) newEvents.push({ team: 'away', type: 'goal', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.away.assist) {
+      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.assist);
+      if (player) newEvents.push({ team: 'away', type: 'assist', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.away.giallo) {
+      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.giallo);
+      if (player) newEvents.push({ team: 'away', type: 'yellow', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.away.rosso) {
+      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.rosso);
+      if (player) newEvents.push({ team: 'away', type: 'red', player: player.name, playerId: player.id });
+    }
+    if (extraEvents.away.sostEsce && extraEvents.away.sostEntra) {
+      const playerOut = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEsce);
+      const playerIn = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEntra);
+      if (playerOut && playerIn) newEvents.push({ team: 'away', type: 'sub', player: playerIn.name, playerOut: playerOut.name });
+    }
+    
+    // Add new events to existing events
+    setMatchEvents(prev => [...prev, ...newEvents]);
+    
+    // Reset form
+    setExtraEvents({
+      home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
+      away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+    });
+    
+    Alert.alert('Salvato', 'Eventi salvati correttamente');
+  };
+
   // Load players when expanding a team
   const loadTeamPlayers = async (teamId: string) => {
     try {
