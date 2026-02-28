@@ -442,11 +442,36 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {activeTab === 'results' && (
               <View>
-                <Text style={styles.resultsTitle}>Inserisci Risultati</Text>
-                {matches.filter(m => m.status !== 'completed').length === 0 ? <EmptyState icon="checkmark-circle-outline" title="Tutti inseriti" /> : (
-                  matches.filter(m => m.status !== 'completed').map((match) => (
-                    <ResultInput key={match.id} match={match} homeTeam={getTeamName(match.home_team_id)} awayTeam={getTeamName(match.away_team_id)} onSave={handleUpdateResult} />
-                  ))
+                {matches.length === 0 ? (
+                  <EmptyState icon="football-outline" title="Nessuna partita" />
+                ) : (
+                  <>
+                    <Text style={styles.resultsTitle}>Seleziona partita da gestire</Text>
+                    {matches.map((match) => (
+                      <TouchableOpacity 
+                        key={match.id} 
+                        style={styles.matchSelectCard}
+                        onPress={() => setSelectedMatch(match)}
+                      >
+                        <View style={styles.matchSelectRow}>
+                          <Text style={styles.matchSelectTeam}>{getTeamName(match.home_team_id)}</Text>
+                          <View style={styles.matchSelectScoreBox}>
+                            <Text style={styles.matchSelectScore}>{match.home_goals ?? 0}</Text>
+                          </View>
+                          <Text style={styles.matchSelectDash}>-</Text>
+                          <View style={styles.matchSelectScoreBox}>
+                            <Text style={styles.matchSelectScore}>{match.away_goals ?? 0}</Text>
+                          </View>
+                          <Text style={styles.matchSelectTeam}>{getTeamName(match.away_team_id)}</Text>
+                        </View>
+                        <View style={styles.matchSelectBadge}>
+                          <Text style={styles.matchSelectBadgeText}>
+                            {match.status === 'completed' ? 'Completata' : 'In corso'}
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    ))}
+                  </>
                 )}
               </View>
             )}
