@@ -114,11 +114,38 @@ backend:
     file: "server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
         comment: "Endpoint già implementato e funzionante, usato per popolare dropdown giocatori"
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ COMPREHENSIVE BACKEND TESTING COMPLETED - ALL TESTS PASSED
+          
+          Complete player dropdown API flow tested successfully:
+          
+          🔐 Authentication: ✅ User registration/login working
+          🏆 Tournament Management: ✅ Create/retrieve tournaments working
+          👥 Team Management: ✅ Create teams for tournaments working  
+          ⚽ Player Management: ✅ Create players for teams working
+          🎯 MAIN ENDPOINT TEST: GET /api/teams/{team_id}/players ✅ WORKING PERFECTLY
+          
+          API Response Validation:
+          - Returns correct JSON array of players filtered by team_id
+          - All required fields present: id, full_name, number, role, team_id, is_active, created_at
+          - Team isolation verified: Each team only gets its own players
+          - Data integrity confirmed: Players properly associated with correct teams
+          - Real football player test data used (Juventus FC vs AC Milan players)
+          
+          Technical Details:
+          - Endpoint: GET https://torneo-live.preview.emergentagent.com/api/teams/{team_id}/players
+          - Authentication: Session-based auth working correctly
+          - Database: MongoDB queries functioning properly
+          - Response format: Proper JSON with all required player fields
+          
+          This endpoint is fully ready for frontend player dropdown functionality.
 
 frontend:
   - task: "Dropdown giocatori dinamici nel modal Extra"
