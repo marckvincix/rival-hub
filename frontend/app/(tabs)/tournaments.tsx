@@ -1593,58 +1593,91 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   );
 }
 
-// Helper Component: Event Dropdown
+// Helper Component: Event Dropdown with Multi-Select
 function EventDropdown({ 
   icon, 
   iconColor = '#000', 
   label, 
   players = [],
-  value,
-  onSelect
+  selectedIds = [],
+  onToggle
 }: { 
   icon: string; 
   iconColor?: string; 
   label: string;
   players?: any[];
-  value?: string;
-  onSelect?: (playerId: string) => void;
+  selectedIds?: string[];
+  onToggle?: (playerId: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const selectedPlayer = players.find(p => p.id === value);
+  const selectedPlayers = players.filter(p => selectedIds.includes(p.id));
+  
+  const handleTogglePlayer = (playerId: string) => {
+    if (onToggle) {
+      onToggle(playerId);
+    }
+  };
+
+  const handleRemovePlayer = (playerId: string) => {
+    if (onToggle) {
+      onToggle(playerId);
+    }
+  };
   
   return (
-    <View>
+    <View style={styles.multiDropdownContainer}>
+      {/* Dropdown Header */}
       <TouchableOpacity style={styles.eventDropdown} onPress={() => setIsOpen(!isOpen)}>
         {icon === 'square' ? (
           <View style={[styles.cardIcon2, { backgroundColor: iconColor }]} />
         ) : (
           <Ionicons name={icon as any} size={16} color={iconColor} />
         )}
-        <Text style={[styles.eventDropdownLabel, selectedPlayer && styles.eventDropdownLabelSelected]} numberOfLines={1}>
-          {selectedPlayer ? selectedPlayer.name : label}
+        <Text style={styles.eventDropdownLabel}>
+          {label} {selectedIds.length > 0 && `(${selectedIds.length})`}
         </Text>
         <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#000" />
       </TouchableOpacity>
-      {isOpen && players.length > 0 && (
-        <View style={styles.eventDropdownList}>
-          <TouchableOpacity 
-            style={styles.eventDropdownItem}
-            onPress={() => { if (onSelect) onSelect(''); setIsOpen(false); }}
-          >
-            <Text style={styles.eventDropdownItemText}>-- Nessuno --</Text>
-          </TouchableOpacity>
-          {players.map((player) => (
-            <TouchableOpacity 
-              key={player.id} 
-              style={styles.eventDropdownItem}
-              onPress={() => { if (onSelect) onSelect(player.id); setIsOpen(false); }}
-            >
-              <Text style={styles.eventDropdownItemText}>
+
+      {/* Selected Players Tags */}
+      {selectedPlayers.length > 0 && (
+        <View style={styles.selectedTagsContainer}>
+          {selectedPlayers.map((player) => (
+            <View key={player.id} style={styles.selectedTag}>
+              <Text style={styles.selectedTagText} numberOfLines={1}>
                 {player.number ? `#${player.number} ` : ''}{player.name}
               </Text>
-              {value === player.id && <Ionicons name="checkmark" size={16} color="#000" />}
-            </TouchableOpacity>
+              <TouchableOpacity 
+                style={styles.selectedTagRemove}
+                onPress={() => handleRemovePlayer(player.id)}
+              >
+                <Ionicons name="close" size={14} color="#FFF" />
+              </TouchableOpacity>
+            </View>
           ))}
+        </View>
+      )}
+
+      {/* Dropdown List */}
+      {isOpen && players.length > 0 && (
+        <View style={styles.eventDropdownList}>
+          <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
+            {players.map((player) => {
+              const isSelected = selectedIds.includes(player.id);
+              return (
+                <TouchableOpacity 
+                  key={player.id} 
+                  style={[styles.eventDropdownItem, isSelected && styles.eventDropdownItemSelected]}
+                  onPress={() => handleTogglePlayer(player.id)}
+                >
+                  <Text style={[styles.eventDropdownItemText, isSelected && styles.eventDropdownItemTextSelected]}>
+                    {player.number ? `#${player.number} ` : ''}{player.name}
+                  </Text>
+                  {isSelected && <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />}
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
         </View>
       )}
       {isOpen && players.length === 0 && (
