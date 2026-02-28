@@ -457,22 +457,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {teams.length === 0 ? <EmptyState icon="people-outline" title="Nessuna squadra" /> : (
                   teams.map((team) => (
                     <View key={team.id} style={styles.teamCardNew}>
-                      {/* Team Header Row */}
-                      <TouchableOpacity style={styles.teamCardHeader} onPress={() => toggleTeamExpand(team.id)}>
-                        <View style={styles.teamAvatarNew}>
-                          <Text style={styles.teamAvatarText}>{team.name.charAt(0).toUpperCase()}</Text>
+                      {/* Team Row with all elements */}
+                      <View style={styles.teamRowFull}>
+                        {/* Left: Avatar + Name + Chevron */}
+                        <TouchableOpacity style={styles.teamLeftSection} onPress={() => toggleTeamExpand(team.id)}>
+                          <View style={styles.teamAvatarNew}>
+                            <Text style={styles.teamAvatarText}>{team.name.charAt(0).toUpperCase()}</Text>
+                          </View>
+                          <Text style={styles.teamNameNew}>{team.name}</Text>
+                          <Ionicons name={expandedTeamId === team.id ? "chevron-down" : "chevron-forward"} size={20} color="#000" />
+                        </TouchableOpacity>
+                        {/* Right: Action Buttons */}
+                        <View style={styles.teamActionBtns}>
+                          <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
+                            <Ionicons name="add" size={20} color="#FFF" />
+                          </TouchableOpacity>
+                          <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
+                            <Ionicons name="trash" size={18} color="#FFF" />
+                          </TouchableOpacity>
                         </View>
-                        <Text style={styles.teamNameNew}>{team.name}</Text>
-                        <Ionicons name={expandedTeamId === team.id ? "chevron-down" : "chevron-forward"} size={20} color="#000" />
-                      </TouchableOpacity>
-                      {/* Action Buttons */}
-                      <View style={styles.teamActionsRow}>
-                        <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
-                          <Ionicons name="add" size={20} color="#FFF" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
-                          <Ionicons name="trash" size={18} color="#FFF" />
-                        </TouchableOpacity>
                       </View>
                       {/* Players Accordion */}
                       {expandedTeamId === team.id && (
