@@ -76,7 +76,7 @@ class BackendTester:
                     "Authorization": f"Bearer {self.session_token}"
                 })
                 
-                self.log(f"✅ Registration successful - User: {data.get('name')} ({data.get('email')})")
+                self.log(f"✅ Registration successful - User: {data.get('name')} ({test_email})")
                 return True
             else:
                 self.log(f"❌ Registration failed: {response.status_code} - {response.text}")
