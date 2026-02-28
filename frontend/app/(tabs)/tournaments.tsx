@@ -1140,39 +1140,58 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   </View>
                 </View>
 
+                {/* Loading indicator */}
+                {loadingPlayerStats && (
+                  <View style={styles.statsLoading}>
+                    <ActivityIndicator size="small" color="#000" />
+                    <Text style={styles.statsLoadingText}>Caricamento statistiche...</Text>
+                  </View>
+                )}
+
                 {/* Stats Grid */}
-                <View style={styles.statsGrid}>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>⚽</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.goals || 0}</Text>
-                    <Text style={styles.statLabel}>Gol</Text>
+                {!loadingPlayerStats && (
+                  <View style={styles.statsGrid}>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>⚽</Text>
+                      <Text style={styles.statValue}>{playerStats?.goals || 0}</Text>
+                      <Text style={styles.statLabel}>Gol</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>🅰️</Text>
+                      <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
+                      <Text style={styles.statLabel}>Assist</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>🟨</Text>
+                      <Text style={styles.statValue}>{playerStats?.yellow_cards || 0}</Text>
+                      <Text style={styles.statLabel}>Gialli</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>🟥</Text>
+                      <Text style={styles.statValue}>{playerStats?.red_cards || 0}</Text>
+                      <Text style={styles.statLabel}>Rossi</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>👟</Text>
+                      <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
+                      <Text style={styles.statLabel}>Presenze</Text>
+                    </View>
+                    <View style={styles.statItem}>
+                      <Text style={styles.statIcon}>⏱️</Text>
+                      <Text style={styles.statValue}>{playerStats?.minutes_played || 0}</Text>
+                      <Text style={styles.statLabel}>Minuti</Text>
+                    </View>
                   </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>🅰️</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.assists || 0}</Text>
-                    <Text style={styles.statLabel}>Assist</Text>
+                )}
+
+                {/* Average Rating */}
+                {!loadingPlayerStats && playerStats?.ratings_count > 0 && (
+                  <View style={styles.averageRatingSection}>
+                    <Text style={styles.averageRatingLabel}>⭐ Media Voto</Text>
+                    <Text style={styles.averageRatingValue}>{playerStats.average_rating}</Text>
+                    <Text style={styles.averageRatingSubtext}>({playerStats.ratings_count} {playerStats.ratings_count === 1 ? 'voto' : 'voti'})</Text>
                   </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>🟨</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.yellowCards || 0}</Text>
-                    <Text style={styles.statLabel}>Gialli</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>🟥</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.redCards || 0}</Text>
-                    <Text style={styles.statLabel}>Rossi</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>👟</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.appearances || 0}</Text>
-                    <Text style={styles.statLabel}>Presenze</Text>
-                  </View>
-                  <View style={styles.statItem}>
-                    <Text style={styles.statIcon}>⏱️</Text>
-                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.minutesPlayed || 0}</Text>
-                    <Text style={styles.statLabel}>Minuti</Text>
-                  </View>
-                </View>
+                )}
 
                 {/* Additional Stats for specific roles */}
                 {selectedPlayerForStats.role === 'Portiere' && (
