@@ -11,7 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News } from '../../src/types';
 
