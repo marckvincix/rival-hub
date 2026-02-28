@@ -47,8 +47,15 @@ export default function TournamentsScreen() {
     category: 'Open',
     format: 'league',
     location: '',
+    start_date: '',
+    start_time: '',
   });
   const [formLoading, setFormLoading] = useState(false);
+  // Tournament date/time picker states
+  const [showTournamentDatePicker, setShowTournamentDatePicker] = useState(false);
+  const [showTournamentTimePicker, setShowTournamentTimePicker] = useState(false);
+  const [tournamentDate, setTournamentDate] = useState<Date | null>(null);
+  const [tournamentTime, setTournamentTime] = useState<Date | null>(null);
 
   const loadTournaments = async () => {
     try {
