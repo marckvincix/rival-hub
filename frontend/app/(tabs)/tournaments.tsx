@@ -1442,6 +1442,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
               {selectedMatch && (
                 <>
+                  {/* Real-time Score Display */}
+                  <View style={styles.liveScoreCard}>
+                    <Text style={styles.liveScoreTeam}>{getTeamName(selectedMatch.home_team_id)}</Text>
+                    <View style={styles.liveScoreCenter}>
+                      <Text style={styles.liveScoreNumber}>{extraEvents.home.marcatore.length}</Text>
+                      <Text style={styles.liveScoreDash}>-</Text>
+                      <Text style={styles.liveScoreNumber}>{extraEvents.away.marcatore.length}</Text>
+                    </View>
+                    <Text style={styles.liveScoreTeam}>{getTeamName(selectedMatch.away_team_id)}</Text>
+                  </View>
+
                   {/* Two Columns for Events */}
                   <View style={styles.extraColumnsContainer}>
                     {/* Home Team Column */}
