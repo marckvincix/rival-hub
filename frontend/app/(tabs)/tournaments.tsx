@@ -537,49 +537,53 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     
     const newEvents: any[] = [];
     
-    // Process home team events
-    if (extraEvents.home.marcatore) {
-      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.marcatore);
+    // Process home team events (now arrays)
+    extraEvents.home.marcatore.forEach(playerId => {
+      const player = homeTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'home', type: 'goal', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.home.assist) {
-      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.assist);
+    });
+    extraEvents.home.assist.forEach(playerId => {
+      const player = homeTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'home', type: 'assist', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.home.giallo) {
-      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.giallo);
+    });
+    extraEvents.home.giallo.forEach(playerId => {
+      const player = homeTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'home', type: 'yellow', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.home.rosso) {
-      const player = homeTeamPlayers.find(p => p.id === extraEvents.home.rosso);
+    });
+    extraEvents.home.rosso.forEach(playerId => {
+      const player = homeTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'home', type: 'red', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.home.sostEsce && extraEvents.home.sostEntra) {
-      const playerOut = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEsce);
-      const playerIn = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEntra);
+    });
+    // Substitutions - pair up exits and entries
+    const homeSubsCount = Math.min(extraEvents.home.sostEsce.length, extraEvents.home.sostEntra.length);
+    for (let i = 0; i < homeSubsCount; i++) {
+      const playerOut = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEsce[i]);
+      const playerIn = homeTeamPlayers.find(p => p.id === extraEvents.home.sostEntra[i]);
       if (playerOut && playerIn) newEvents.push({ team: 'home', type: 'sub', player: playerIn.name, playerOut: playerOut.name });
     }
     
-    // Process away team events
-    if (extraEvents.away.marcatore) {
-      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.marcatore);
+    // Process away team events (now arrays)
+    extraEvents.away.marcatore.forEach(playerId => {
+      const player = awayTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'away', type: 'goal', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.away.assist) {
-      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.assist);
+    });
+    extraEvents.away.assist.forEach(playerId => {
+      const player = awayTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'away', type: 'assist', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.away.giallo) {
-      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.giallo);
+    });
+    extraEvents.away.giallo.forEach(playerId => {
+      const player = awayTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'away', type: 'yellow', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.away.rosso) {
-      const player = awayTeamPlayers.find(p => p.id === extraEvents.away.rosso);
+    });
+    extraEvents.away.rosso.forEach(playerId => {
+      const player = awayTeamPlayers.find(p => p.id === playerId);
       if (player) newEvents.push({ team: 'away', type: 'red', player: player.name, playerId: player.id });
-    }
-    if (extraEvents.away.sostEsce && extraEvents.away.sostEntra) {
-      const playerOut = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEsce);
-      const playerIn = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEntra);
+    });
+    // Substitutions - pair up exits and entries
+    const awaySubsCount = Math.min(extraEvents.away.sostEsce.length, extraEvents.away.sostEntra.length);
+    for (let i = 0; i < awaySubsCount; i++) {
+      const playerOut = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEsce[i]);
+      const playerIn = awayTeamPlayers.find(p => p.id === extraEvents.away.sostEntra[i]);
       if (playerOut && playerIn) newEvents.push({ team: 'away', type: 'sub', player: playerIn.name, playerOut: playerOut.name });
     }
     
@@ -588,8 +592,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     
     // Reset form
     setExtraEvents({
-      home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
-      away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+      home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
+      away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
     });
     
     Alert.alert('Salvato', 'Eventi salvati correttamente');
