@@ -249,6 +249,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [matchEvents, setMatchEvents] = useState<any[]>([]);
   const [playerRatings, setPlayerRatings] = useState<Record<string, Record<string, number>>>({});
+  // Teams & Players state
+  const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
+  const [selectedTeamForPlayer, setSelectedTeamForPlayer] = useState<any>(null);
+  const [newPlayerData, setNewPlayerData] = useState({
+    name: '',
+    number: '',
+    role: '',
+    photo: '',
+    birthDate: ''
+  });
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [teamPlayers, setTeamPlayers] = useState<Record<string, any[]>>({});
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
