@@ -101,3 +101,80 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+user_problem_statement: |
+  GoalManager - Applicazione per gestione tornei di calcio.
+  La funzionalità in test è il modal "+ Extra" per la gestione live delle partite.
+  I dropdown per selezionare marcatore/assist devono mostrare i giocatori delle squadre corrette.
+
+backend:
+  - task: "API GET /api/teams/{team_id}/players"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Endpoint già implementato e funzionante, usato per popolare dropdown giocatori"
+
+frontend:
+  - task: "Dropdown giocatori dinamici nel modal Extra"
+    implemented: true
+    working: "NA"
+    file: "app/(tabs)/tournaments.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: |
+          Implementato EventDropdown component con supporto per lista giocatori.
+          Aggiunta logica loadPlayersForExtraModal che carica homeTeamPlayers e awayTeamPlayers.
+          I dropdown ora ricevono players, value e onSelect props.
+          TeamRatingsAccordion ora usa giocatori reali invece di mock data.
+
+  - task: "Tab Risultati - Navigazione e rendering"
+    implemented: true
+    working: "NA"
+    file: "app/(tabs)/tournaments.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+      - working: "NA"
+        agent: "main"
+        comment: "Da verificare se la tab Risultati mostra correttamente le partite in corso"
+
+metadata:
+  created_by: "main_agent"
+  version: "1.0"
+  test_sequence: 1
+  run_ui: false
+
+test_plan:
+  current_focus:
+    - "API GET /api/teams/{team_id}/players"
+    - "Tab Risultati - Navigazione e rendering"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+agent_communication:
+  - agent: "main"
+    message: |
+      Ho implementato i dropdown dinamici nel modal Extra.
+      Ora i dropdown per marcatore, assist, cartellini ecc mostrano i giocatori 
+      della squadra corretta (home vs away). La funzione loadPlayersForExtraModal 
+      carica i giocatori quando si apre il modal Extra.
+      
+      TEST DA ESEGUIRE:
+      1. Verificare che l'API /api/teams/{team_id}/players funzioni correttamente
+      2. Verificare che la tab "Risultati" mostri le partite "In corso"
+      3. Se possibile, testare che cliccando su una partita in corso si apra il modal
+      
+      CREDENZIALI: newuser@test.com / password123
+      oppure registrare un nuovo utente
