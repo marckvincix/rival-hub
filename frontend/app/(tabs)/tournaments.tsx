@@ -367,7 +367,76 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleOpenAddPlayer = (team: any) => {
     setSelectedTeamForPlayer(team);
     setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
+    setSelectedDate(null);
     setShowAddPlayerModal(true);
+  };
+
+  // Image Picker function
+  const pickImage = async () => {
+    // Request permissions
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permesso negato', 'Serve il permesso per accedere alla galleria');
+      return;
+    }
+
+    // Show action sheet to choose camera or gallery
+    Alert.alert(
+      'Seleziona foto',
+      'Scegli da dove caricare la foto',
+      [
+        {
+          text: 'Fotocamera',
+          onPress: async () => {
+            const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+            if (cameraStatus.status !== 'granted') {
+              Alert.alert('Permesso negato', 'Serve il permesso per usare la fotocamera');
+              return;
+            }
+            const result = await ImagePicker.launchCameraAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setNewPlayerData({ ...newPlayerData, photo: result.assets[0].uri });
+            }
+          }
+        },
+        {
+          text: 'Galleria',
+          onPress: async () => {
+            const result = await ImagePicker.launchImageLibraryAsync({
+              mediaTypes: ImagePicker.MediaTypeOptions.Images,
+              allowsEditing: true,
+              aspect: [1, 1],
+              quality: 0.8,
+            });
+            if (!result.canceled && result.assets[0]) {
+              setNewPlayerData({ ...newPlayerData, photo: result.assets[0].uri });
+            }
+          }
+        },
+        { text: 'Annulla', style: 'cancel' }
+      ]
+    );
+  };
+
+  // Date Picker handlers
+  const onDateChange = (event: any, date?: Date) => {
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+    if (date) {
+      setSelectedDate(date);
+      const formattedDate = `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+      setNewPlayerData({ ...newPlayerData, birthDate: formattedDate });
+    }
+  };
+
+  const openDatePicker = () => {
+    setShowDatePicker(true);
   };
 
   const handleAddPlayer = async () => {
