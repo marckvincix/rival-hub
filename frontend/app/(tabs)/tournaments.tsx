@@ -969,7 +969,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {activeTab === 'matches' && (
               <View>
-                <Button title="Aggiungi Partita" onPress={() => setShowAddMatchModal(true)} icon="add" fullWidth disabled={teams.length < 2} />
+                <Button title="Aggiungi Partita" onPress={() => {
+                  setMatchDate(null);
+                  setMatchTime(null);
+                  setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
+                  setShowAddMatchModal(true);
+                }} icon="add" fullWidth disabled={teams.length < 2} />
                 {teams.length < 2 && <Text style={styles.warningText}>Aggiungi almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
                 {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
