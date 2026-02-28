@@ -2293,6 +2293,9 @@ const styles = StyleSheet.create({
   subEvent: { flexDirection: 'row', alignItems: 'center' },
   subPlayerOut: { fontSize: 12, color: '#666', marginLeft: 4 },
   noEventsText: { fontSize: 14, color: '#999', textAlign: 'center' },
+  noEventsContainer: { padding: 20, alignItems: 'center' },
+  noEventsMessage: { fontSize: 14, color: '#999', fontStyle: 'italic', textAlign: 'center' },
+  statsRowReverse: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, justifyContent: 'flex-start', gap: 6 },
   // Result Buttons
   resultButtonsRow: { flexDirection: 'row', gap: 12, marginTop: 16 },
   finePartitaBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', paddingVertical: 16, borderRadius: 16, gap: 8 },
