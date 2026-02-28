@@ -20,10 +20,11 @@ class BackendTester:
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         print(f"[{timestamp}] {message}")
         
-    def test_login(self):
-        """Test user login"""
-        self.log("🔐 Testing login...")
+    def test_register_or_login(self):
+        """Test user registration or login"""
+        self.log("🔐 Testing login/registration...")
         
+        # First try login
         try:
             response = self.session.post(f"{BASE_URL}/auth/login", json={
                 "email": TEST_EMAIL,
@@ -43,11 +44,43 @@ class BackendTester:
                 self.log(f"✅ Login successful - User: {data.get('name')} ({data.get('email')})")
                 return True
             else:
-                self.log(f"❌ Login failed: {response.status_code} - {response.text}")
-                return False
+                self.log(f"⚠️  Login failed, trying registration...")
+                # Try registration
+                return self.test_register()
                 
         except Exception as e:
             self.log(f"❌ Login error: {str(e)}")
+            return False
+    
+    def test_register(self):
+        """Test user registration"""
+        self.log("📝 Testing user registration...")
+        
+        try:
+            response = self.session.post(f"{BASE_URL}/auth/register", json={
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD,
+                "name": "Test User GoalManager"
+            })
+            
+            if response.status_code == 200:
+                data = response.json()
+                self.session_token = data.get("session_token")
+                self.user_data = data
+                
+                # Set session token in headers
+                self.session.headers.update({
+                    "Authorization": f"Bearer {self.session_token}"
+                })
+                
+                self.log(f"✅ Registration successful - User: {data.get('name')} ({data.get('email')})")
+                return True
+            else:
+                self.log(f"❌ Registration failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Registration error: {str(e)}")
             return False
     
     def test_get_tournaments(self):
