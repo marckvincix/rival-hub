@@ -943,6 +943,91 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </SafeAreaView>
       </Modal>
 
+      {/* Player Stats Modal */}
+      <Modal visible={showPlayerStatsModal} animationType="fade" transparent onRequestClose={() => setShowPlayerStatsModal(false)}>
+        <TouchableOpacity 
+          style={styles.statsModalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowPlayerStatsModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.statsModalContent}>
+            {/* Close Button */}
+            <TouchableOpacity style={styles.statsModalClose} onPress={() => setShowPlayerStatsModal(false)}>
+              <Ionicons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+            
+            {selectedPlayerForStats && (
+              <>
+                {/* Player Header */}
+                <View style={styles.statsModalHeader}>
+                  {selectedPlayerForStats.photo ? (
+                    <Image source={{ uri: selectedPlayerForStats.photo }} style={styles.statsModalAvatar} />
+                  ) : (
+                    <View style={styles.statsModalAvatarPlaceholder}>
+                      <Text style={styles.statsModalAvatarText}>
+                        {selectedPlayerForStats.name ? selectedPlayerForStats.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?'}
+                      </Text>
+                    </View>
+                  )}
+                  <View style={styles.statsModalPlayerInfo}>
+                    <Text style={styles.statsModalPlayerName}>{selectedPlayerForStats.name}</Text>
+                    <Text style={styles.statsModalPlayerRole}>{selectedPlayerForStats.role || 'Non specificato'}</Text>
+                  </View>
+                </View>
+
+                {/* Stats Grid */}
+                <View style={styles.statsGrid}>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>⚽</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.goals || 0}</Text>
+                    <Text style={styles.statLabel}>Gol</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>🅰️</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.assists || 0}</Text>
+                    <Text style={styles.statLabel}>Assist</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>🟨</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.yellowCards || 0}</Text>
+                    <Text style={styles.statLabel}>Gialli</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>🟥</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.redCards || 0}</Text>
+                    <Text style={styles.statLabel}>Rossi</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>👟</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.appearances || 0}</Text>
+                    <Text style={styles.statLabel}>Presenze</Text>
+                  </View>
+                  <View style={styles.statItem}>
+                    <Text style={styles.statIcon}>⏱️</Text>
+                    <Text style={styles.statValue}>{selectedPlayerForStats.stats?.minutesPlayed || 0}</Text>
+                    <Text style={styles.statLabel}>Minuti</Text>
+                  </View>
+                </View>
+
+                {/* Additional Stats for specific roles */}
+                {selectedPlayerForStats.role === 'Portiere' && (
+                  <View style={styles.additionalStats}>
+                    <View style={styles.additionalStatRow}>
+                      <Text style={styles.additionalStatLabel}>🧤 Parate</Text>
+                      <Text style={styles.additionalStatValue}>{selectedPlayerForStats.stats?.saves || 0}</Text>
+                    </View>
+                    <View style={styles.additionalStatRow}>
+                      <Text style={styles.additionalStatLabel}>🚫 Clean Sheet</Text>
+                      <Text style={styles.additionalStatValue}>{selectedPlayerForStats.stats?.cleanSheets || 0}</Text>
+                    </View>
+                  </View>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Add Match Modal - Redesigned */}
       <Modal visible={showAddMatchModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddMatchModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
