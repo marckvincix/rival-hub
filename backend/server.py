@@ -1122,6 +1122,165 @@ async def delete_event(
     await db.match_events.delete_one({"id": event_id})
     return {"message": "Evento eliminato"}
 
+@api_router.post("/matches/{match_id}/events/batch")
+async def save_match_events_batch(
+    match_id: str,
+    data: MatchEventsBatchSave,
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Save all match events in batch, update match score, and update player stats.
+    This is used by the Extra modal to save all events at once.
+    """
+    match = await db.matches.find_one({"id": match_id}, {"_id": 0})
+    if not match:
+        raise HTTPException(status_code=404, detail="Partita non trovata")
+    
+    # Verify ownership
+    tournament = await db.tournaments.find_one(
+        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    now = datetime.now(timezone.utc)
+    
+    # First, delete existing events for this match (to allow re-saving)
+    await db.match_events.delete_many({"match_id": match_id})
+    
+    # Insert all new events
+    created_events = []
+    for event_data in data.events:
+        event_id = f"event_{uuid.uuid4().hex[:12]}"
+        event_doc = {
+            "id": event_id,
+            "match_id": match_id,
+            "tournament_id": match["tournament_id"],
+            "player_id": event_data.player_id,
+            "team_id": event_data.team_id,
+            "event_type": event_data.event_type,
+            "minute": event_data.minute,
+            "note": event_data.note,
+            "created_at": now
+        }
+        await db.match_events.insert_one(event_doc)
+        created_events.append(event_doc)
+    
+    # Update match score
+    await db.matches.update_one(
+        {"id": match_id},
+        {"$set": {
+            "home_goals": data.home_goals,
+            "away_goals": data.away_goals,
+            "updated_at": now
+        }}
+    )
+    
+    # Save player ratings for this match in a separate collection
+    if data.ratings:
+        for player_id, rating in data.ratings.items():
+            await db.player_ratings.update_one(
+                {"match_id": match_id, "player_id": player_id},
+                {"$set": {
+                    "match_id": match_id,
+                    "player_id": player_id,
+                    "tournament_id": match["tournament_id"],
+                    "rating": rating,
+                    "created_at": now
+                }},
+                upsert=True
+            )
+    
+    # Update player statistics based on events
+    player_updates = {}
+    
+    for event in data.events:
+        pid = event.player_id
+        if pid not in player_updates:
+            player_updates[pid] = {
+                "goals": 0,
+                "assists": 0,
+                "yellow_cards": 0,
+                "red_cards": 0
+            }
+        
+        if event.event_type in ["goal", "penalty_goal"]:
+            player_updates[pid]["goals"] += 1
+        elif event.event_type == "assist":
+            player_updates[pid]["assists"] += 1
+        elif event.event_type == "yellow_card":
+            player_updates[pid]["yellow_cards"] += 1
+        elif event.event_type == "red_card":
+            player_updates[pid]["red_cards"] += 1
+    
+    # Apply updates to player_stats collection (cumulative stats)
+    for player_id, updates in player_updates.items():
+        await db.player_stats.update_one(
+            {"player_id": player_id},
+            {"$inc": {
+                "goals": updates["goals"],
+                "assists": updates["assists"],
+                "yellow_cards": updates["yellow_cards"],
+                "red_cards": updates["red_cards"]
+            }},
+            upsert=True
+        )
+    
+    # Return updated match data
+    updated_match = await db.matches.find_one({"id": match_id}, {"_id": 0})
+    
+    return {
+        "message": "Eventi salvati con successo",
+        "match": updated_match,
+        "events_count": len(created_events)
+    }
+
+@api_router.get("/players/{player_id}/stats", response_model=PlayerStatsResponse)
+async def get_player_stats(player_id: str):
+    """Get cumulative statistics for a player"""
+    # Get player info
+    player = await db.players.find_one({"id": player_id}, {"_id": 0})
+    if not player:
+        raise HTTPException(status_code=404, detail="Giocatore non trovato")
+    
+    # Get cumulative stats from player_stats collection
+    stats = await db.player_stats.find_one({"player_id": player_id}, {"_id": 0})
+    
+    # Get all ratings for this player
+    ratings = await db.player_ratings.find({"player_id": player_id}, {"_id": 0}).to_list(1000)
+    
+    # Calculate average rating
+    avg_rating = 0.0
+    ratings_count = len(ratings)
+    if ratings_count > 0:
+        total_rating = sum(r.get("rating", 0) for r in ratings)
+        avg_rating = round(total_rating / ratings_count, 2)
+    
+    # Count appearances (unique matches where player has events or ratings)
+    matches_with_events = await db.match_events.distinct("match_id", {"player_id": player_id})
+    matches_with_ratings = await db.player_ratings.distinct("match_id", {"player_id": player_id})
+    all_matches = set(matches_with_events + matches_with_ratings)
+    appearances = len(all_matches)
+    
+    # Calculate minutes (assuming 90 minutes per appearance for now)
+    minutes_played = appearances * 90
+    
+    return PlayerStatsResponse(
+        player_id=player_id,
+        full_name=player.get("full_name", ""),
+        role=player.get("role", ""),
+        photo=player.get("photo"),
+        goals=stats.get("goals", 0) if stats else 0,
+        assists=stats.get("assists", 0) if stats else 0,
+        yellow_cards=stats.get("yellow_cards", 0) if stats else 0,
+        red_cards=stats.get("red_cards", 0) if stats else 0,
+        appearances=appearances,
+        minutes_played=minutes_played,
+        average_rating=avg_rating,
+        ratings_count=ratings_count
+    )
+
 # ===================== NEWS ENDPOINTS =====================
 
 @api_router.post("/tournaments/{tournament_id}/news", response_model=News)
