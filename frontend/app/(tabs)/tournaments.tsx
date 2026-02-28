@@ -268,6 +268,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [teamPlayers, setTeamPlayers] = useState<Record<string, any[]>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+  const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
+  const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<any>(null);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
