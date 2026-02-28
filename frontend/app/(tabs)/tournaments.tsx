@@ -357,6 +357,54 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (e) { Alert.alert('Errore'); }
   };
 
+  // Player management functions
+  const handleOpenAddPlayer = (team: any) => {
+    setSelectedTeamForPlayer(team);
+    setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
+    setShowAddPlayerModal(true);
+  };
+
+  const handleAddPlayer = async () => {
+    if (!newPlayerData.name.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
+    if (!selectedTeamForPlayer) return;
+    
+    const newPlayer = {
+      id: `player_${Date.now()}`,
+      name: newPlayerData.name,
+      number: newPlayerData.number ? parseInt(newPlayerData.number) : null,
+      role: newPlayerData.role || null,
+      photo: newPlayerData.photo || null,
+      birthDate: newPlayerData.birthDate || null,
+    };
+    
+    // Add to local state (in a real app, this would be an API call)
+    setTeamPlayers(prev => ({
+      ...prev,
+      [selectedTeamForPlayer.id]: [...(prev[selectedTeamForPlayer.id] || []), newPlayer]
+    }));
+    
+    setShowAddPlayerModal(false);
+    setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
+    Alert.alert('Successo', 'Giocatore aggiunto');
+  };
+
+  const handleDeleteTeamConfirm = (teamId: string, teamName: string) => {
+    Alert.alert(
+      'Elimina Squadra',
+      `Sei sicuro di voler eliminare ${teamName}?`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Elimina', style: 'destructive', onPress: () => handleDeleteTeam(teamId) }
+      ]
+    );
+  };
+
+  const toggleTeamExpand = (teamId: string) => {
+    setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
+  };
+
+  const PLAYER_ROLES = ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
+
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
 
   const getStatusLabel = (status: string) => {
