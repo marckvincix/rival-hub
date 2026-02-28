@@ -66,6 +66,11 @@ export default function TournamentPublicPage() {
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
 
+  const handleOpenMatchStats = (match: Match) => {
+    setSelectedMatchForStats(match);
+    setShowStatsModal(true);
+  };
+
   if (loading) return <Loading message="Caricamento..." />;
 
   if (!tournament) {
