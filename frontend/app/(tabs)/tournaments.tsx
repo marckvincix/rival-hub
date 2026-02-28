@@ -1442,12 +1442,50 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <View style={styles.extraColumnHeader}>
                         <Text style={styles.extraColumnHeaderText}>{getTeamName(selectedMatch.home_team_id)}</Text>
                       </View>
-                      <EventDropdown icon="football" label="Marcatore" />
-                      <EventDropdown icon="ellipse" label="Assist" />
-                      <EventDropdown icon="square" iconColor="#FFD700" label="Cart. Giallo" />
-                      <EventDropdown icon="square" iconColor="#FF0000" label="Cart. Rosso" />
-                      <EventDropdown icon="arrow-back" label="Sost. esce" />
-                      <EventDropdown icon="arrow-forward" label="Sost. entra" />
+                      <EventDropdown 
+                        icon="football" 
+                        label="Marcatore" 
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.marcatore}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, marcatore: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="ellipse" 
+                        label="Assist"
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.assist}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, assist: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="square" 
+                        iconColor="#FFD700" 
+                        label="Cart. Giallo"
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.giallo}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, giallo: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="square" 
+                        iconColor="#FF0000" 
+                        label="Cart. Rosso"
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.rosso}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, rosso: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="arrow-back" 
+                        label="Sost. esce"
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.sostEsce}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, sostEsce: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="arrow-forward" 
+                        label="Sost. entra"
+                        players={homeTeamPlayers}
+                        value={extraEvents.home.sostEntra}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, sostEntra: id}}))}
+                      />
                     </View>
 
                     {/* Away Team Column */}
@@ -1455,17 +1493,55 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <View style={styles.extraColumnHeader}>
                         <Text style={styles.extraColumnHeaderText}>{getTeamName(selectedMatch.away_team_id)}</Text>
                       </View>
-                      <EventDropdown icon="football" label="Marcatore" />
-                      <EventDropdown icon="ellipse" label="Assist" />
-                      <EventDropdown icon="square" iconColor="#FFD700" label="Cart. Giallo" />
-                      <EventDropdown icon="square" iconColor="#FF0000" label="Cart. Rosso" />
-                      <EventDropdown icon="arrow-back" label="Sost. esce" />
-                      <EventDropdown icon="arrow-forward" label="Sost. entra" />
+                      <EventDropdown 
+                        icon="football" 
+                        label="Marcatore"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.marcatore}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, marcatore: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="ellipse" 
+                        label="Assist"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.assist}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, assist: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="square" 
+                        iconColor="#FFD700" 
+                        label="Cart. Giallo"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.giallo}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, giallo: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="square" 
+                        iconColor="#FF0000" 
+                        label="Cart. Rosso"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.rosso}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, rosso: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="arrow-back" 
+                        label="Sost. esce"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.sostEsce}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, sostEsce: id}}))}
+                      />
+                      <EventDropdown 
+                        icon="arrow-forward" 
+                        label="Sost. entra"
+                        players={awayTeamPlayers}
+                        value={extraEvents.away.sostEntra}
+                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, sostEntra: id}}))}
+                      />
                     </View>
                   </View>
 
                   {/* Salva Button for Events */}
-                  <TouchableOpacity style={styles.salvaBtn} onPress={() => Alert.alert('Salvato', 'Eventi salvati')}>
+                  <TouchableOpacity style={styles.salvaBtn} onPress={handleSaveExtraEvents}>
                     <Ionicons name="checkmark" size={20} color="#FFF" />
                     <Text style={styles.salvaBtnText}>Salva</Text>
                   </TouchableOpacity>
