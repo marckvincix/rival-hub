@@ -21,13 +21,14 @@ class MatchEventsAndStatsTester:
         print(f"[{timestamp}] {message}")
         
     def test_login(self):
-        """Test user login"""
-        self.log("🔐 Testing login...")
+        """Test user registration (creating a unique user for each test)"""
+        self.log("🔐 Testing registration...")
         
         try:
-            response = self.session.post(f"{BASE_URL}/auth/login", json={
+            response = self.session.post(f"{BASE_URL}/auth/register", json={
                 "email": TEST_EMAIL,
-                "password": TEST_PASSWORD
+                "password": TEST_PASSWORD,
+                "name": "Test User Match Events"
             })
             
             if response.status_code == 200:
@@ -40,14 +41,14 @@ class MatchEventsAndStatsTester:
                     "Authorization": f"Bearer {self.session_token}"
                 })
                 
-                self.log(f"✅ Login successful - User: {data.get('name')} ({data.get('email')})")
+                self.log(f"✅ Registration successful - User: {data.get('name')} ({data.get('email')})")
                 return True
             else:
-                self.log(f"❌ Login failed: {response.status_code} - {response.text}")
+                self.log(f"❌ Registration failed: {response.status_code} - {response.text}")
                 return False
                 
         except Exception as e:
-            self.log(f"❌ Login error: {str(e)}")
+            self.log(f"❌ Registration error: {str(e)}")
             return False
     
     def get_or_create_tournament_with_teams_and_players(self):
