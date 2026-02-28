@@ -321,6 +321,42 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     loadPlayerStats(player.id);
   };
 
+  // Load match events from backend
+  const loadMatchEvents = async (matchId: string) => {
+    try {
+      const response = await api.get(`/api/matches/${matchId}/events`);
+      const events = response.data || [];
+      
+      // Transform events to the format expected by the UI
+      const transformedEvents = events.map((event: any) => {
+        const isHomeTeam = selectedMatch && event.team_id === selectedMatch.home_team_id;
+        return {
+          team: isHomeTeam ? 'home' : 'away',
+          type: event.event_type === 'goal' ? 'goal' : 
+                event.event_type === 'assist' ? 'assist' :
+                event.event_type === 'yellow_card' ? 'yellow' :
+                event.event_type === 'red_card' ? 'red' :
+                event.event_type === 'substitution_out' ? 'sub_out' :
+                event.event_type === 'substitution_in' ? 'sub_in' : event.event_type,
+          player: event.player_name || 'Giocatore',
+          playerId: event.player_id
+        };
+      });
+      
+      setMatchEvents(transformedEvents);
+    } catch (error) {
+      console.error('Error loading match events:', error);
+      setMatchEvents([]);
+    }
+  };
+
+  // Open match result modal and load events
+  const handleOpenMatchResult = async (match: any) => {
+    setSelectedMatch(match);
+    setMatchEvents([]);
+    await loadMatchEvents(match.id);
+  };
+
   // Memoize grouped matches to prevent re-computation on every render
   const groupedMatches = React.useMemo(() => {
     const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
