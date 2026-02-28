@@ -888,6 +888,63 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   );
 }
 
+// Helper Component: Event Dropdown
+function EventDropdown({ icon, iconColor = '#000', label }: { icon: string; iconColor?: string; label: string }) {
+  return (
+    <TouchableOpacity style={styles.eventDropdown}>
+      {icon === 'square' ? (
+        <View style={[styles.cardIcon2, { backgroundColor: iconColor }]} />
+      ) : (
+        <Ionicons name={icon as any} size={16} color={iconColor} />
+      )}
+      <Text style={styles.eventDropdownLabel}>{label}</Text>
+      <Ionicons name="chevron-down" size={16} color="#000" />
+    </TouchableOpacity>
+  );
+}
+
+// Helper Component: Team Ratings Accordion
+function TeamRatingsAccordion({ teamName, teamLetter }: { teamName: string; teamLetter: string }) {
+  const [isExpanded, setIsExpanded] = useState(true);
+  // Mock players for demonstration
+  const mockPlayers = [
+    { name: 'Mario Rossi', role: 'Portiere', rating: 6 },
+    { name: 'Giuseppe Verdi', role: 'Difensore', rating: 6.5 },
+    { name: 'Marco Bianchi', role: 'Centrocampista', rating: 8 },
+    { name: 'Gino Ferrari', role: 'Attaccante', rating: 7.5 },
+  ];
+
+  return (
+    <View style={styles.teamAccordion}>
+      <TouchableOpacity style={styles.teamAccordionHeader} onPress={() => setIsExpanded(!isExpanded)}>
+        <View style={styles.teamLetterBadge}>
+          <Text style={styles.teamLetterText}>{teamLetter}</Text>
+        </View>
+        <Text style={styles.teamAccordionName}>{teamName}</Text>
+        <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={20} color="#000" />
+      </TouchableOpacity>
+      {isExpanded && (
+        <View style={styles.playersList}>
+          {mockPlayers.map((player, idx) => (
+            <View key={idx} style={styles.playerRatingRow}>
+              <View style={styles.playerInfo}>
+                <Text style={styles.playerName}>{player.name}</Text>
+                <Text style={styles.playerRole}>{player.role}</Text>
+              </View>
+              <TouchableOpacity style={styles.votoBtn}>
+                <Ionicons name="add" size={14} color="#FFF" />
+                <Text style={styles.votoBtnText}>Voto</Text>
+              </TouchableOpacity>
+              <Ionicons name="checkbox-outline" size={20} color="#000" style={{ marginHorizontal: 8 }} />
+              <Text style={styles.ratingNumber}>{player.rating}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function ResultInput({ match, homeTeam, awayTeam, onSave }: any) {
   const [homeGoals, setHomeGoals] = useState('');
   const [awayGoals, setAwayGoals] = useState('');
