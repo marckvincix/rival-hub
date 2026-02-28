@@ -292,10 +292,13 @@ metadata:
 
 test_plan:
   current_focus:
+    - "Authentication system - Login credentials validation"
+    - "Dropdown giocatori dinamici nel modal Extra"
     - "Tab Risultati - Navigazione e rendering"
-  stuck_tasks: []
+  stuck_tasks:
+    - "Authentication system - Login credentials validation"
   test_all: false
-  test_priority: "high_first"
+  test_priority: "stuck_first"
 
 agent_communication:
   - agent: "main"
@@ -374,3 +377,33 @@ agent_communication:
       - Visualizzazione statistiche giocatori
       - Aggiornamento punteggi in tempo reale
       - Sistema valutazioni giocatori
+  - agent: "testing"
+    message: |
+      ❌ FRONTEND TESTING BLOCKED - CRITICAL AUTHENTICATION ISSUE
+      
+      🚨 MAJOR BLOCKER IDENTIFIED:
+      
+      SYNTAX ERROR RESOLVED:
+      ✅ Fixed duplicate 'playerRatings' state declaration in tournaments.tsx line 286
+      ✅ App now compiles and loads without errors
+      ✅ Frontend structure is correct with all components implemented
+      
+      AUTHENTICATION SYSTEM FAILURE:
+      ❌ Login with test credentials (newuser@test.com / password123) returns 401 Unauthorized
+      ❌ Backend logs show "POST /api/auth/login HTTP/1.1" 401 Unauthorized"
+      ❌ Cannot access tournament dashboard to test frontend functionality
+      ❌ All frontend testing blocked by authentication
+      
+      BACKEND VS FRONTEND DISCONNECT:
+      - Backend APIs work perfectly when tested directly (all previous tests passed)
+      - Frontend cannot authenticate to access these working APIs
+      - Need to verify user exists in database or create new test user
+      - May need to check session management between frontend/backend
+      
+      IMMEDIATE ACTION NEEDED:
+      1. Verify test user exists in MongoDB with correct credentials
+      2. Check authentication flow between React frontend and FastAPI backend
+      3. Investigate session/token management
+      4. Create valid test user if needed
+      
+      CANNOT PROCEED WITH FRONTEND TESTING UNTIL AUTHENTICATION IS RESOLVED
