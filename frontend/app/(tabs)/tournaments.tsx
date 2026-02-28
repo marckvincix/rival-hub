@@ -621,11 +621,29 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           ) : (
                             (teamPlayers[team.id] || []).map((player) => (
                               <View key={player.id} style={styles.playerRow}>
+                                {/* Player Avatar */}
+                                {player.photo ? (
+                                  <Image source={{ uri: player.photo }} style={styles.playerAvatar} />
+                                ) : (
+                                  <View style={styles.playerAvatarPlaceholder}>
+                                    <Text style={styles.playerAvatarInitials}>
+                                      {player.name ? player.name.split(' ').map((n: string) => n[0]).join('').toUpperCase().slice(0, 2) : '?'}
+                                    </Text>
+                                  </View>
+                                )}
+                                {/* Player Info */}
                                 <View style={styles.playerInfo}>
                                   <Text style={styles.playerNameBold}>{player.name}</Text>
                                   <Text style={styles.playerRoleText}>{player.role || '-'}</Text>
                                 </View>
+                                {/* Right Section: Stats + Delete + Number */}
                                 <View style={styles.playerRightSection}>
+                                  <TouchableOpacity 
+                                    style={styles.playerStatsBtn}
+                                    onPress={() => { setSelectedPlayerForStats(player); setShowPlayerStatsModal(true); }}
+                                  >
+                                    <Ionicons name="stats-chart" size={18} color="#666" />
+                                  </TouchableOpacity>
                                   <TouchableOpacity 
                                     style={styles.playerDeleteBtn} 
                                     onPress={() => handleDeletePlayer(team.id, player.id)}
