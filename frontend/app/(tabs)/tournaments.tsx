@@ -1607,31 +1607,68 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <View style={styles.dateTimeRow}>
               <View style={styles.dateTimeCol}>
                 <Text style={styles.newMatchLabel}>Data</Text>
-                <View style={styles.newMatchInputWithIcon}>
-                  <TextInput
-                    style={styles.inputFieldText}
-                    placeholder="GG/MM/AAAA"
-                    placeholderTextColor="#999"
-                    value={newMatchData.date}
-                    onChangeText={(text) => setNewMatchData({ ...newMatchData, date: text })}
-                  />
+                <TouchableOpacity 
+                  style={styles.newMatchInputWithIcon}
+                  onPress={() => setShowMatchDatePicker(true)}
+                >
+                  <Text style={matchDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
+                    {matchDate ? matchDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
+                  </Text>
                   <Ionicons name="calendar-outline" size={22} color="#000" />
-                </View>
+                </TouchableOpacity>
               </View>
               <View style={styles.dateTimeCol}>
                 <Text style={styles.newMatchLabel}>Orario</Text>
-                <View style={styles.newMatchInputWithIcon}>
-                  <TextInput
-                    style={styles.inputFieldText}
-                    placeholder="00-00"
-                    placeholderTextColor="#999"
-                    value={newMatchData.time}
-                    onChangeText={(text) => setNewMatchData({ ...newMatchData, time: text })}
-                  />
+                <TouchableOpacity 
+                  style={styles.newMatchInputWithIcon}
+                  onPress={() => setShowMatchTimePicker(true)}
+                >
+                  <Text style={matchTime ? styles.inputFieldText : styles.inputFieldPlaceholder}>
+                    {matchTime ? matchTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM'}
+                  </Text>
                   <Ionicons name="time-outline" size={22} color="#000" />
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
+
+            {/* Date Picker Modal */}
+            {showMatchDatePicker && (
+              <DateTimePicker
+                value={matchDate || new Date()}
+                mode="date"
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedDate) => {
+                  setShowMatchDatePicker(Platform.OS === 'ios');
+                  if (selectedDate) {
+                    setMatchDate(selectedDate);
+                    setNewMatchData({ 
+                      ...newMatchData, 
+                      date: selectedDate.toLocaleDateString('it-IT') 
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Time Picker Modal */}
+            {showMatchTimePicker && (
+              <DateTimePicker
+                value={matchTime || new Date()}
+                mode="time"
+                is24Hour={true}
+                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                onChange={(event, selectedTime) => {
+                  setShowMatchTimePicker(Platform.OS === 'ios');
+                  if (selectedTime) {
+                    setMatchTime(selectedTime);
+                    setNewMatchData({ 
+                      ...newMatchData, 
+                      time: selectedTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) 
+                    });
+                  }
+                }}
+              />
+            )}
 
             {/* Luogo */}
             <Text style={styles.newMatchLabel}>Luogo</Text>
