@@ -208,6 +208,160 @@ export default function TournamentsScreen() {
             <Input label="Nome Torneo *" placeholder="es. Torneo Primavera 2025" value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
             <Input label="Luogo" placeholder="es. Milano, Campo XYZ" value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
             
+            {/* Data e Orario - Side by Side */}
+            <View style={styles.dateTimeRow}>
+              <View style={styles.dateTimeCol}>
+                <Text style={styles.inputLabel}>Data</Text>
+                <TouchableOpacity 
+                  style={styles.newMatchInputWithIcon}
+                  onPress={() => setShowTournamentDatePicker(true)}
+                >
+                  <Text style={tournamentDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
+                    {tournamentDate ? tournamentDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
+                  </Text>
+                  <Ionicons name="calendar-outline" size={22} color="#000" />
+                </TouchableOpacity>
+              </View>
+              <View style={styles.dateTimeCol}>
+                <Text style={styles.inputLabel}>Orario</Text>
+                <TouchableOpacity 
+                  style={styles.newMatchInputWithIcon}
+                  onPress={() => setShowTournamentTimePicker(true)}
+                >
+                  <Text style={tournamentTime ? styles.inputFieldText : styles.inputFieldPlaceholder}>
+                    {tournamentTime ? tournamentTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM'}
+                  </Text>
+                  <Ionicons name="time-outline" size={22} color="#000" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            {/* Tournament Date Picker - iOS Modal */}
+            {showTournamentDatePicker && Platform.OS === 'ios' && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={showTournamentDatePicker}
+                onRequestClose={() => setShowTournamentDatePicker(false)}
+              >
+                <TouchableOpacity 
+                  style={styles.pickerModalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowTournamentDatePicker(false)}
+                >
+                  <View style={styles.pickerModalContent}>
+                    <View style={styles.pickerModalHeader}>
+                      <TouchableOpacity onPress={() => setShowTournamentDatePicker(false)}>
+                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pickerTitle}>Seleziona Data</Text>
+                      <TouchableOpacity onPress={() => setShowTournamentDatePicker(false)}>
+                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={tournamentDate || new Date()}
+                      mode="date"
+                      display="spinner"
+                      onChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setTournamentDate(selectedDate);
+                          setFormData({ 
+                            ...formData, 
+                            start_date: selectedDate.toLocaleDateString('it-IT') 
+                          });
+                        }
+                      }}
+                      style={{ height: 200 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+
+            {/* Tournament Date Picker - Android */}
+            {showTournamentDatePicker && Platform.OS !== 'ios' && (
+              <DateTimePicker
+                value={tournamentDate || new Date()}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => {
+                  setShowTournamentDatePicker(false);
+                  if (event.type === 'set' && selectedDate) {
+                    setTournamentDate(selectedDate);
+                    setFormData({ 
+                      ...formData, 
+                      start_date: selectedDate.toLocaleDateString('it-IT') 
+                    });
+                  }
+                }}
+              />
+            )}
+
+            {/* Tournament Time Picker - iOS Modal */}
+            {showTournamentTimePicker && Platform.OS === 'ios' && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={showTournamentTimePicker}
+                onRequestClose={() => setShowTournamentTimePicker(false)}
+              >
+                <TouchableOpacity 
+                  style={styles.pickerModalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowTournamentTimePicker(false)}
+                >
+                  <View style={styles.pickerModalContent}>
+                    <View style={styles.pickerModalHeader}>
+                      <TouchableOpacity onPress={() => setShowTournamentTimePicker(false)}>
+                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pickerTitle}>Seleziona Orario</Text>
+                      <TouchableOpacity onPress={() => setShowTournamentTimePicker(false)}>
+                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={tournamentTime || new Date()}
+                      mode="time"
+                      is24Hour={true}
+                      display="spinner"
+                      onChange={(event, selectedTime) => {
+                        if (selectedTime) {
+                          setTournamentTime(selectedTime);
+                          setFormData({ 
+                            ...formData, 
+                            start_time: selectedTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) 
+                          });
+                        }
+                      }}
+                      style={{ height: 200 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+
+            {/* Tournament Time Picker - Android */}
+            {showTournamentTimePicker && Platform.OS !== 'ios' && (
+              <DateTimePicker
+                value={tournamentTime || new Date()}
+                mode="time"
+                is24Hour={true}
+                display="default"
+                onChange={(event, selectedTime) => {
+                  setShowTournamentTimePicker(false);
+                  if (event.type === 'set' && selectedTime) {
+                    setTournamentTime(selectedTime);
+                    setFormData({ 
+                      ...formData, 
+                      start_time: selectedTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) 
+                    });
+                  }
+                }}
+              />
+            )}
+            
             <Text style={styles.inputLabel}>Categoria</Text>
             <View style={styles.chipContainer}>
               {CATEGORIES.map((cat) => (
