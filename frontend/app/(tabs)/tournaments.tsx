@@ -2188,8 +2188,23 @@ const styles = StyleSheet.create({
   eventDropdownLabelSelected: { fontWeight: '600' },
   eventDropdownList: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#000', borderRadius: 12, marginTop: -6, marginBottom: 12, maxHeight: 160 },
   eventDropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  eventDropdownItemSelected: { backgroundColor: '#F0FFF0' },
   eventDropdownItemText: { fontSize: 12, color: '#000' },
+  eventDropdownItemTextSelected: { fontWeight: '600' },
   eventDropdownItemTextEmpty: { fontSize: 12, color: '#999', paddingHorizontal: 12, paddingVertical: 10 },
+  // Multi-select styles
+  multiDropdownContainer: { marginBottom: 8 },
+  selectedTagsContainer: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: 6, marginBottom: 8 },
+  selectedTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', borderRadius: 20, paddingLeft: 10, paddingRight: 4, paddingVertical: 4, maxWidth: '100%' },
+  selectedTagText: { fontSize: 11, color: '#FFF', marginRight: 4, flexShrink: 1 },
+  selectedTagRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  dropdownScrollView: { maxHeight: 150 },
+  // Live Score styles
+  liveScoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F5F5', borderRadius: 16, padding: 16, marginBottom: 16 },
+  liveScoreTeam: { flex: 1, fontSize: 12, fontWeight: '600', color: '#000', textAlign: 'center' },
+  liveScoreCenter: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  liveScoreNumber: { fontSize: 28, fontWeight: '700', color: '#000', minWidth: 36, textAlign: 'center', backgroundColor: '#FFF', borderRadius: 8, paddingVertical: 8, paddingHorizontal: 12 },
+  liveScoreDash: { fontSize: 24, fontWeight: '700', color: '#000' },
   salvaBtn: { backgroundColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, gap: 8, marginBottom: 20 },
   salvaBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   // Voti Section
