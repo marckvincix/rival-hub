@@ -524,8 +524,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     if (selectedMatch) {
       await loadPlayersForExtraModal(selectedMatch.home_team_id, selectedMatch.away_team_id);
       setExtraEvents({
-        home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
-        away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+        home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
+        away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
       });
       setShowExtraModal(true);
     }
