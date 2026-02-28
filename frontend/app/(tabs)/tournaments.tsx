@@ -814,23 +814,62 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {/* Foto */}
             <Text style={styles.playerFormLabel}>Foto</Text>
-            <TouchableOpacity style={styles.playerFormPhotoBox}>
-              <Ionicons name="cloud-upload-outline" size={24} color="#999" />
-              <Text style={styles.playerFormPhotoText}>Carica immagine</Text>
+            <TouchableOpacity style={styles.playerFormPhotoBox} onPress={pickImage}>
+              {newPlayerData.photo ? (
+                <Image source={{ uri: newPlayerData.photo }} style={styles.playerPhotoPreview} />
+              ) : (
+                <>
+                  <Ionicons name="cloud-upload-outline" size={24} color="#999" />
+                  <Text style={styles.playerFormPhotoText}>Carica immagine</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             {/* Data di nascita */}
             <Text style={styles.playerFormLabel}>Data di nascita</Text>
-            <View style={styles.playerFormInputWithIcon}>
-              <TextInput
-                style={styles.playerFormInput}
-                placeholder="GG/MM/AAAA"
-                placeholderTextColor="#999"
-                value={newPlayerData.birthDate}
-                onChangeText={(text) => setNewPlayerData({ ...newPlayerData, birthDate: text })}
-              />
+            <TouchableOpacity style={styles.playerFormInputWithIcon} onPress={openDatePicker}>
+              <Text style={newPlayerData.birthDate ? styles.playerFormInput : styles.playerFormPlaceholder}>
+                {newPlayerData.birthDate || 'GG/MM/AAAA'}
+              </Text>
               <Ionicons name="calendar-outline" size={22} color="#000" />
-            </View>
+            </TouchableOpacity>
+
+            {/* Date Picker Modal for iOS or inline for Android */}
+            {showDatePicker && (
+              Platform.OS === 'ios' ? (
+                <Modal transparent animationType="slide" visible={showDatePicker}>
+                  <View style={styles.datePickerModal}>
+                    <View style={styles.datePickerContainer}>
+                      <View style={styles.datePickerHeader}>
+                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                          <Text style={styles.datePickerCancel}>Annulla</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={() => setShowDatePicker(false)}>
+                          <Text style={styles.datePickerDone}>Fine</Text>
+                        </TouchableOpacity>
+                      </View>
+                      <DateTimePicker
+                        value={selectedDate || new Date(2000, 0, 1)}
+                        mode="date"
+                        display="spinner"
+                        onChange={onDateChange}
+                        maximumDate={new Date()}
+                        minimumDate={new Date(1950, 0, 1)}
+                      />
+                    </View>
+                  </View>
+                </Modal>
+              ) : (
+                <DateTimePicker
+                  value={selectedDate || new Date(2000, 0, 1)}
+                  mode="date"
+                  display="default"
+                  onChange={onDateChange}
+                  maximumDate={new Date()}
+                  minimumDate={new Date(1950, 0, 1)}
+                />
+              )
+            )}
 
             {/* Aggiungi Button */}
             <TouchableOpacity style={[styles.addBtnBlack, { marginTop: 32, marginBottom: 40 }]} onPress={handleAddPlayer}>
