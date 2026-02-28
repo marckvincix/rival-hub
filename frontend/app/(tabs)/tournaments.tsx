@@ -168,7 +168,12 @@ export default function TournamentsScreen() {
             title="Nessun torneo"
             description="Crea il tuo primo torneo"
             actionLabel="Crea Torneo"
-            onAction={() => setShowCreateModal(true)}
+            onAction={() => {
+              setTournamentDate(null);
+              setTournamentTime(null);
+              setFormData({ name: '', description: '', category: 'Open', format: 'league', location: '', start_date: '', start_time: '' });
+              setShowCreateModal(true);
+            }}
           />
         ) : (
           tournaments.map((tournament) => (
