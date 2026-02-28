@@ -1980,6 +1980,8 @@ const styles = StyleSheet.create({
   teamAccordionName: { flex: 1, fontSize: 16, fontWeight: '600', color: '#000' },
   playersList: { borderTopWidth: 1, borderTopColor: '#EEE' },
   playerRatingRow: { flexDirection: 'row', alignItems: 'center', padding: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  noPlayersRatingRow: { padding: 16, alignItems: 'center' },
+  noPlayersRatingText: { fontSize: 14, color: '#999', fontStyle: 'italic' },
   playerInfo: { flex: 1 },
   playerName: { fontSize: 14, fontWeight: '700', color: '#000' },
   playerRole: { fontSize: 12, color: '#666' },
