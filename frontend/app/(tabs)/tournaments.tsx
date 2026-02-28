@@ -273,9 +273,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
-  const [extraEvents, setExtraEvents] = useState({
-    home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
-    away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+  const [extraEvents, setExtraEvents] = useState<{
+    home: { marcatore: string[]; assist: string[]; giallo: string[]; rosso: string[]; sostEsce: string[]; sostEntra: string[] };
+    away: { marcatore: string[]; assist: string[]; giallo: string[]; rosso: string[]; sostEsce: string[]; sostEntra: string[] };
+  }>({
+    home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
+    away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
   });
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
