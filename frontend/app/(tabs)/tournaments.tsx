@@ -1557,12 +1557,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     <TeamRatingsAccordion 
                       teamName={getTeamName(selectedMatch.home_team_id)} 
                       teamLetter={getTeamName(selectedMatch.home_team_id).charAt(0)}
+                      players={homeTeamPlayers}
                     />
 
                     {/* Away Team Ratings */}
                     <TeamRatingsAccordion 
                       teamName={getTeamName(selectedMatch.away_team_id)} 
                       teamLetter={getTeamName(selectedMatch.away_team_id).charAt(0)}
+                      players={awayTeamPlayers}
                     />
                   </View>
 
