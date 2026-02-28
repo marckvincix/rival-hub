@@ -2547,6 +2547,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF'
   },
   inputFieldText: { flex: 1, fontSize: 16, color: '#000' },
+  inputFieldPlaceholder: { flex: 1, fontSize: 16, color: '#999' },
   // Match Selection Styles
   matchSelectCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, padding: 16, marginBottom: 12 },
   matchSelectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
