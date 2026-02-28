@@ -1730,14 +1730,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Marcatore"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.marcatore}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            marcatore: prev.away.marcatore.includes(id) 
-                              ? prev.away.marcatore.filter(x => x !== id)
-                              : [...prev.away.marcatore, id]
-                          }
+                          away: { ...prev.away, marcatore: [...prev.away.marcatore, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, marcatore: prev.away.marcatore.filter((_, i) => i !== index) }
                         }))}
                       />
                       <EventDropdown 
@@ -1745,14 +1744,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Assist"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.assist}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            assist: prev.away.assist.includes(id) 
-                              ? prev.away.assist.filter(x => x !== id)
-                              : [...prev.away.assist, id]
-                          }
+                          away: { ...prev.away, assist: [...prev.away.assist, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, assist: prev.away.assist.filter((_, i) => i !== index) }
                         }))}
                       />
                       <EventDropdown 
@@ -1761,14 +1759,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Cart. Giallo"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.giallo}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            giallo: prev.away.giallo.includes(id) 
-                              ? prev.away.giallo.filter(x => x !== id)
-                              : [...prev.away.giallo, id]
-                          }
+                          away: { ...prev.away, giallo: [...prev.away.giallo, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, giallo: prev.away.giallo.filter((_, i) => i !== index) }
                         }))}
                       />
                       <EventDropdown 
@@ -1777,14 +1774,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Cart. Rosso"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.rosso}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            rosso: prev.away.rosso.includes(id) 
-                              ? prev.away.rosso.filter(x => x !== id)
-                              : [...prev.away.rosso, id]
-                          }
+                          away: { ...prev.away, rosso: [...prev.away.rosso, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, rosso: prev.away.rosso.filter((_, i) => i !== index) }
                         }))}
                       />
                       <EventDropdown 
@@ -1792,14 +1788,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Sost. esce"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.sostEsce}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            sostEsce: prev.away.sostEsce.includes(id) 
-                              ? prev.away.sostEsce.filter(x => x !== id)
-                              : [...prev.away.sostEsce, id]
-                          }
+                          away: { ...prev.away, sostEsce: [...prev.away.sostEsce, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, sostEsce: prev.away.sostEsce.filter((_, i) => i !== index) }
                         }))}
                       />
                       <EventDropdown 
@@ -1807,14 +1802,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         label="Sost. entra"
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.sostEntra}
-                        onToggle={(id) => setExtraEvents(prev => ({
+                        onAdd={(id) => setExtraEvents(prev => ({
                           ...prev, 
-                          away: {
-                            ...prev.away, 
-                            sostEntra: prev.away.sostEntra.includes(id) 
-                              ? prev.away.sostEntra.filter(x => x !== id)
-                              : [...prev.away.sostEntra, id]
-                          }
+                          away: { ...prev.away, sostEntra: [...prev.away.sostEntra, id] }
+                        }))}
+                        onRemoveAt={(index) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: { ...prev.away, sostEntra: prev.away.sostEntra.filter((_, i) => i !== index) }
                         }))}
                       />
                     </View>
