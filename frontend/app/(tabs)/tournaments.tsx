@@ -505,9 +505,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                   <Text style={styles.playerNameBold}>{player.name}</Text>
                                   <Text style={styles.playerRoleText}>{player.role || '-'}</Text>
                                 </View>
-                                <View style={styles.playerNumberBox}>
-                                  <Text style={styles.playerNumberLabel}>Nº</Text>
-                                  <Text style={styles.playerNumberValue}>{player.number || '-'}</Text>
+                                <View style={styles.playerRightSection}>
+                                  <TouchableOpacity 
+                                    style={styles.playerDeleteBtn} 
+                                    onPress={() => handleDeletePlayer(team.id, player.id)}
+                                  >
+                                    <Ionicons name="trash-outline" size={18} color="#666" />
+                                  </TouchableOpacity>
+                                  <View style={styles.playerNumberBox}>
+                                    <Text style={styles.playerNumberLabel}>Nº</Text>
+                                    <Text style={styles.playerNumberValue}>{player.number || '-'}</Text>
+                                  </View>
                                 </View>
                               </View>
                             ))
