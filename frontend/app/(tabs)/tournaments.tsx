@@ -1464,45 +1464,53 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     <View style={styles.statsHeader}>
                       <Text style={styles.statsHeaderText}>Statistiche</Text>
                     </View>
-                    <View style={styles.statsContent}>
-                      {/* Home Team Events */}
-                      <View style={styles.statsColumn}>
-                        {matchEvents.filter(e => e.team === 'home').map((event, idx) => (
-                          <View key={idx} style={styles.statsRow}>
-                            <Text style={styles.statsPlayerName}>{event.player}</Text>
-                            {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
-                            {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
-                            {event.type === 'yellow' && <><View style={styles.yellowCard} /><Text style={styles.statsIcon}>⚽</Text></>}
-                            {event.type === 'red' && <View style={styles.redCard} />}
-                            {event.type === 'sub' && (
-                              <View style={styles.subEvent}>
-                                <Ionicons name="swap-horizontal" size={16} color="#000" />
-                                <Text style={styles.subPlayerOut}>{event.playerOut}</Text>
-                              </View>
-                            )}
-                          </View>
-                        ))}
-                        {matchEvents.filter(e => e.team === 'home').length === 0 && (
-                          <Text style={styles.noEventsText}>-</Text>
-                        )}
+                    
+                    {/* Show message if no events */}
+                    {matchEvents.length === 0 && (
+                      <View style={styles.noEventsContainer}>
+                        <Text style={styles.noEventsMessage}>Nessun evento ancora registrato</Text>
                       </View>
-                      <View style={styles.statsVerticalLine} />
-                      {/* Away Team Events */}
-                      <View style={styles.statsColumn}>
-                        {matchEvents.filter(e => e.team === 'away').map((event, idx) => (
-                          <View key={idx} style={styles.statsRow}>
-                            {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
-                            {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
-                            {event.type === 'yellow' && <><View style={styles.yellowCard} /><Text style={styles.statsIcon}>⚽</Text></>}
-                            {event.type === 'red' && <View style={styles.redCard} />}
-                            <Text style={styles.statsPlayerName}>{event.player}</Text>
-                          </View>
-                        ))}
-                        {matchEvents.filter(e => e.team === 'away').length === 0 && (
-                          <Text style={styles.noEventsText}>-</Text>
-                        )}
+                    )}
+                    
+                    {matchEvents.length > 0 && (
+                      <View style={styles.statsContent}>
+                        {/* Home Team Events */}
+                        <View style={styles.statsColumn}>
+                          {matchEvents.filter(e => e.team === 'home').map((event, idx) => (
+                            <View key={idx} style={styles.statsRow}>
+                              <Text style={styles.statsPlayerName} numberOfLines={1}>{event.player}</Text>
+                              {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
+                              {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
+                              {event.type === 'yellow' && <View style={styles.yellowCard} />}
+                              {event.type === 'red' && <View style={styles.redCard} />}
+                              {event.type === 'sub_out' && <Text style={styles.statsIcon}>🔻</Text>}
+                              {event.type === 'sub_in' && <Text style={styles.statsIcon}>🔺</Text>}
+                            </View>
+                          ))}
+                          {matchEvents.filter(e => e.team === 'home').length === 0 && (
+                            <Text style={styles.noEventsText}>-</Text>
+                          )}
+                        </View>
+                        <View style={styles.statsVerticalLine} />
+                        {/* Away Team Events */}
+                        <View style={styles.statsColumn}>
+                          {matchEvents.filter(e => e.team === 'away').map((event, idx) => (
+                            <View key={idx} style={styles.statsRowReverse}>
+                              {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
+                              {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
+                              {event.type === 'yellow' && <View style={styles.yellowCard} />}
+                              {event.type === 'red' && <View style={styles.redCard} />}
+                              {event.type === 'sub_out' && <Text style={styles.statsIcon}>🔻</Text>}
+                              {event.type === 'sub_in' && <Text style={styles.statsIcon}>🔺</Text>}
+                              <Text style={styles.statsPlayerName} numberOfLines={1}>{event.player}</Text>
+                            </View>
+                          ))}
+                          {matchEvents.filter(e => e.team === 'away').length === 0 && (
+                            <Text style={styles.noEventsText}>-</Text>
+                          )}
+                        </View>
                       </View>
-                    </View>
+                    )}
                   </View>
                 </View>
 
