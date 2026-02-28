@@ -1636,15 +1636,58 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
             </View>
 
-            {/* Date Picker Modal */}
-            {showMatchDatePicker && (
+            {/* Date Picker - Wrapped in Modal for better control */}
+            {showMatchDatePicker && Platform.OS === 'ios' && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={showMatchDatePicker}
+                onRequestClose={() => setShowMatchDatePicker(false)}
+              >
+                <TouchableOpacity 
+                  style={styles.pickerModalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowMatchDatePicker(false)}
+                >
+                  <View style={styles.pickerModalContent}>
+                    <View style={styles.pickerModalHeader}>
+                      <TouchableOpacity onPress={() => setShowMatchDatePicker(false)}>
+                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pickerTitle}>Seleziona Data</Text>
+                      <TouchableOpacity onPress={() => setShowMatchDatePicker(false)}>
+                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={matchDate || new Date()}
+                      mode="date"
+                      display="spinner"
+                      onChange={(event, selectedDate) => {
+                        if (selectedDate) {
+                          setMatchDate(selectedDate);
+                          setNewMatchData({ 
+                            ...newMatchData, 
+                            date: selectedDate.toLocaleDateString('it-IT') 
+                          });
+                        }
+                      }}
+                      style={{ height: 200 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+
+            {/* Date Picker - Android (auto-closes) */}
+            {showMatchDatePicker && Platform.OS !== 'ios' && (
               <DateTimePicker
                 value={matchDate || new Date()}
                 mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 onChange={(event, selectedDate) => {
-                  setShowMatchDatePicker(Platform.OS === 'ios');
-                  if (selectedDate) {
+                  setShowMatchDatePicker(false);
+                  if (event.type === 'set' && selectedDate) {
                     setMatchDate(selectedDate);
                     setNewMatchData({ 
                       ...newMatchData, 
@@ -1655,16 +1698,60 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               />
             )}
 
-            {/* Time Picker Modal */}
-            {showMatchTimePicker && (
+            {/* Time Picker - Wrapped in Modal for better control */}
+            {showMatchTimePicker && Platform.OS === 'ios' && (
+              <Modal
+                transparent
+                animationType="fade"
+                visible={showMatchTimePicker}
+                onRequestClose={() => setShowMatchTimePicker(false)}
+              >
+                <TouchableOpacity 
+                  style={styles.pickerModalOverlay}
+                  activeOpacity={1}
+                  onPress={() => setShowMatchTimePicker(false)}
+                >
+                  <View style={styles.pickerModalContent}>
+                    <View style={styles.pickerModalHeader}>
+                      <TouchableOpacity onPress={() => setShowMatchTimePicker(false)}>
+                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.pickerTitle}>Seleziona Orario</Text>
+                      <TouchableOpacity onPress={() => setShowMatchTimePicker(false)}>
+                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                      </TouchableOpacity>
+                    </View>
+                    <DateTimePicker
+                      value={matchTime || new Date()}
+                      mode="time"
+                      is24Hour={true}
+                      display="spinner"
+                      onChange={(event, selectedTime) => {
+                        if (selectedTime) {
+                          setMatchTime(selectedTime);
+                          setNewMatchData({ 
+                            ...newMatchData, 
+                            time: selectedTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) 
+                          });
+                        }
+                      }}
+                      style={{ height: 200 }}
+                    />
+                  </View>
+                </TouchableOpacity>
+              </Modal>
+            )}
+
+            {/* Time Picker - Android (auto-closes) */}
+            {showMatchTimePicker && Platform.OS !== 'ios' && (
               <DateTimePicker
                 value={matchTime || new Date()}
                 mode="time"
                 is24Hour={true}
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                display="default"
                 onChange={(event, selectedTime) => {
-                  setShowMatchTimePicker(Platform.OS === 'ios');
-                  if (selectedTime) {
+                  setShowMatchTimePicker(false);
+                  if (event.type === 'set' && selectedTime) {
                     setMatchTime(selectedTime);
                     setNewMatchData({ 
                       ...newMatchData, 
