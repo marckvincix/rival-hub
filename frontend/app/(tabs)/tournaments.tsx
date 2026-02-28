@@ -147,7 +147,12 @@ export default function TournamentsScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>I Miei Tornei</Text>
-        <TouchableOpacity style={styles.addButton} onPress={() => setShowCreateModal(true)}>
+        <TouchableOpacity style={styles.addButton} onPress={() => {
+          setTournamentDate(null);
+          setTournamentTime(null);
+          setFormData({ name: '', description: '', category: 'Open', format: 'league', location: '', start_date: '', start_time: '' });
+          setShowCreateModal(true);
+        }}>
           <Ionicons name="add" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
