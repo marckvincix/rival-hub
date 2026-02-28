@@ -1347,6 +1347,145 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </TouchableOpacity>
       </Modal>
 
+      {/* Match Statistics Modal */}
+      <Modal visible={showMatchStatsModal} animationType="fade" transparent onRequestClose={() => setShowMatchStatsModal(false)}>
+        <TouchableOpacity 
+          style={styles.statsModalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowMatchStatsModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.matchStatsModalContent}>
+            {selectedMatchForStats && (
+              <>
+                {/* Header */}
+                <View style={styles.matchStatsHeader}>
+                  <Text style={styles.matchStatsTitle}>📊 Statistiche Partita</Text>
+                  <TouchableOpacity onPress={() => setShowMatchStatsModal(false)}>
+                    <Ionicons name="close" size={24} color="#000" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* Result */}
+                <View style={styles.matchStatsResultBox}>
+                  <Text style={styles.matchStatsTeamName}>{getTeamName(selectedMatchForStats.home_team_id)}</Text>
+                  <View style={styles.matchStatsScoreBox}>
+                    <Text style={styles.matchStatsScore}>
+                      {selectedMatchForStats.home_goals ?? 0} - {selectedMatchForStats.away_goals ?? 0}
+                    </Text>
+                  </View>
+                  <Text style={styles.matchStatsTeamName}>{getTeamName(selectedMatchForStats.away_team_id)}</Text>
+                </View>
+
+                {/* Loading */}
+                {loadingMatchStats && (
+                  <View style={styles.statsLoading}>
+                    <ActivityIndicator size="small" color="#000" />
+                    <Text style={styles.statsLoadingText}>Caricamento statistiche...</Text>
+                  </View>
+                )}
+
+                {/* Events */}
+                {!loadingMatchStats && (
+                  <ScrollView style={styles.matchStatsEventsScroll} showsVerticalScrollIndicator={false}>
+                    {matchStatsEvents.length === 0 ? (
+                      <View style={styles.noMatchStatsContainer}>
+                        <Ionicons name="document-outline" size={48} color="#CCC" />
+                        <Text style={styles.noMatchStatsText}>Nessuna statistica disponibile</Text>
+                      </View>
+                    ) : (
+                      <>
+                        {/* Goals */}
+                        {matchStatsEvents.filter(e => e.event_type === 'goal').length > 0 && (
+                          <View style={styles.matchStatsSection}>
+                            <Text style={styles.matchStatsSectionTitle}>⚽ Marcatori</Text>
+                            {matchStatsEvents.filter(e => e.event_type === 'goal').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Assists */}
+                        {matchStatsEvents.filter(e => e.event_type === 'assist').length > 0 && (
+                          <View style={styles.matchStatsSection}>
+                            <Text style={styles.matchStatsSectionTitle}>🅰️ Assist</Text>
+                            {matchStatsEvents.filter(e => e.event_type === 'assist').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Yellow Cards */}
+                        {matchStatsEvents.filter(e => e.event_type === 'yellow_card').length > 0 && (
+                          <View style={styles.matchStatsSection}>
+                            <Text style={styles.matchStatsSectionTitle}>🟨 Cartellini Gialli</Text>
+                            {matchStatsEvents.filter(e => e.event_type === 'yellow_card').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Red Cards */}
+                        {matchStatsEvents.filter(e => e.event_type === 'red_card').length > 0 && (
+                          <View style={styles.matchStatsSection}>
+                            <Text style={styles.matchStatsSectionTitle}>🟥 Cartellini Rossi</Text>
+                            {matchStatsEvents.filter(e => e.event_type === 'red_card').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+
+                        {/* Substitutions */}
+                        {(matchStatsEvents.filter(e => e.event_type === 'substitution_out' || e.event_type === 'substitution_in').length > 0) && (
+                          <View style={styles.matchStatsSection}>
+                            <Text style={styles.matchStatsSectionTitle}>🔄 Sostituzioni</Text>
+                            {matchStatsEvents.filter(e => e.event_type === 'substitution_out').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>🔻 {event.player_name} (esce)</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                            {matchStatsEvents.filter(e => e.event_type === 'substitution_in').map((event, idx) => (
+                              <View key={idx} style={styles.matchStatsEventRow}>
+                                <Text style={styles.matchStatsEventPlayer}>🔺 {event.player_name} (entra)</Text>
+                                <Text style={styles.matchStatsEventTeam}>
+                                  ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                      </>
+                    )}
+                  </ScrollView>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
       {/* Add Match Modal - Redesigned */}
       <Modal visible={showAddMatchModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddMatchModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
