@@ -7,7 +7,7 @@ from datetime import datetime
 
 # Configuration
 BASE_URL = "https://torneo-live.preview.emergentagent.com/api"
-TEST_EMAIL = "newuser@test.com"
+TEST_EMAIL = f"testuser{datetime.now().strftime('%Y%m%d%H%M%S')}@goalmanager.test"
 TEST_PASSWORD = "password123"
 
 class BackendTester:
