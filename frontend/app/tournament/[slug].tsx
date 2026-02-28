@@ -287,6 +287,14 @@ export default function TournamentPublicPage() {
           </View>
         )}
       </ScrollView>
+
+      {/* Match Stats Modal */}
+      <MatchStatsModal
+        visible={showStatsModal}
+        onClose={() => setShowStatsModal(false)}
+        match={selectedMatchForStats}
+        getTeamName={getTeamName}
+      />
     </SafeAreaView>
   );
 }
