@@ -56,9 +56,12 @@ class BackendTester:
         """Test user registration"""
         self.log("📝 Testing user registration...")
         
+        # Use a unique email for testing
+        test_email = f"testuser{datetime.now().strftime('%Y%m%d%H%M%S')}@goalmanager.test"
+        
         try:
             response = self.session.post(f"{BASE_URL}/auth/register", json={
-                "email": TEST_EMAIL,
+                "email": test_email,
                 "password": TEST_PASSWORD,
                 "name": "Test User GoalManager"
             })
