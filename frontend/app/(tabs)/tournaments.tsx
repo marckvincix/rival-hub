@@ -1654,12 +1654,6 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </View>
                   </View>
 
-                  {/* Salva Button for Events */}
-                  <TouchableOpacity style={styles.salvaBtn} onPress={handleSaveExtraEvents}>
-                    <Ionicons name="checkmark" size={20} color="#FFF" />
-                    <Text style={styles.salvaBtnText}>Salva</Text>
-                  </TouchableOpacity>
-
                   {/* Voti Section */}
                   <View style={styles.votiSection}>
                     <View style={styles.votiHeader}>
