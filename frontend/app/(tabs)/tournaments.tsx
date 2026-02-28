@@ -911,7 +911,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <TouchableOpacity 
                           key={match.id} 
                           style={styles.matchSelectCard}
-                          onPress={() => setSelectedMatch(match)}
+                          onPress={() => handleOpenMatchResult(match)}
                         >
                           <View style={styles.matchSelectRow}>
                             <Text style={styles.matchSelectTeam}>{getTeamName(match.home_team_id)}</Text>
