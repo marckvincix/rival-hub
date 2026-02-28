@@ -31,6 +31,8 @@ export default function TournamentPublicPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('standings');
+  const [showStatsModal, setShowStatsModal] = useState(false);
+  const [selectedMatchForStats, setSelectedMatchForStats] = useState<Match | null>(null);
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
