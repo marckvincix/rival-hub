@@ -1132,6 +1132,12 @@ async def save_match_events_batch(
     Save all match events in batch, update match score, and update player stats.
     This is used by the Extra modal to save all events at once.
     """
+    import logging
+    logging.info(f"Received batch save request for match {match_id}")
+    logging.info(f"Events received: {len(data.events)}")
+    logging.info(f"Events data: {data.events}")
+    logging.info(f"Home goals: {data.home_goals}, Away goals: {data.away_goals}")
+    
     match = await db.matches.find_one({"id": match_id}, {"_id": 0})
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
