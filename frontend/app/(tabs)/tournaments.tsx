@@ -2385,6 +2385,8 @@ const styles = StyleSheet.create({
   selectedTag: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#000', borderRadius: 20, paddingLeft: 10, paddingRight: 4, paddingVertical: 4, maxWidth: '100%' },
   selectedTagText: { fontSize: 11, color: '#FFF', marginRight: 4, flexShrink: 1 },
   selectedTagRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
+  selectedCountBadge: { backgroundColor: '#4CAF50', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginRight: 6 },
+  selectedCountText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
   dropdownScrollView: { maxHeight: 150 },
   // Live Score styles
   liveScoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F5F5', borderRadius: 16, padding: 16, marginBottom: 16 },
