@@ -245,6 +245,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   });
   const [showHomeDropdown, setShowHomeDropdown] = useState(false);
   const [showAwayDropdown, setShowAwayDropdown] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<any>(null);
+  const [showExtraModal, setShowExtraModal] = useState(false);
+  const [matchEvents, setMatchEvents] = useState<any[]>([]);
+  const [playerRatings, setPlayerRatings] = useState<Record<string, Record<string, number>>>({});
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
