@@ -1609,7 +1609,15 @@ const styles = StyleSheet.create({
   roleDropdownList: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginTop: 8, backgroundColor: '#FFF', overflow: 'hidden' },
   roleDropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#EEE' },
   roleDropdownText: { fontSize: 16, color: '#000' },
-  playerFormPhotoBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingVertical: 20, gap: 8, borderStyle: 'dashed' },
+  playerFormPhotoBox: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingVertical: 20, gap: 8, borderStyle: 'dashed', minHeight: 100 },
   playerFormPhotoText: { fontSize: 16, color: '#999' },
+  playerPhotoPreview: { width: 80, height: 80, borderRadius: 12 },
+  playerFormPlaceholder: { fontSize: 16, color: '#999', flex: 1 },
   playerFormInputWithIcon: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14 },
+  // Date Picker Styles
+  datePickerModal: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.5)' },
+  datePickerContainer: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 20 },
+  datePickerHeader: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  datePickerCancel: { fontSize: 16, color: '#666' },
+  datePickerDone: { fontSize: 16, fontWeight: '700', color: '#000' },
 });
