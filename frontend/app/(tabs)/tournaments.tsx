@@ -1696,12 +1696,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   </View>
 
                   {/* Final Salva Button */}
-                  <TouchableOpacity style={[styles.salvaBtn, { marginBottom: 40 }]} onPress={() => {
-                    setShowExtraModal(false);
-                    Alert.alert('Salvato', 'Tutti i dati salvati');
-                  }}>
+                  <TouchableOpacity 
+                    style={[styles.salvaBtn, { marginBottom: 40 }, savingEvents && { opacity: 0.6 }]} 
+                    onPress={handleSaveExtraEvents}
+                    disabled={savingEvents}
+                  >
                     <Ionicons name="checkmark" size={20} color="#FFF" />
-                    <Text style={styles.salvaBtnText}>Salva</Text>
+                    <Text style={styles.salvaBtnText}>{savingEvents ? 'Salvataggio...' : 'Salva'}</Text>
                   </TouchableOpacity>
                 </>
               )}
