@@ -147,6 +147,75 @@ backend:
           
           This endpoint is fully ready for frontend player dropdown functionality.
 
+  - task: "API POST /api/matches/{match_id}/events/batch - Batch save match events with score update"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ BATCH EVENTS ENDPOINT FULLY TESTED AND WORKING
+          
+          Complete match events batch save functionality tested:
+          
+          🎯 Endpoint: POST /api/matches/{match_id}/events/batch
+          ✅ Accepts complex batch data with events, ratings, and match score
+          ✅ Successfully saves multiple events (goals, assists, yellow_cards, etc.)
+          ✅ Updates match score correctly (home_goals, away_goals)
+          ✅ Stores player ratings in separate collection
+          ✅ Updates cumulative player statistics automatically
+          ✅ Handles event types: goal, assist, yellow_card, red_card, penalty_goal, own_goal
+          
+          Test Results:
+          - Created match with 4 events (2 goals, 1 assist, 1 yellow card)
+          - Set match score to 2-1 correctly
+          - Saved 5 player ratings successfully
+          - All player stats updated in database
+          - Response includes updated match data and events count
+          
+          This endpoint is ready for live match management functionality.
+
+  - task: "API GET /api/players/{player_id}/stats - Get player cumulative statistics"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ PLAYER STATS ENDPOINT FULLY TESTED AND WORKING
+          
+          Complete player statistics retrieval functionality tested:
+          
+          🎯 Endpoint: GET /api/players/{player_id}/stats
+          ✅ Returns comprehensive PlayerStatsResponse with all required fields
+          ✅ Includes player info: player_id, full_name, role, photo
+          ✅ Provides game stats: goals, assists, yellow_cards, red_cards
+          ✅ Shows appearance data: appearances, minutes_played
+          ✅ Calculates average_rating from all match ratings
+          ✅ Aggregates data from match_events and player_ratings collections
+          
+          Verified Data Accuracy:
+          - Goals and assists correctly counted from match events
+          - Yellow/red cards properly tracked
+          - Average rating calculated accurately (8.5, 7.0, 7.5, etc.)
+          - Appearances counted from unique matches with events/ratings
+          - Minutes calculated (90 per appearance)
+          
+          Response Format Validation:
+          - All required fields present in JSON response
+          - Proper data types (integers for counts, float for rating)
+          - Player identification matches request parameter
+          
+          This endpoint is ready for player statistics display functionality.
+
 frontend:
   - task: "Dropdown giocatori dinamici nel modal Extra"
     implemented: true
