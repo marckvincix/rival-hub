@@ -679,6 +679,211 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Match Result Modal - Full Screen */}
+      <Modal visible={!!selectedMatch} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setSelectedMatch(null)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setSelectedMatch(null)}>
+              <View style={styles.backBtnRound}><Ionicons name="arrow-back" size={24} color="#000" /></View>
+            </TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.modalTitle}>{tournament.name}</Text>
+              <Text style={styles.modalSubtitle}>{tournament.category} - {tournament.status === 'active' ? 'In corso' : 'Bozza'}</Text>
+            </View>
+            <TouchableOpacity style={styles.eyeBtn}>
+              <Ionicons name="eye" size={24} color="#000" />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.resultModalContent} showsVerticalScrollIndicator={false}>
+            {selectedMatch && (
+              <>
+                {/* Score Input Card */}
+                <View style={styles.scoreCard}>
+                  <View style={styles.scoreRow}>
+                    <Text style={styles.scoreTeamName}>{getTeamName(selectedMatch.home_team_id)}</Text>
+                    <TextInput
+                      style={styles.scoreInputBox}
+                      keyboardType="numeric"
+                      value={String(selectedMatch.home_goals ?? 0)}
+                      onChangeText={(text) => {
+                        const val = parseInt(text) || 0;
+                        setSelectedMatch({ ...selectedMatch, home_goals: val });
+                      }}
+                      maxLength={2}
+                    />
+                    <Text style={styles.scoreDash}>-</Text>
+                    <TextInput
+                      style={styles.scoreInputBox}
+                      keyboardType="numeric"
+                      value={String(selectedMatch.away_goals ?? 0)}
+                      onChangeText={(text) => {
+                        const val = parseInt(text) || 0;
+                        setSelectedMatch({ ...selectedMatch, away_goals: val });
+                      }}
+                      maxLength={2}
+                    />
+                    <Text style={styles.scoreTeamName}>{getTeamName(selectedMatch.away_team_id)}</Text>
+                  </View>
+
+                  {/* Statistiche Section */}
+                  <View style={styles.statsSection}>
+                    <View style={styles.statsHeader}>
+                      <Text style={styles.statsHeaderText}>Statistiche</Text>
+                    </View>
+                    <View style={styles.statsContent}>
+                      {/* Home Team Events */}
+                      <View style={styles.statsColumn}>
+                        {matchEvents.filter(e => e.team === 'home').map((event, idx) => (
+                          <View key={idx} style={styles.statsRow}>
+                            <Text style={styles.statsPlayerName}>{event.player}</Text>
+                            {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
+                            {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
+                            {event.type === 'yellow' && <><View style={styles.yellowCard} /><Text style={styles.statsIcon}>⚽</Text></>}
+                            {event.type === 'red' && <View style={styles.redCard} />}
+                            {event.type === 'sub' && (
+                              <View style={styles.subEvent}>
+                                <Ionicons name="swap-horizontal" size={16} color="#000" />
+                                <Text style={styles.subPlayerOut}>{event.playerOut}</Text>
+                              </View>
+                            )}
+                          </View>
+                        ))}
+                        {matchEvents.filter(e => e.team === 'home').length === 0 && (
+                          <Text style={styles.noEventsText}>-</Text>
+                        )}
+                      </View>
+                      <View style={styles.statsVerticalLine} />
+                      {/* Away Team Events */}
+                      <View style={styles.statsColumn}>
+                        {matchEvents.filter(e => e.team === 'away').map((event, idx) => (
+                          <View key={idx} style={styles.statsRow}>
+                            {event.type === 'goal' && <Text style={styles.statsIcon}>⚽</Text>}
+                            {event.type === 'assist' && <Text style={styles.statsIcon}>🅰️</Text>}
+                            {event.type === 'yellow' && <><View style={styles.yellowCard} /><Text style={styles.statsIcon}>⚽</Text></>}
+                            {event.type === 'red' && <View style={styles.redCard} />}
+                            <Text style={styles.statsPlayerName}>{event.player}</Text>
+                          </View>
+                        ))}
+                        {matchEvents.filter(e => e.team === 'away').length === 0 && (
+                          <Text style={styles.noEventsText}>-</Text>
+                        )}
+                      </View>
+                    </View>
+                  </View>
+                </View>
+
+                {/* Bottom Buttons */}
+                <View style={styles.resultButtonsRow}>
+                  <TouchableOpacity 
+                    style={styles.finePartitaBtn}
+                    onPress={async () => {
+                      try {
+                        await handleUpdateResult(selectedMatch, selectedMatch.home_goals ?? 0, selectedMatch.away_goals ?? 0);
+                        setSelectedMatch(null);
+                        Alert.alert('Successo', 'Partita completata');
+                      } catch (e) {
+                        Alert.alert('Errore', 'Impossibile salvare');
+                      }
+                    }}
+                  >
+                    <Ionicons name="checkmark" size={22} color="#FFF" />
+                    <Text style={styles.finePartitaBtnText}>Fine partita</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={styles.extraBtn}
+                    onPress={() => setShowExtraModal(true)}
+                  >
+                    <Ionicons name="add" size={20} color="#FFF" />
+                    <Text style={styles.extraBtnText}>Extra</Text>
+                  </TouchableOpacity>
+                </View>
+              </>
+            )}
+          </ScrollView>
+        </SafeAreaView>
+
+        {/* Extra Modal */}
+        <Modal visible={showExtraModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowExtraModal(false)}>
+          <SafeAreaView style={styles.modalContainer}>
+            <ScrollView style={styles.extraModalContent} showsVerticalScrollIndicator={false}>
+              {/* Extra Header */}
+              <View style={styles.extraHeaderBox}>
+                <Text style={styles.extraHeaderText}>Extra</Text>
+              </View>
+
+              {selectedMatch && (
+                <>
+                  {/* Two Columns for Events */}
+                  <View style={styles.extraColumnsContainer}>
+                    {/* Home Team Column */}
+                    <View style={styles.extraColumn}>
+                      <View style={styles.extraColumnHeader}>
+                        <Text style={styles.extraColumnHeaderText}>{getTeamName(selectedMatch.home_team_id)}</Text>
+                      </View>
+                      <EventDropdown icon="football" label="Marcatore" />
+                      <EventDropdown icon="ellipse" label="Assist" />
+                      <EventDropdown icon="square" iconColor="#FFD700" label="Cart. Giallo" />
+                      <EventDropdown icon="square" iconColor="#FF0000" label="Cart. Rosso" />
+                      <EventDropdown icon="arrow-back" label="Sost. esce" />
+                      <EventDropdown icon="arrow-forward" label="Sost. entra" />
+                    </View>
+
+                    {/* Away Team Column */}
+                    <View style={styles.extraColumn}>
+                      <View style={styles.extraColumnHeader}>
+                        <Text style={styles.extraColumnHeaderText}>{getTeamName(selectedMatch.away_team_id)}</Text>
+                      </View>
+                      <EventDropdown icon="football" label="Marcatore" />
+                      <EventDropdown icon="ellipse" label="Assist" />
+                      <EventDropdown icon="square" iconColor="#FFD700" label="Cart. Giallo" />
+                      <EventDropdown icon="square" iconColor="#FF0000" label="Cart. Rosso" />
+                      <EventDropdown icon="arrow-back" label="Sost. esce" />
+                      <EventDropdown icon="arrow-forward" label="Sost. entra" />
+                    </View>
+                  </View>
+
+                  {/* Salva Button for Events */}
+                  <TouchableOpacity style={styles.salvaBtn} onPress={() => Alert.alert('Salvato', 'Eventi salvati')}>
+                    <Ionicons name="checkmark" size={20} color="#FFF" />
+                    <Text style={styles.salvaBtnText}>Salva</Text>
+                  </TouchableOpacity>
+
+                  {/* Voti Section */}
+                  <View style={styles.votiSection}>
+                    <View style={styles.votiHeader}>
+                      <Ionicons name="checkbox-outline" size={20} color="#FFF" />
+                      <Text style={styles.votiHeaderText}>Voti</Text>
+                    </View>
+
+                    {/* Home Team Ratings */}
+                    <TeamRatingsAccordion 
+                      teamName={getTeamName(selectedMatch.home_team_id)} 
+                      teamLetter={getTeamName(selectedMatch.home_team_id).charAt(0)}
+                    />
+
+                    {/* Away Team Ratings */}
+                    <TeamRatingsAccordion 
+                      teamName={getTeamName(selectedMatch.away_team_id)} 
+                      teamLetter={getTeamName(selectedMatch.away_team_id).charAt(0)}
+                    />
+                  </View>
+
+                  {/* Final Salva Button */}
+                  <TouchableOpacity style={[styles.salvaBtn, { marginBottom: 40 }]} onPress={() => {
+                    setShowExtraModal(false);
+                    Alert.alert('Salvato', 'Tutti i dati salvati');
+                  }}>
+                    <Ionicons name="checkmark" size={20} color="#FFF" />
+                    <Text style={styles.salvaBtnText}>Salva</Text>
+                  </TouchableOpacity>
+                </>
+              )}
+            </ScrollView>
+          </SafeAreaView>
+        </Modal>
+      </Modal>
     </SafeAreaView>
   );
 }
