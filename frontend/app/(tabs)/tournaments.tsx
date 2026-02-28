@@ -584,14 +584,62 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     }
   };
 
-  // Open Extra modal and load players
+  // Open Extra modal and load players + existing events
   const handleOpenExtraModal = async () => {
     if (selectedMatch) {
       await loadPlayersForExtraModal(selectedMatch.home_team_id, selectedMatch.away_team_id);
-      setExtraEvents({
-        home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
-        away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
-      });
+      
+      // Load existing events for this match
+      try {
+        const eventsRes = await api.get(`/api/matches/${selectedMatch.id}/events`);
+        const existingEvents = eventsRes.data || [];
+        
+        // Transform events into the extraEvents structure
+        const newExtraEvents = {
+          home: { marcatore: [] as string[], assist: [] as string[], giallo: [] as string[], rosso: [] as string[], sostEsce: [] as string[], sostEntra: [] as string[] },
+          away: { marcatore: [] as string[], assist: [] as string[], giallo: [] as string[], rosso: [] as string[], sostEsce: [] as string[], sostEntra: [] as string[] }
+        };
+        
+        existingEvents.forEach((event: any) => {
+          const isHome = event.team_id === selectedMatch.home_team_id;
+          const team = isHome ? 'home' : 'away';
+          
+          switch (event.event_type) {
+            case 'goal':
+              newExtraEvents[team].marcatore.push(event.player_id);
+              break;
+            case 'assist':
+              newExtraEvents[team].assist.push(event.player_id);
+              break;
+            case 'yellow_card':
+              newExtraEvents[team].giallo.push(event.player_id);
+              break;
+            case 'red_card':
+              newExtraEvents[team].rosso.push(event.player_id);
+              break;
+            case 'substitution_out':
+              newExtraEvents[team].sostEsce.push(event.player_id);
+              break;
+            case 'substitution_in':
+              newExtraEvents[team].sostEntra.push(event.player_id);
+              break;
+          }
+        });
+        
+        setExtraEvents(newExtraEvents);
+        console.log('Loaded existing events:', newExtraEvents);
+      } catch (error) {
+        console.error('Error loading existing events:', error);
+        // Reset to empty if loading fails
+        setExtraEvents({
+          home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
+          away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
+        });
+      }
+      
+      // Also load existing ratings
+      setPlayerRatings({});
+      
       setShowExtraModal(true);
     }
   };
