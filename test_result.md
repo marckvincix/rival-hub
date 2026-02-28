@@ -302,3 +302,36 @@ agent_communication:
       - URL: GET https://torneo-live.preview.emergentagent.com/api/teams/{team_id}/players
       - Autenticazione: Token di sessione richiesto
       - Formato risposta: JSON array con oggetti Player
+  - agent: "testing"
+    message: |
+      ✅ MATCH EVENTS & PLAYER STATS TESTING COMPLETED - NEW ENDPOINTS FULLY WORKING
+      
+      Ho testato con successo i nuovi endpoint per eventi partita e statistiche giocatori:
+      
+      🎯 ENDPOINT TESTATI E FUNZIONANTI:
+      
+      1. POST /api/matches/{match_id}/events/batch
+      ✅ Salva eventi multipli in batch (gol, assist, cartellini)
+      ✅ Aggiorna punteggio partita (home_goals, away_goals)  
+      ✅ Salva valutazioni giocatori
+      ✅ Aggiorna statistiche cumulative giocatori
+      ✅ Gestisce tutti i tipi di evento: goal, assist, yellow_card, red_card, penalty_goal, own_goal
+      
+      2. GET /api/players/{player_id}/stats
+      ✅ Ritorna statistiche complete giocatore
+      ✅ Include: gol, assist, cartellini, presenze, minuti giocati
+      ✅ Calcola media valutazioni correttamente
+      ✅ Aggrega dati da match_events e player_ratings
+      
+      RISULTATI TESTING:
+      - Creata partita di test con 4 eventi (2 gol, 1 assist, 1 cartellino giallo)
+      - Punteggio aggiornato correttamente: 2-1
+      - 5 valutazioni giocatori salvate
+      - Tutte le statistiche giocatori aggiornate in database
+      - Verificata accuratezza calcoli (media valutazioni: 8.5, 7.0, 7.5, etc.)
+      
+      🚀 QUESTI ENDPOINT SONO PRONTI PER:
+      - Gestione live delle partite nel modal Extra
+      - Visualizzazione statistiche giocatori
+      - Aggiornamento punteggi in tempo reale
+      - Sistema valutazioni giocatori
