@@ -794,7 +794,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                 <View style={styles.playerRightSection}>
                                   <TouchableOpacity 
                                     style={styles.playerStatsBtn}
-                                    onPress={() => { setSelectedPlayerForStats(player); setShowPlayerStatsModal(true); }}
+                                    onPress={() => handleOpenPlayerStats(player)}
                                   >
                                     <Ionicons name="stats-chart" size={18} color="#666" />
                                   </TouchableOpacity>
