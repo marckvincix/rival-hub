@@ -603,7 +603,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         )}
       </ScrollView>
 
-      {/* Add Team Modal */}
+      {/* Add Team Modal - Redesigned */}
       <Modal visible={showAddTeamModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddTeamModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
@@ -611,10 +611,131 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <Text style={styles.modalTitle}>Nuova Squadra</Text>
             <View style={{ width: 60 }} />
           </View>
-          <View style={styles.modalContent}>
-            <Input label="Nome Squadra" placeholder="es. FC Juventus" value={newTeamName} onChangeText={setNewTeamName} />
-            <Button title="Aggiungi" onPress={handleAddTeam} fullWidth size="large" />
+          <View style={styles.modalContentSimple}>
+            <Text style={styles.inputLabelSimple}>Nome Squadra</Text>
+            <View style={styles.inputBoxSimple}>
+              <TextInput
+                style={styles.inputTextSimple}
+                placeholder="es. SSC Napoli"
+                placeholderTextColor="#999"
+                value={newTeamName}
+                onChangeText={setNewTeamName}
+              />
+            </View>
+            <TouchableOpacity style={styles.addBtnBlack} onPress={handleAddTeam}>
+              <Ionicons name="add" size={20} color="#FFF" />
+              <Text style={styles.addBtnBlackText}>Aggiungi</Text>
+            </TouchableOpacity>
           </View>
+        </SafeAreaView>
+      </Modal>
+
+      {/* Add Player Modal - Full Screen */}
+      <Modal visible={showAddPlayerModal} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowAddPlayerModal(false)}>
+        <SafeAreaView style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <TouchableOpacity onPress={() => setShowAddPlayerModal(false)}>
+              <View style={styles.backBtnRound}><Ionicons name="arrow-back" size={24} color="#000" /></View>
+            </TouchableOpacity>
+            <View style={{ flex: 1, marginLeft: 12 }}>
+              <Text style={styles.modalTitle}>{tournament.name}</Text>
+              <Text style={styles.modalSubtitle}>Aggiungi Giocatore</Text>
+            </View>
+          </View>
+          <ScrollView style={styles.playerFormContent} showsVerticalScrollIndicator={false}>
+            {/* Team Selector (closed dropdown showing selected team) */}
+            {selectedTeamForPlayer && (
+              <View style={styles.teamSelectorClosed}>
+                <View style={styles.teamSelectorAvatar}>
+                  <Text style={styles.teamSelectorAvatarText}>{selectedTeamForPlayer.name.charAt(0).toUpperCase()}</Text>
+                </View>
+                <Text style={styles.teamSelectorName}>{selectedTeamForPlayer.name}</Text>
+                <Ionicons name="chevron-down" size={20} color="#000" />
+              </View>
+            )}
+
+            {/* Nome giocatore */}
+            <Text style={styles.playerFormLabel}>Nome giocatore</Text>
+            <View style={styles.playerFormInputBox}>
+              <TextInput
+                style={styles.playerFormInput}
+                placeholder="es. Mario Rossi"
+                placeholderTextColor="#999"
+                value={newPlayerData.name}
+                onChangeText={(text) => setNewPlayerData({ ...newPlayerData, name: text })}
+              />
+            </View>
+
+            {/* Numero + Ruolo side by side */}
+            <View style={styles.playerFormRow}>
+              <View style={styles.playerFormColSmall}>
+                <Text style={styles.playerFormLabel}>Numero</Text>
+                <View style={styles.playerFormInputBox}>
+                  <TextInput
+                    style={styles.playerFormInput}
+                    placeholder="10"
+                    placeholderTextColor="#999"
+                    keyboardType="numeric"
+                    maxLength={2}
+                    value={newPlayerData.number}
+                    onChangeText={(text) => setNewPlayerData({ ...newPlayerData, number: text })}
+                  />
+                </View>
+              </View>
+              <View style={styles.playerFormColLarge}>
+                <Text style={styles.playerFormLabel}>Ruolo</Text>
+                <TouchableOpacity 
+                  style={styles.playerFormDropdown}
+                  onPress={() => setShowRoleDropdown(!showRoleDropdown)}
+                >
+                  <Text style={newPlayerData.role ? styles.playerFormDropdownText : styles.playerFormDropdownPlaceholder}>
+                    {newPlayerData.role || 'Seleziona ruolo'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={20} color="#000" />
+                </TouchableOpacity>
+                {showRoleDropdown && (
+                  <View style={styles.roleDropdownList}>
+                    {PLAYER_ROLES.map((role) => (
+                      <TouchableOpacity 
+                        key={role} 
+                        style={styles.roleDropdownItem}
+                        onPress={() => { setNewPlayerData({ ...newPlayerData, role }); setShowRoleDropdown(false); }}
+                      >
+                        <Text style={styles.roleDropdownText}>{role}</Text>
+                        {newPlayerData.role === role && <Ionicons name="checkmark" size={18} color="#000" />}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Foto */}
+            <Text style={styles.playerFormLabel}>Foto</Text>
+            <TouchableOpacity style={styles.playerFormPhotoBox}>
+              <Ionicons name="cloud-upload-outline" size={24} color="#999" />
+              <Text style={styles.playerFormPhotoText}>Carica immagine</Text>
+            </TouchableOpacity>
+
+            {/* Data di nascita */}
+            <Text style={styles.playerFormLabel}>Data di nascita</Text>
+            <View style={styles.playerFormInputWithIcon}>
+              <TextInput
+                style={styles.playerFormInput}
+                placeholder="GG/MM/AAAA"
+                placeholderTextColor="#999"
+                value={newPlayerData.birthDate}
+                onChangeText={(text) => setNewPlayerData({ ...newPlayerData, birthDate: text })}
+              />
+              <Ionicons name="calendar-outline" size={22} color="#000" />
+            </View>
+
+            {/* Aggiungi Button */}
+            <TouchableOpacity style={[styles.addBtnBlack, { marginTop: 32, marginBottom: 40 }]} onPress={handleAddPlayer}>
+              <Text style={styles.addBtnBlackText}>Aggiungi</Text>
+              <Ionicons name="add" size={20} color="#FFF" />
+            </TouchableOpacity>
+          </ScrollView>
         </SafeAreaView>
       </Modal>
 
