@@ -257,8 +257,8 @@ class BackendTester:
         self.log("🚀 Starting Player Dropdown API Testing...")
         self.log("=" * 60)
         
-        # Step 1: Login
-        if not self.test_login():
+        # Step 1: Login/Register
+        if not self.test_register_or_login():
             return False
         
         # Step 2: Get existing tournaments
