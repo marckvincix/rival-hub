@@ -651,6 +651,15 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       const homeGoals = extraEvents.home.marcatore.length;
       const awayGoals = extraEvents.away.marcatore.length;
       
+      console.log('Saving events:', {
+        events,
+        eventsCount: events.length,
+        homeGoals,
+        awayGoals,
+        extraEvents,
+        playerRatings
+      });
+      
       // Send batch request to backend
       const response = await api.post(`/api/matches/${selectedMatch.id}/events/batch`, {
         events,
@@ -658,6 +667,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         home_goals: homeGoals,
         away_goals: awayGoals
       });
+      
+      console.log('Save response:', response.data);
       
       // Update local match state with new score
       const updatedMatch = {
