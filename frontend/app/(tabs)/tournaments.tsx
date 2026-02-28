@@ -299,6 +299,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (error) {} finally { setLoading(false); }
   };
 
+  // Load player statistics from backend
+  const loadPlayerStats = async (playerId: string) => {
+    setLoadingPlayerStats(true);
+    try {
+      const response = await api.get(`/api/players/${playerId}/stats`);
+      setPlayerStats(response.data);
+    } catch (error) {
+      console.error('Error loading player stats:', error);
+      setPlayerStats(null);
+    } finally {
+      setLoadingPlayerStats(false);
+    }
+  };
+
+  // Open player stats modal
+  const handleOpenPlayerStats = (player: any) => {
+    setSelectedPlayerForStats(player);
+    setPlayerStats(null);
+    setShowPlayerStatsModal(true);
+    loadPlayerStats(player.id);
+  };
+
   // Memoize grouped matches to prevent re-computation on every render
   const groupedMatches = React.useMemo(() => {
     const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
