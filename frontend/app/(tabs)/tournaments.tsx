@@ -365,6 +365,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     await loadMatchEvents(match.id, match);
   };
 
+  // Open match statistics modal
+  const handleOpenMatchStats = async (match: any) => {
+    setSelectedMatchForStats(match);
+    setMatchStatsEvents([]);
+    setLoadingMatchStats(true);
+    setShowMatchStatsModal(true);
+    
+    try {
+      const response = await api.get(`/api/matches/${match.id}/events`);
+      const events = response.data || [];
+      setMatchStatsEvents(events);
+    } catch (error) {
+      console.error('Error loading match stats:', error);
+      setMatchStatsEvents([]);
+    } finally {
+      setLoadingMatchStats(false);
+    }
+  };
+
   // Memoize grouped matches to prevent re-computation on every render
   const groupedMatches = React.useMemo(() => {
     const matchesByRound = matches.reduce((acc: Record<string, any[]>, match: any) => {
