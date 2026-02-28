@@ -1413,7 +1413,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.extraBtn}
-                    onPress={() => setShowExtraModal(true)}
+                    onPress={handleOpenExtraModal}
                   >
                     <Ionicons name="add" size={20} color="#FFF" />
                     <Text style={styles.extraBtnText}>Extra</Text>
