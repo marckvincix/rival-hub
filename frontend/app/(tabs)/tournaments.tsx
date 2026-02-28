@@ -1591,12 +1591,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   style={styles.newGiornataInput}
                   placeholder={`Giornata ${nextRoundNumber}`}
                   placeholderTextColor="#999"
-                  value={newMatchData.round && !existingRounds.includes(newMatchData.round) ? newMatchData.round : ''}
-                  onChangeText={(text) => setNewMatchData({ ...newMatchData, round: text })}
+                  value={newRoundInput}
+                  onChangeText={setNewRoundInput}
                 />
                 <TouchableOpacity 
                   style={styles.newGiornataAddBtn}
-                  onPress={() => setNewMatchData({ ...newMatchData, round: `Giornata ${nextRoundNumber}` })}
+                  onPress={handleAddNewRound}
                 >
                   <Ionicons name="add" size={24} color="#000" />
                 </TouchableOpacity>
