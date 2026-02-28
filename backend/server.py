@@ -1087,16 +1087,6 @@ async def create_match_event(
     
     return MatchEvent(**event_doc)
 
-@api_router.get("/matches/{match_id}/events", response_model=List[MatchEvent])
-async def get_match_events(match_id: str):
-    """Get all events for a match"""
-    events = await db.match_events.find(
-        {"match_id": match_id},
-        {"_id": 0}
-    ).sort("minute", 1).to_list(500)
-    
-    return [MatchEvent(**e) for e in events]
-
 @api_router.delete("/events/{event_id}")
 async def delete_event(
     event_id: str,
