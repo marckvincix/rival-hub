@@ -657,15 +657,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       });
       
       // Update local match state with new score
-      setSelectedMatch({
+      const updatedMatch = {
         ...selectedMatch,
         home_goals: homeGoals,
         away_goals: awayGoals
-      });
+      };
+      setSelectedMatch(updatedMatch);
       
       // Refresh matches list to show updated score
       const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches`);
       setMatches(matchesRes.data);
+      
+      // Reload events to show in the result screen
+      await loadMatchEvents(selectedMatch.id);
       
       Alert.alert('Salvato', 'Statistiche salvate correttamente');
       setShowExtraModal(false);
