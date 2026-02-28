@@ -188,6 +188,14 @@ export default function TournamentPublicPage() {
                         </View>
                         <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                       </View>
+                      {/* Statistiche Button */}
+                      <TouchableOpacity 
+                        style={styles.statsButton} 
+                        onPress={() => handleOpenMatchStats(match)}
+                      >
+                        <Ionicons name="stats-chart" size={14} color="#666" />
+                        <Text style={styles.statsButtonText}>Statistiche</Text>
+                      </TouchableOpacity>
                     </View>
                   ))}
                 </View>
