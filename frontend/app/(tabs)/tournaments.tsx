@@ -1465,6 +1465,8 @@ const styles = StyleSheet.create({
   playerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
   playerNameBold: { fontSize: 15, fontWeight: '700', color: '#000' },
   playerRoleText: { fontSize: 13, color: '#666' },
+  playerRightSection: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  playerDeleteBtn: { padding: 4 },
   playerNumberBox: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   playerNumberLabel: { fontSize: 13, color: '#666' },
   playerNumberValue: { fontSize: 16, fontWeight: '700', color: '#000', minWidth: 24, textAlign: 'right' },
