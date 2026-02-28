@@ -1935,6 +1935,11 @@ const styles = StyleSheet.create({
   eventDropdown: { flexDirection: 'row', alignItems: 'center', borderWidth: 1.5, borderColor: '#000', borderRadius: 12, paddingHorizontal: 10, paddingVertical: 10, marginBottom: 8 },
   cardIcon2: { width: 12, height: 16, borderRadius: 2, marginRight: 6 },
   eventDropdownLabel: { flex: 1, fontSize: 12, color: '#000', marginLeft: 6 },
+  eventDropdownLabelSelected: { fontWeight: '600' },
+  eventDropdownList: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#000', borderRadius: 12, marginTop: -6, marginBottom: 12, maxHeight: 160 },
+  eventDropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  eventDropdownItemText: { fontSize: 12, color: '#000' },
+  eventDropdownItemTextEmpty: { fontSize: 12, color: '#999', paddingHorizontal: 12, paddingVertical: 10 },
   salvaBtn: { backgroundColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, gap: 8, marginBottom: 20 },
   salvaBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   // Voti Section
