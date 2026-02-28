@@ -280,7 +280,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
     away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
   });
+  const [playerRatings, setPlayerRatings] = useState<Record<string, number>>({});
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const [savingEvents, setSavingEvents] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
