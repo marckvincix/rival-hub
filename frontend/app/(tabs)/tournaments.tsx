@@ -270,6 +270,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
   const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<any>(null);
+  // Extra Modal state for match events
+  const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
+  const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
+  const [extraEvents, setExtraEvents] = useState({
+    home: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' },
+    away: { marcatore: '', assist: '', giallo: '', rosso: '', sostEsce: '', sostEntra: '' }
+  });
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
