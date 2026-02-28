@@ -1653,10 +1653,30 @@ function EventDropdown({
 function TeamRatingsAccordion({ teamName, teamLetter, players = [] }: { teamName: string; teamLetter: string; players?: any[] }) {
   const [isExpanded, setIsExpanded] = useState(true);
   const [playerRatings, setPlayerRatings] = useState<Record<string, number>>({});
+  const [showRatingPicker, setShowRatingPicker] = useState(false);
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const [selectedPlayerName, setSelectedPlayerName] = useState('');
 
   const handleRatingChange = (playerId: string, rating: number) => {
     setPlayerRatings(prev => ({ ...prev, [playerId]: rating }));
   };
+
+  const openRatingPicker = (playerId: string, playerName: string) => {
+    setSelectedPlayerId(playerId);
+    setSelectedPlayerName(playerName);
+    setShowRatingPicker(true);
+  };
+
+  const selectRating = (rating: number) => {
+    if (selectedPlayerId) {
+      handleRatingChange(selectedPlayerId, rating);
+    }
+    setShowRatingPicker(false);
+    setSelectedPlayerId(null);
+  };
+
+  // Available ratings from 1 to 10 with half points
+  const ratings = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5, 8, 8.5, 9, 9.5, 10];
 
   return (
     <View style={styles.teamAccordion}>
@@ -1674,44 +1694,100 @@ function TeamRatingsAccordion({ teamName, teamLetter, players = [] }: { teamName
               <Text style={styles.noPlayersRatingText}>Nessun giocatore in rosa</Text>
             </View>
           ) : (
-            players.map((player) => (
-              <View key={player.id} style={styles.playerRatingRow}>
-                <View style={styles.playerInfo}>
-                  <Text style={styles.playerName}>{player.name}</Text>
-                  <Text style={styles.playerRole}>{player.role || '-'}</Text>
+            players.map((player) => {
+              const hasRating = playerRatings[player.id] !== undefined;
+              return (
+                <View key={player.id} style={styles.playerRatingRow}>
+                  <View style={styles.playerInfo}>
+                    <Text style={styles.playerName}>{player.name}</Text>
+                    <Text style={styles.playerRole}>{player.role || '-'}</Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={[styles.votoBtn, hasRating && styles.votoBtnEdit]}
+                    onPress={() => openRatingPicker(player.id, player.name)}
+                  >
+                    <Ionicons name={hasRating ? "pencil" : "add"} size={14} color="#FFF" />
+                    <Text style={styles.votoBtnText}>{hasRating ? 'Modifica' : 'Voto'}</Text>
+                  </TouchableOpacity>
+                  <Ionicons 
+                    name={hasRating ? "checkbox" : "checkbox-outline"} 
+                    size={20} 
+                    color={hasRating ? "#4CAF50" : "#CCC"} 
+                    style={{ marginHorizontal: 8 }} 
+                  />
+                  {/* Only show rating if assigned */}
+                  {hasRating ? (
+                    <Text style={styles.ratingNumber}>{playerRatings[player.id]}</Text>
+                  ) : (
+                    <View style={styles.ratingPlaceholder} />
+                  )}
                 </View>
-                <TouchableOpacity 
-                  style={styles.votoBtn}
-                  onPress={() => {
-                    Alert.prompt && Alert.prompt(
-                      'Inserisci Voto',
-                      `Voto per ${player.name}`,
-                      (text) => {
-                        const val = parseFloat(text);
-                        if (!isNaN(val) && val >= 0 && val <= 10) {
-                          handleRatingChange(player.id, val);
-                        }
-                      },
-                      'plain-text',
-                      String(playerRatings[player.id] || '')
-                    );
-                  }}
-                >
-                  <Ionicons name="add" size={14} color="#FFF" />
-                  <Text style={styles.votoBtnText}>Voto</Text>
-                </TouchableOpacity>
-                <Ionicons 
-                  name={playerRatings[player.id] ? "checkbox" : "checkbox-outline"} 
-                  size={20} 
-                  color="#000" 
-                  style={{ marginHorizontal: 8 }} 
-                />
-                <Text style={styles.ratingNumber}>{playerRatings[player.id] || '-'}</Text>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
       )}
+
+      {/* Rating Picker Modal */}
+      <Modal 
+        visible={showRatingPicker} 
+        animationType="fade" 
+        transparent 
+        onRequestClose={() => setShowRatingPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.ratingPickerOverlay} 
+          activeOpacity={1} 
+          onPress={() => setShowRatingPicker(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.ratingPickerContainer}>
+            {/* Header */}
+            <View style={styles.ratingPickerHeader}>
+              <Text style={styles.ratingPickerTitle}>Assegna Voto</Text>
+              <TouchableOpacity onPress={() => setShowRatingPicker(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Player Name */}
+            <Text style={styles.ratingPickerPlayerName}>{selectedPlayerName}</Text>
+            
+            {/* Rating Grid */}
+            <View style={styles.ratingGrid}>
+              {ratings.map((rating) => {
+                const isSelected = selectedPlayerId && playerRatings[selectedPlayerId] === rating;
+                return (
+                  <TouchableOpacity 
+                    key={rating} 
+                    style={[styles.ratingGridItem, isSelected && styles.ratingGridItemSelected]}
+                    onPress={() => selectRating(rating)}
+                  >
+                    <Text style={[styles.ratingGridText, isSelected && styles.ratingGridTextSelected]}>
+                      {rating}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            {/* Quick select common ratings */}
+            <View style={styles.quickRatings}>
+              <Text style={styles.quickRatingsLabel}>Voti rapidi:</Text>
+              <View style={styles.quickRatingsRow}>
+                {[5, 5.5, 6, 6.5, 7, 7.5, 8].map((r) => (
+                  <TouchableOpacity 
+                    key={r} 
+                    style={styles.quickRatingBtn}
+                    onPress={() => selectRating(r)}
+                  >
+                    <Text style={styles.quickRatingText}>{r}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 }
