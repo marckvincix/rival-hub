@@ -443,24 +443,36 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     if (!newPlayerData.name.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
     if (!selectedTeamForPlayer) return;
     
-    const newPlayer = {
-      id: `player_${Date.now()}`,
-      name: newPlayerData.name,
-      number: newPlayerData.number ? parseInt(newPlayerData.number) : null,
-      role: newPlayerData.role || null,
-      photo: newPlayerData.photo || null,
-      birthDate: newPlayerData.birthDate || null,
-    };
-    
-    // Add to local state (in a real app, this would be an API call)
-    setTeamPlayers(prev => ({
-      ...prev,
-      [selectedTeamForPlayer.id]: [...(prev[selectedTeamForPlayer.id] || []), newPlayer]
-    }));
-    
-    setShowAddPlayerModal(false);
-    setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
-    Alert.alert('Successo', 'Giocatore aggiunto');
+    try {
+      // Call backend API to create player
+      const response = await api.post(`/api/teams/${selectedTeamForPlayer.id}/players`, {
+        full_name: newPlayerData.name,
+        number: newPlayerData.number ? parseInt(newPlayerData.number) : null,
+        role: newPlayerData.role || null,
+        photo: newPlayerData.photo || null,
+        birth_date: newPlayerData.birthDate || null,
+      });
+      
+      // Add to local state from API response
+      const savedPlayer = response.data;
+      setTeamPlayers(prev => ({
+        ...prev,
+        [selectedTeamForPlayer.id]: [...(prev[selectedTeamForPlayer.id] || []), {
+          id: savedPlayer.id,
+          name: savedPlayer.full_name,
+          number: savedPlayer.number,
+          role: savedPlayer.role,
+          photo: savedPlayer.photo,
+          birthDate: savedPlayer.birth_date,
+        }]
+      }));
+      
+      setShowAddPlayerModal(false);
+      setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
+      Alert.alert('Successo', 'Giocatore aggiunto');
+    } catch (error: any) {
+      Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere giocatore');
+    }
   };
 
   const handleDeleteTeamConfirm = (teamId: string, teamName: string) => {
@@ -474,23 +486,54 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     );
   };
 
-  const toggleTeamExpand = (teamId: string) => {
-    setExpandedTeamId(expandedTeamId === teamId ? null : teamId);
+  // Load players when expanding a team
+  const loadTeamPlayers = async (teamId: string) => {
+    try {
+      const response = await api.get(`/api/teams/${teamId}/players`);
+      const players = response.data.map((p: any) => ({
+        id: p.id,
+        name: p.full_name,
+        number: p.number,
+        role: p.role,
+        photo: p.photo,
+        birthDate: p.birth_date,
+      }));
+      setTeamPlayers(prev => ({ ...prev, [teamId]: players }));
+    } catch (error) {
+      console.error('Error loading players:', error);
+    }
+  };
+
+  const toggleTeamExpand = async (teamId: string) => {
+    if (expandedTeamId === teamId) {
+      setExpandedTeamId(null);
+    } else {
+      setExpandedTeamId(teamId);
+      // Load players from backend if not already loaded
+      if (!teamPlayers[teamId]) {
+        await loadTeamPlayers(teamId);
+      }
+    }
   };
 
   const PLAYER_ROLES = ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
 
-  const handleDeletePlayer = (teamId: string, playerId: string) => {
+  const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(
       'Elimina Giocatore',
       'Sei sicuro di voler eliminare questo giocatore?',
       [
         { text: 'Annulla', style: 'cancel' },
-        { text: 'Elimina', style: 'destructive', onPress: () => {
-          setTeamPlayers(prev => ({
-            ...prev,
-            [teamId]: (prev[teamId] || []).filter(p => p.id !== playerId)
-          }));
+        { text: 'Elimina', style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/api/players/${playerId}`);
+            setTeamPlayers(prev => ({
+              ...prev,
+              [teamId]: (prev[teamId] || []).filter(p => p.id !== playerId)
+            }));
+          } catch (error: any) {
+            Alert.alert('Errore', 'Impossibile eliminare giocatore');
+          }
         }}
       ]
     );
