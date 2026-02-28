@@ -971,11 +971,20 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       </View>
                       {roundMatches.map((match: any) => (
                         <View key={match.id} style={styles.matchPillCard}>
-                          <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
-                          <Text style={styles.matchPillScore}>
-                            {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
-                          </Text>
-                          <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                          <View style={styles.matchPillMain}>
+                            <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
+                            <Text style={styles.matchPillScore}>
+                              {match.home_goals ?? 0} - {match.away_goals ?? 0}
+                            </Text>
+                            <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                          </View>
+                          <TouchableOpacity 
+                            style={styles.matchStatsBtn}
+                            onPress={() => handleOpenMatchStats(match)}
+                          >
+                            <Ionicons name="stats-chart" size={16} color="#666" />
+                            <Text style={styles.matchStatsBtnText}>Statistiche</Text>
+                          </TouchableOpacity>
                         </View>
                       ))}
                     </View>
