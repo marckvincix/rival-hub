@@ -405,6 +405,22 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   const PLAYER_ROLES = ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
 
+  const handleDeletePlayer = (teamId: string, playerId: string) => {
+    Alert.alert(
+      'Elimina Giocatore',
+      'Sei sicuro di voler eliminare questo giocatore?',
+      [
+        { text: 'Annulla', style: 'cancel' },
+        { text: 'Elimina', style: 'destructive', onPress: () => {
+          setTeamPlayers(prev => ({
+            ...prev,
+            [teamId]: (prev[teamId] || []).filter(p => p.id !== playerId)
+          }));
+        }}
+      ]
+    );
+  };
+
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
 
   const getStatusLabel = (status: string) => {
