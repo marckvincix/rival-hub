@@ -322,14 +322,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   };
 
   // Load match events from backend
-  const loadMatchEvents = async (matchId: string) => {
+  const loadMatchEvents = async (matchId: string, match?: any) => {
     try {
       const response = await api.get(`/api/matches/${matchId}/events`);
       const events = response.data || [];
       
+      // Use the passed match or fall back to selectedMatch
+      const currentMatch = match || selectedMatch;
+      
       // Transform events to the format expected by the UI
       const transformedEvents = events.map((event: any) => {
-        const isHomeTeam = selectedMatch && event.team_id === selectedMatch.home_team_id;
+        const isHomeTeam = currentMatch && event.team_id === currentMatch.home_team_id;
         return {
           team: isHomeTeam ? 'home' : 'away',
           type: event.event_type === 'goal' ? 'goal' : 
@@ -354,7 +357,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleOpenMatchResult = async (match: any) => {
     setSelectedMatch(match);
     setMatchEvents([]);
-    await loadMatchEvents(match.id);
+    await loadMatchEvents(match.id, match);
   };
 
   // Memoize grouped matches to prevent re-computation on every render
