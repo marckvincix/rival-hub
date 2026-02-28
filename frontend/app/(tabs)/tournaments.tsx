@@ -410,13 +410,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   // Get existing round names and next round number
   const existingRounds = React.useMemo(() => {
-    const rounds = [...new Set(matches.map(m => m.round))].filter(Boolean);
-    return rounds.sort((a, b) => {
+    const matchRounds = [...new Set(matches.map(m => m.round))].filter(Boolean);
+    const allRounds = [...new Set([...matchRounds, ...customRounds])];
+    return allRounds.sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
       return numA - numB;
     });
-  }, [matches]);
+  }, [matches, customRounds]);
 
   const nextRoundNumber = React.useMemo(() => {
     if (existingRounds.length === 0) return 1;
@@ -424,6 +425,18 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     const num = parseInt(lastRound.replace(/\D/g, '')) || 0;
     return num + 1;
   }, [existingRounds]);
+
+  // Add new round to list
+  const handleAddNewRound = () => {
+    const roundName = newRoundInput.trim() || `Giornata ${nextRoundNumber}`;
+    if (!existingRounds.includes(roundName)) {
+      setCustomRounds(prev => [...prev, roundName]);
+      setNewMatchData({ ...newMatchData, round: roundName });
+    } else {
+      setNewMatchData({ ...newMatchData, round: roundName });
+    }
+    setNewRoundInput('');
+  };
 
   const handleAddTeam = async () => {
     if (!newTeamName.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
