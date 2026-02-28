@@ -1871,34 +1871,41 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   );
 }
 
-// Helper Component: Event Dropdown with Multi-Select
+// Helper Component: Event Dropdown with Multi-Select (allows duplicates)
 function EventDropdown({ 
   icon, 
   iconColor = '#000', 
   label, 
   players = [],
   selectedIds = [],
-  onToggle
+  onAdd,
+  onRemoveAt
 }: { 
   icon: string; 
   iconColor?: string; 
   label: string;
   players?: any[];
   selectedIds?: string[];
-  onToggle?: (playerId: string) => void;
+  onAdd?: (playerId: string) => void;
+  onRemoveAt?: (index: number) => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const selectedPlayers = players.filter(p => selectedIds.includes(p.id));
   
-  const handleTogglePlayer = (playerId: string) => {
-    if (onToggle) {
-      onToggle(playerId);
+  // Get player info for each selected ID (allows duplicates)
+  const selectedEntries = selectedIds.map((id, index) => {
+    const player = players.find(p => p.id === id);
+    return { index, playerId: id, player };
+  }).filter(e => e.player);
+  
+  const handleAddPlayer = (playerId: string) => {
+    if (onAdd) {
+      onAdd(playerId);
     }
   };
 
-  const handleRemovePlayer = (playerId: string) => {
-    if (onToggle) {
-      onToggle(playerId);
+  const handleRemoveEntry = (index: number) => {
+    if (onRemoveAt) {
+      onRemoveAt(index);
     }
   };
   
@@ -1917,17 +1924,17 @@ function EventDropdown({
         <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#000" />
       </TouchableOpacity>
 
-      {/* Selected Players Tags */}
-      {selectedPlayers.length > 0 && (
+      {/* Selected Players Tags (shows all entries including duplicates) */}
+      {selectedEntries.length > 0 && (
         <View style={styles.selectedTagsContainer}>
-          {selectedPlayers.map((player) => (
-            <View key={player.id} style={styles.selectedTag}>
+          {selectedEntries.map((entry) => (
+            <View key={`${entry.playerId}-${entry.index}`} style={styles.selectedTag}>
               <Text style={styles.selectedTagText} numberOfLines={1}>
-                {player.number ? `#${player.number} ` : ''}{player.name}
+                {entry.player.number ? `#${entry.player.number} ` : ''}{entry.player.name}
               </Text>
               <TouchableOpacity 
                 style={styles.selectedTagRemove}
-                onPress={() => handleRemovePlayer(player.id)}
+                onPress={() => handleRemoveEntry(entry.index)}
               >
                 <Ionicons name="close" size={14} color="#FFF" />
               </TouchableOpacity>
@@ -1936,22 +1943,27 @@ function EventDropdown({
         </View>
       )}
 
-      {/* Dropdown List */}
+      {/* Dropdown List - always allows adding (no toggle) */}
       {isOpen && players.length > 0 && (
         <View style={styles.eventDropdownList}>
           <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
             {players.map((player) => {
-              const isSelected = selectedIds.includes(player.id);
+              const count = selectedIds.filter(id => id === player.id).length;
               return (
                 <TouchableOpacity 
                   key={player.id} 
-                  style={[styles.eventDropdownItem, isSelected && styles.eventDropdownItemSelected]}
-                  onPress={() => handleTogglePlayer(player.id)}
+                  style={styles.eventDropdownItem}
+                  onPress={() => handleAddPlayer(player.id)}
                 >
-                  <Text style={[styles.eventDropdownItemText, isSelected && styles.eventDropdownItemTextSelected]}>
+                  <Text style={styles.eventDropdownItemText}>
                     {player.number ? `#${player.number} ` : ''}{player.name}
                   </Text>
-                  {isSelected && <Ionicons name="checkmark-circle" size={18} color="#4CAF50" />}
+                  {count > 0 && (
+                    <View style={styles.selectedCountBadge}>
+                      <Text style={styles.selectedCountText}>{count}</Text>
+                    </View>
+                  )}
+                  <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
                 </TouchableOpacity>
               );
             })}
