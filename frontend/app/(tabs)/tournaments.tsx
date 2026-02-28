@@ -1685,6 +1685,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       teamName={getTeamName(selectedMatch.home_team_id)} 
                       teamLetter={getTeamName(selectedMatch.home_team_id).charAt(0)}
                       players={homeTeamPlayers}
+                      ratings={playerRatings}
+                      onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({...prev, [playerId]: rating}))}
                     />
 
                     {/* Away Team Ratings */}
@@ -1692,6 +1694,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       teamName={getTeamName(selectedMatch.away_team_id)} 
                       teamLetter={getTeamName(selectedMatch.away_team_id).charAt(0)}
                       players={awayTeamPlayers}
+                      ratings={playerRatings}
+                      onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({...prev, [playerId]: rating}))}
                     />
                   </View>
 
