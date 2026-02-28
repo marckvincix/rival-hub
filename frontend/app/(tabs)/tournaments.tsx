@@ -273,6 +273,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<any>(null);
   const [playerStats, setPlayerStats] = useState<any>(null);
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
+  // Match Statistics Modal state
+  const [showMatchStatsModal, setShowMatchStatsModal] = useState(false);
+  const [selectedMatchForStats, setSelectedMatchForStats] = useState<any>(null);
+  const [matchStatsEvents, setMatchStatsEvents] = useState<any[]>([]);
+  const [loadingMatchStats, setLoadingMatchStats] = useState(false);
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
