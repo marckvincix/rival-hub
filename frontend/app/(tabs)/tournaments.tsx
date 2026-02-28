@@ -1453,45 +1453,93 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         icon="football" 
                         label="Marcatore" 
                         players={homeTeamPlayers}
-                        value={extraEvents.home.marcatore}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, marcatore: id}}))}
+                        selectedIds={extraEvents.home.marcatore}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            marcatore: prev.home.marcatore.includes(id) 
+                              ? prev.home.marcatore.filter(x => x !== id)
+                              : [...prev.home.marcatore, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="ellipse" 
                         label="Assist"
                         players={homeTeamPlayers}
-                        value={extraEvents.home.assist}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, assist: id}}))}
+                        selectedIds={extraEvents.home.assist}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            assist: prev.home.assist.includes(id) 
+                              ? prev.home.assist.filter(x => x !== id)
+                              : [...prev.home.assist, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FFD700" 
                         label="Cart. Giallo"
                         players={homeTeamPlayers}
-                        value={extraEvents.home.giallo}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, giallo: id}}))}
+                        selectedIds={extraEvents.home.giallo}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            giallo: prev.home.giallo.includes(id) 
+                              ? prev.home.giallo.filter(x => x !== id)
+                              : [...prev.home.giallo, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FF0000" 
                         label="Cart. Rosso"
                         players={homeTeamPlayers}
-                        value={extraEvents.home.rosso}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, rosso: id}}))}
+                        selectedIds={extraEvents.home.rosso}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            rosso: prev.home.rosso.includes(id) 
+                              ? prev.home.rosso.filter(x => x !== id)
+                              : [...prev.home.rosso, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="arrow-back" 
                         label="Sost. esce"
                         players={homeTeamPlayers}
-                        value={extraEvents.home.sostEsce}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, sostEsce: id}}))}
+                        selectedIds={extraEvents.home.sostEsce}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            sostEsce: prev.home.sostEsce.includes(id) 
+                              ? prev.home.sostEsce.filter(x => x !== id)
+                              : [...prev.home.sostEsce, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="arrow-forward" 
                         label="Sost. entra"
                         players={homeTeamPlayers}
-                        value={extraEvents.home.sostEntra}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, home: {...prev.home, sostEntra: id}}))}
+                        selectedIds={extraEvents.home.sostEntra}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          home: {
+                            ...prev.home, 
+                            sostEntra: prev.home.sostEntra.includes(id) 
+                              ? prev.home.sostEntra.filter(x => x !== id)
+                              : [...prev.home.sostEntra, id]
+                          }
+                        }))}
                       />
                     </View>
 
@@ -1504,45 +1552,93 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         icon="football" 
                         label="Marcatore"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.marcatore}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, marcatore: id}}))}
+                        selectedIds={extraEvents.away.marcatore}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            marcatore: prev.away.marcatore.includes(id) 
+                              ? prev.away.marcatore.filter(x => x !== id)
+                              : [...prev.away.marcatore, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="ellipse" 
                         label="Assist"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.assist}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, assist: id}}))}
+                        selectedIds={extraEvents.away.assist}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            assist: prev.away.assist.includes(id) 
+                              ? prev.away.assist.filter(x => x !== id)
+                              : [...prev.away.assist, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FFD700" 
                         label="Cart. Giallo"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.giallo}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, giallo: id}}))}
+                        selectedIds={extraEvents.away.giallo}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            giallo: prev.away.giallo.includes(id) 
+                              ? prev.away.giallo.filter(x => x !== id)
+                              : [...prev.away.giallo, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FF0000" 
                         label="Cart. Rosso"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.rosso}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, rosso: id}}))}
+                        selectedIds={extraEvents.away.rosso}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            rosso: prev.away.rosso.includes(id) 
+                              ? prev.away.rosso.filter(x => x !== id)
+                              : [...prev.away.rosso, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="arrow-back" 
                         label="Sost. esce"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.sostEsce}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, sostEsce: id}}))}
+                        selectedIds={extraEvents.away.sostEsce}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            sostEsce: prev.away.sostEsce.includes(id) 
+                              ? prev.away.sostEsce.filter(x => x !== id)
+                              : [...prev.away.sostEsce, id]
+                          }
+                        }))}
                       />
                       <EventDropdown 
                         icon="arrow-forward" 
                         label="Sost. entra"
                         players={awayTeamPlayers}
-                        value={extraEvents.away.sostEntra}
-                        onSelect={(id) => setExtraEvents(prev => ({...prev, away: {...prev.away, sostEntra: id}}))}
+                        selectedIds={extraEvents.away.sostEntra}
+                        onToggle={(id) => setExtraEvents(prev => ({
+                          ...prev, 
+                          away: {
+                            ...prev.away, 
+                            sostEntra: prev.away.sostEntra.includes(id) 
+                              ? prev.away.sostEntra.filter(x => x !== id)
+                              : [...prev.away.sostEntra, id]
+                          }
+                        }))}
                       />
                     </View>
                   </View>
