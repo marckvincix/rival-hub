@@ -1928,8 +1928,8 @@ function TeamRatingsAccordion({
             
             {/* Rating Grid */}
             <View style={styles.ratingGrid}>
-              {ratings.map((rating) => {
-                const isSelected = selectedPlayerId && playerRatings[selectedPlayerId] === rating;
+              {availableRatings.map((rating) => {
+                const isSelected = selectedPlayerId && ratings[selectedPlayerId] === rating;
                 return (
                   <TouchableOpacity 
                     key={rating} 
