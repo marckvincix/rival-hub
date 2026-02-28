@@ -8,7 +8,9 @@ import {
   RefreshControl,
   Modal,
   TextInput,
-  Alert
+  Alert,
+  Platform,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -17,6 +19,8 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Button, EmptyState, Loading, Input } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament } from '../../src/types';
+import * as ImagePicker from 'expo-image-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const CATEGORIES = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
 const FORMATS = [
