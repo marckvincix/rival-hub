@@ -1509,17 +1509,65 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 }
 
 // Helper Component: Event Dropdown
-function EventDropdown({ icon, iconColor = '#000', label }: { icon: string; iconColor?: string; label: string }) {
+function EventDropdown({ 
+  icon, 
+  iconColor = '#000', 
+  label, 
+  players = [],
+  value,
+  onSelect
+}: { 
+  icon: string; 
+  iconColor?: string; 
+  label: string;
+  players?: any[];
+  value?: string;
+  onSelect?: (playerId: string) => void;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const selectedPlayer = players.find(p => p.id === value);
+  
   return (
-    <TouchableOpacity style={styles.eventDropdown}>
-      {icon === 'square' ? (
-        <View style={[styles.cardIcon2, { backgroundColor: iconColor }]} />
-      ) : (
-        <Ionicons name={icon as any} size={16} color={iconColor} />
+    <View>
+      <TouchableOpacity style={styles.eventDropdown} onPress={() => setIsOpen(!isOpen)}>
+        {icon === 'square' ? (
+          <View style={[styles.cardIcon2, { backgroundColor: iconColor }]} />
+        ) : (
+          <Ionicons name={icon as any} size={16} color={iconColor} />
+        )}
+        <Text style={[styles.eventDropdownLabel, selectedPlayer && styles.eventDropdownLabelSelected]} numberOfLines={1}>
+          {selectedPlayer ? selectedPlayer.name : label}
+        </Text>
+        <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#000" />
+      </TouchableOpacity>
+      {isOpen && players.length > 0 && (
+        <View style={styles.eventDropdownList}>
+          <TouchableOpacity 
+            style={styles.eventDropdownItem}
+            onPress={() => { if (onSelect) onSelect(''); setIsOpen(false); }}
+          >
+            <Text style={styles.eventDropdownItemText}>-- Nessuno --</Text>
+          </TouchableOpacity>
+          {players.map((player) => (
+            <TouchableOpacity 
+              key={player.id} 
+              style={styles.eventDropdownItem}
+              onPress={() => { if (onSelect) onSelect(player.id); setIsOpen(false); }}
+            >
+              <Text style={styles.eventDropdownItemText}>
+                {player.number ? `#${player.number} ` : ''}{player.name}
+              </Text>
+              {value === player.id && <Ionicons name="checkmark" size={16} color="#000" />}
+            </TouchableOpacity>
+          ))}
+        </View>
       )}
-      <Text style={styles.eventDropdownLabel}>{label}</Text>
-      <Ionicons name="chevron-down" size={16} color="#000" />
-    </TouchableOpacity>
+      {isOpen && players.length === 0 && (
+        <View style={styles.eventDropdownList}>
+          <Text style={styles.eventDropdownItemTextEmpty}>Nessun giocatore</Text>
+        </View>
+      )}
+    </View>
   );
 }
 
