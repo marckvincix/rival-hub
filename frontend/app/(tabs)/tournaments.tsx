@@ -250,6 +250,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   });
   const [showHomeDropdown, setShowHomeDropdown] = useState(false);
   const [showAwayDropdown, setShowAwayDropdown] = useState(false);
+  // Date/Time picker states
+  const [showMatchDatePicker, setShowMatchDatePicker] = useState(false);
+  const [showMatchTimePicker, setShowMatchTimePicker] = useState(false);
+  const [matchDate, setMatchDate] = useState<Date | null>(null);
+  const [matchTime, setMatchTime] = useState<Date | null>(null);
+  // New round input state
+  const [newRoundInput, setNewRoundInput] = useState('');
+  const [customRounds, setCustomRounds] = useState<string[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [matchEvents, setMatchEvents] = useState<any[]>([]);
