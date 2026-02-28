@@ -218,33 +218,17 @@ export default function TournamentsScreen() {
             <Input label="Nome Torneo *" placeholder="es. Torneo Primavera 2025" value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
             <Input label="Luogo" placeholder="es. Milano, Campo XYZ" value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
             
-            {/* Data e Orario - Side by Side */}
-            <View style={styles.dateTimeRow}>
-              <View style={styles.dateTimeCol}>
-                <Text style={styles.inputLabel}>Data</Text>
-                <TouchableOpacity 
-                  style={styles.newMatchInputWithIcon}
-                  onPress={() => setShowTournamentDatePicker(true)}
-                >
-                  <Text style={tournamentDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
-                    {tournamentDate ? tournamentDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
-                  </Text>
-                  <Ionicons name="calendar-outline" size={22} color="#000" />
-                </TouchableOpacity>
-              </View>
-              <View style={styles.dateTimeCol}>
-                <Text style={styles.inputLabel}>Orario</Text>
-                <TouchableOpacity 
-                  style={styles.newMatchInputWithIcon}
-                  onPress={() => setShowTournamentTimePicker(true)}
-                >
-                  <Text style={tournamentTime ? styles.inputFieldText : styles.inputFieldPlaceholder}>
-                    {tournamentTime ? tournamentTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM'}
-                  </Text>
-                  <Ionicons name="time-outline" size={22} color="#000" />
-                </TouchableOpacity>
-              </View>
-            </View>
+            {/* Data Field */}
+            <Text style={styles.inputLabel}>Data</Text>
+            <TouchableOpacity 
+              style={styles.newMatchInputWithIcon}
+              onPress={() => setShowTournamentDatePicker(true)}
+            >
+              <Text style={tournamentDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
+                {tournamentDate ? tournamentDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
+              </Text>
+              <Ionicons name="calendar-outline" size={22} color="#000" />
+            </TouchableOpacity>
 
             {/* Tournament Date Picker - iOS Modal */}
             {showTournamentDatePicker && Platform.OS === 'ios' && (
