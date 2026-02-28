@@ -2400,4 +2400,11 @@ const styles = StyleSheet.create({
   additionalStatRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
   additionalStatLabel: { fontSize: 14, color: '#000' },
   additionalStatValue: { fontSize: 16, fontWeight: '700', color: '#000' },
+  // Stats loading and average rating
+  statsLoading: { alignItems: 'center', paddingVertical: 20 },
+  statsLoadingText: { fontSize: 14, color: '#666', marginTop: 8 },
+  averageRatingSection: { borderTopWidth: 1, borderTopColor: '#EEE', paddingTop: 16, marginTop: 8, alignItems: 'center' },
+  averageRatingLabel: { fontSize: 14, color: '#666', marginBottom: 4 },
+  averageRatingValue: { fontSize: 32, fontWeight: '700', color: '#FFD700' },
+  averageRatingSubtext: { fontSize: 12, color: '#999', marginTop: 4 },
 });
