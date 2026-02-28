@@ -219,11 +219,11 @@ backend:
 frontend:
   - task: "Dropdown giocatori dinamici nel modal Extra"
     implemented: true
-    working: "NA"
+    working: false
     file: "app/(tabs)/tournaments.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
@@ -232,18 +232,57 @@ frontend:
           Aggiunta logica loadPlayersForExtraModal che carica homeTeamPlayers e awayTeamPlayers.
           I dropdown ora ricevono players, value e onSelect props.
           TeamRatingsAccordion ora usa giocatori reali invece di mock data.
+      - working: false
+        agent: "testing"
+        comment: |
+          ❌ TESTING FAILED - Cannot access Extra modal functionality
+          
+          CRITICAL BLOCKER: Login authentication not working with test credentials
+          - Credentials: newuser@test.com / password123
+          - Login form fills correctly but redirects back to login page
+          - Unable to access tournament dashboard to test dropdown functionality
+          - URL remains at /login after submission indicating authentication failure
+          
+          SYNTAX ERROR FIXED:
+          ✅ Fixed duplicate 'playerRatings' state declaration on line 286
+          ✅ App now loads without compilation errors
+          ✅ Frontend structure appears correct with EventDropdown component implemented
+          
+          CANNOT TEST WITHOUT AUTHENTICATION:
+          - Dynamic player dropdowns in Extra modal
+          - Multi-select functionality 
+          - Live score updates
+          - Player selection and tags display
+          
+          AUTHENTICATION ISSUE NEEDS RESOLUTION BEFORE FRONTEND TESTING CAN PROCEED
 
   - task: "Tab Risultati - Navigazione e rendering"
     implemented: true
-    working: "NA"
+    working: false
     file: "app/(tabs)/tournaments.tsx"
-    stuck_count: 0
+    stuck_count: 1
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Da verificare se la tab Risultati mostra correttamente le partite in corso"
+      - working: false
+        agent: "testing"
+        comment: |
+          ❌ TESTING FAILED - Cannot access tournament interface
+          
+          BLOCKER: Same authentication issue prevents testing
+          - Unable to login with provided credentials
+          - Cannot reach tournament dashboard to test "Risultati" tab
+          - App structure shows tabs (Squadre, Partite, Risultati) are implemented
+          - Frontend code shows proper filtering for "In corso" status matches
+          
+          REQUIRES AUTHENTICATION FIX TO TEST:
+          - Tab navigation functionality
+          - "Risultati" tab rendering
+          - Match filtering by status
+          - Match card display and interaction
 
 metadata:
   created_by: "main_agent"
