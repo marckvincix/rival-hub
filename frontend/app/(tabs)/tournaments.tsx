@@ -706,37 +706,48 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {activeTab === 'results' && (
               <View>
-                {matches.length === 0 ? (
-                  <EmptyState icon="football-outline" title="Nessuna partita" />
-                ) : (
-                  <>
-                    <Text style={styles.resultsTitle}>Seleziona partita da gestire</Text>
-                    {matches.map((match) => (
-                      <TouchableOpacity 
-                        key={match.id} 
-                        style={styles.matchSelectCard}
-                        onPress={() => setSelectedMatch(match)}
-                      >
-                        <View style={styles.matchSelectRow}>
-                          <Text style={styles.matchSelectTeam}>{getTeamName(match.home_team_id)}</Text>
-                          <View style={styles.matchSelectScoreBox}>
-                            <Text style={styles.matchSelectScore}>{match.home_goals ?? 0}</Text>
+                {(() => {
+                  // Filter only matches that are NOT completed (in corso or pending)
+                  const matchesInCorso = matches.filter(m => m.status !== 'completed');
+                  
+                  if (matchesInCorso.length === 0) {
+                    return <EmptyState icon="football-outline" title="Nessuna partita in corso" />;
+                  }
+                  
+                  return (
+                    <>
+                      <Text style={styles.resultsTitle}>Seleziona partita da gestire</Text>
+                      {matchesInCorso.map((match) => (
+                        <TouchableOpacity 
+                          key={match.id} 
+                          style={styles.matchSelectCard}
+                          onPress={() => setSelectedMatch(match)}
+                        >
+                          <View style={styles.matchSelectRow}>
+                            <Text style={styles.matchSelectTeam}>{getTeamName(match.home_team_id)}</Text>
+                            <View style={styles.matchSelectScoreBox}>
+                              <Text style={styles.matchSelectScore}>{match.home_goals ?? 0}</Text>
+                            </View>
+                            <Text style={styles.matchSelectDash}>-</Text>
+                            <View style={styles.matchSelectScoreBox}>
+                              <Text style={styles.matchSelectScore}>{match.away_goals ?? 0}</Text>
+                            </View>
+                            <Text style={styles.matchSelectTeam}>{getTeamName(match.away_team_id)}</Text>
                           </View>
-                          <Text style={styles.matchSelectDash}>-</Text>
-                          <View style={styles.matchSelectScoreBox}>
-                            <Text style={styles.matchSelectScore}>{match.away_goals ?? 0}</Text>
+                          <View style={styles.matchSelectFooter}>
+                            <View style={styles.matchSelectBadgeInCorso}>
+                              <Text style={styles.matchSelectBadgeTextInCorso}>In corso</Text>
+                            </View>
+                            <View style={styles.matchEditIcon}>
+                              <Ionicons name="create-outline" size={20} color="#000" />
+                              <Ionicons name="chevron-forward" size={18} color="#000" />
+                            </View>
                           </View>
-                          <Text style={styles.matchSelectTeam}>{getTeamName(match.away_team_id)}</Text>
-                        </View>
-                        <View style={styles.matchSelectBadge}>
-                          <Text style={styles.matchSelectBadgeText}>
-                            {match.status === 'completed' ? 'Completata' : 'In corso'}
-                          </Text>
-                        </View>
-                      </TouchableOpacity>
-                    ))}
-                  </>
-                )}
+                        </TouchableOpacity>
+                      ))}
+                    </>
+                  );
+                })()}
               </View>
             )}
 
