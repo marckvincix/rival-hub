@@ -2640,6 +2640,13 @@ const styles = StyleSheet.create({
   },
   inputFieldText: { flex: 1, fontSize: 16, color: '#000' },
   inputFieldPlaceholder: { flex: 1, fontSize: 16, color: '#999' },
+  // Date/Time Picker Modal styles
+  pickerModalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  pickerModalContent: { backgroundColor: '#FFF', borderTopLeftRadius: 20, borderTopRightRadius: 20, paddingBottom: 30 },
+  pickerModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  pickerTitle: { fontSize: 16, fontWeight: '600', color: '#000' },
+  pickerCancelText: { fontSize: 16, color: '#666' },
+  pickerConfirmText: { fontSize: 16, fontWeight: '600', color: '#007AFF' },
   // Match Selection Styles
   matchSelectCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, padding: 16, marginBottom: 12 },
   matchSelectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
