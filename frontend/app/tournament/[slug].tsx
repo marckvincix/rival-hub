@@ -353,6 +353,49 @@ export default function TournamentPublicPage() {
         match={selectedMatchForStats}
         getTeamName={getTeamName}
       />
+
+      {/* Formation Field Modal */}
+      <Modal
+        visible={showFormationModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowFormationModal(false)}
+      >
+        <SafeAreaView style={styles.formationModalContainer}>
+          <View style={styles.formationModalHeader}>
+            <TouchableOpacity onPress={() => setShowFormationModal(false)}>
+              <Text style={styles.formationModalClose}>Chiudi</Text>
+            </TouchableOpacity>
+            <Text style={styles.formationModalTitle}>
+              {teams.find(t => t.id === selectedFormation?.team_id)?.name || 'Formazione'}
+            </Text>
+            <View style={{ width: 60 }} />
+          </View>
+          {selectedFormation && (
+            <>
+              <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
+              <FieldView
+                module={selectedFormation.module}
+                starters={selectedFormation.starters}
+                gameFormat={tournament?.game_format || '11v11'}
+              />
+              {selectedFormation.bench && selectedFormation.bench.length > 0 && (
+                <View style={styles.benchSection}>
+                  <Text style={styles.benchSectionTitle}>🪑 Panchina ({selectedFormation.bench.length})</Text>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.benchScroll}>
+                    {selectedFormation.bench.map((player: any, idx: number) => (
+                      <View key={idx} style={styles.benchPlayerChip}>
+                        <Text style={styles.benchPlayerNumber}>{player.player_number || '-'}</Text>
+                        <Text style={styles.benchPlayerName}>{player.player_name || '?'}</Text>
+                      </View>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </>
+          )}
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
