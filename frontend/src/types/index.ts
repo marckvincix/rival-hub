@@ -132,6 +132,7 @@ export interface PlayerStats {
   red_cards: number;
   mvp_awards: number;
   appearances: number;
+  average_rating?: number;
 }
 
 // Formation Types
