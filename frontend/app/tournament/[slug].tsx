@@ -16,7 +16,7 @@ import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView } from '../..
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation } from '../../src/types';
 
-type TabId = 'standings' | 'matches' | 'scorers' | 'stats' | 'news' | 'info';
+type TabId = 'standings' | 'matches' | 'formations' | 'scorers' | 'stats' | 'news' | 'info';
 
 export default function TournamentPublicPage() {
   const router = useRouter();
@@ -29,11 +29,14 @@ export default function TournamentPublicPage() {
   const [scorers, setScorers] = useState<Scorer[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [news, setNews] = useState<News[]>([]);
+  const [formations, setFormations] = useState<Formation[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('standings');
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedMatchForStats, setSelectedMatchForStats] = useState<Match | null>(null);
+  const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
+  const [showFormationModal, setShowFormationModal] = useState(false);
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
