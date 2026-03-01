@@ -236,7 +236,7 @@ export function FormationModal({
               </TouchableOpacity>
 
               {showDropdown === dropdownKey && (
-                <View style={styles.dropdownList}>
+                <ScrollView style={styles.dropdownList} nestedScrollEnabled={true}>
                   <TouchableOpacity
                     style={styles.dropdownItem}
                     onPress={() => handlePlayerSelect(position, idx, '')}
@@ -263,7 +263,7 @@ export function FormationModal({
                       </Text>
                     </TouchableOpacity>
                   ))}
-                </View>
+                </ScrollView>
               )}
             </View>
           );
