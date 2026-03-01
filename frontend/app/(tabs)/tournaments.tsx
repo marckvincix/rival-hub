@@ -987,6 +987,35 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     switch (status) { case 'active': return 'In corso'; case 'completed': return 'Completato'; default: return 'Bozza'; }
   };
 
+  // Load formation for a team
+  const loadTeamFormation = async (teamId: string) => {
+    try {
+      const response = await api.get(`/api/teams/${teamId}/formation`);
+      if (response.data) {
+        setTeamFormations(prev => ({ ...prev, [teamId]: response.data }));
+      }
+    } catch (error) {
+      console.log('No formation found for team', teamId);
+    }
+  };
+
+  // Open Formation Modal
+  const handleOpenFormation = async (team: any) => {
+    // Load players if not already loaded
+    if (!teamPlayers[team.id]) {
+      await loadTeamPlayers(team.id);
+    }
+    // Load existing formation
+    await loadTeamFormation(team.id);
+    setSelectedTeamForFormation(team);
+    setShowFormationModal(true);
+  };
+
+  // Handle formation save
+  const handleFormationSave = (formation: Formation) => {
+    setTeamFormations(prev => ({ ...prev, [formation.team_id]: formation }));
+  };
+
   const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' }[] = [
     { id: 'teams', label: 'Squadre', icon: 'people' },
     { id: 'matches', label: 'Partite', icon: 'football' },
