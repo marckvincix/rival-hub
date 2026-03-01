@@ -88,6 +88,8 @@ class TournamentCreate(BaseModel):
     description: Optional[str] = None
     category: str = "Open"  # U10, U12, U14, U16, U18, Open
     format: str = "league"  # league, knockout, groups_knockout, mixed
+    game_format: str = "11v11"  # 11v11, 8v8, 7v7, 6v6, 5v5, custom
+    custom_players_per_side: Optional[int] = None  # For custom format
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
@@ -99,6 +101,8 @@ class TournamentUpdate(BaseModel):
     description: Optional[str] = None
     category: Optional[str] = None
     format: Optional[str] = None
+    game_format: Optional[str] = None
+    custom_players_per_side: Optional[int] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
@@ -114,6 +118,8 @@ class Tournament(BaseModel):
     organizer_id: str
     category: str = "Open"
     format: str = "league"
+    game_format: str = "11v11"
+    custom_players_per_side: Optional[int] = None
     status: str = "draft"  # draft, active, completed
     start_date: Optional[str] = None
     end_date: Optional[str] = None
