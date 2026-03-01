@@ -569,4 +569,18 @@ const styles = StyleSheet.create({
   benchPlayerChip: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 16, marginRight: 8, borderWidth: 1, borderColor: '#E0E0E0' },
   benchPlayerNumber: { fontSize: 13, fontWeight: '700', color: '#000', marginRight: 6 },
   benchPlayerName: { fontSize: 13, color: '#333' },
+  noBenchText: { fontSize: 14, color: '#999', fontStyle: 'italic' },
+  // Public view toggle
+  publicViewToggle: { flexDirection: 'row', margin: 16, backgroundColor: '#F0F0F0', borderRadius: 8, padding: 4 },
+  publicToggleButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8, borderRadius: 6, gap: 6 },
+  publicToggleButtonActive: { backgroundColor: '#000' },
+  publicToggleText: { fontSize: 14, fontWeight: '500', color: '#000' },
+  publicToggleTextActive: { color: '#FFF' },
+  // Public list view
+  publicListView: { padding: 16 },
+  publicPositionSection: { marginBottom: 20 },
+  publicPositionTitle: { fontSize: 15, fontWeight: '700', color: '#000', marginBottom: 10 },
+  publicPlayerRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 10, padding: 12, marginBottom: 8 },
+  publicPlayerNumber: { fontSize: 14, fontWeight: '700', color: '#000', width: 30 },
+  publicPlayerName: { fontSize: 14, color: '#000', flex: 1 },
 });
