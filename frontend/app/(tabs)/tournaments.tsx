@@ -1049,7 +1049,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </ScrollView>
       </View>
 
-      <ScrollView style={styles.detailContent} showsVerticalScrollIndicator={false}>
+      <ScrollView style={styles.detailContent} contentContainerStyle={styles.detailContentContainer} showsVerticalScrollIndicator={false}>
         {loading ? <Loading /> : (
           <>
             {activeTab === 'teams' && (
