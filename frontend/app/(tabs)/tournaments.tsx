@@ -433,6 +433,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   });
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [savingEvents, setSavingEvents] = useState(false);
+  // Formation Modal state
+  const [showFormationModal, setShowFormationModal] = useState(false);
+  const [selectedTeamForFormation, setSelectedTeamForFormation] = useState<any>(null);
+  const [teamFormations, setTeamFormations] = useState<Record<string, Formation | null>>({});
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
