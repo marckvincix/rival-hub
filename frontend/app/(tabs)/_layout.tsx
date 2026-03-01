@@ -26,8 +26,8 @@ function CustomTabBar() {
           style={[styles.tabItem, isActive('dashboard') && styles.tabItemActive]}
           onPress={() => router.push('/(tabs)/')}
         >
-          <Text style={styles.tabLabel}>Dashboard</Text>
           <Ionicons name="grid" size={24} color="#000" />
+          <Text style={styles.tabLabel}>Dashboard</Text>
         </TouchableOpacity>
 
         {/* Tornei Tab */}
@@ -35,8 +35,8 @@ function CustomTabBar() {
           style={[styles.tabItem, isActive('tournaments') && styles.tabItemActive]}
           onPress={() => router.push('/(tabs)/tournaments')}
         >
-          <Text style={styles.tabLabel}>Tornei</Text>
           <Ionicons name="trophy-outline" size={24} color="#000" />
+          <Text style={styles.tabLabel}>Tornei</Text>
         </TouchableOpacity>
 
         {/* PRO Tab - Always black background */}
@@ -44,8 +44,8 @@ function CustomTabBar() {
           style={[styles.tabItem, styles.tabItemPro]}
           onPress={() => router.push('/(tabs)/profile')}
         >
-          <Text style={styles.tabLabelPro}>PRO</Text>
           <Ionicons name="shield" size={24} color="#FFF" />
+          <Text style={styles.tabLabelPro}>PRO</Text>
         </TouchableOpacity>
       </View>
     </View>
