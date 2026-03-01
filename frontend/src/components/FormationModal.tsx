@@ -177,6 +177,10 @@ export function FormationModal({
       return;
     }
 
+    // Calculate bench players (those not in starters)
+    const assignedIds = starters.filter(s => s.player_id).map(s => s.player_id);
+    const benchPlayerIds = players.filter(p => !assignedIds.includes(p.id)).map(p => p.id);
+
     setSaving(true);
     try {
       const response = await api.post(`/api/teams/${teamId}/formation`, {
@@ -186,7 +190,7 @@ export function FormationModal({
           position: s.position,
           slot_index: s.slot_index,
         })),
-        bench,
+        bench: benchPlayerIds,
       });
       onSave(response.data);
       Alert.alert('Successo', 'Formazione salvata!');
