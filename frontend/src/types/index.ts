@@ -17,6 +17,8 @@ export interface Tournament {
   organizer_id: string;
   category: 'U10' | 'U12' | 'U14' | 'U16' | 'U18' | 'Open';
   format: 'league' | 'knockout' | 'groups_knockout' | 'mixed';
+  game_format: '11v11' | '8v8' | '7v7' | '6v6' | '5v5' | 'custom';
+  custom_players_per_side?: number;
   status: 'draft' | 'active' | 'completed';
   start_date?: string;
   end_date?: string;
