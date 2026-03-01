@@ -1077,11 +1077,21 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
                             <Ionicons name="add" size={20} color="#FFF" />
                           </TouchableOpacity>
+                          <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
+                            <Ionicons name="grid" size={18} color="#FFF" />
+                          </TouchableOpacity>
                           <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
                             <Ionicons name="trash" size={18} color="#FFF" />
                           </TouchableOpacity>
                         </View>
                       </View>
+                      {/* Formation Badge */}
+                      {teamFormations[team.id] && (
+                        <View style={styles.formationBadge}>
+                          <Ionicons name="grid" size={14} color="#2D8A2E" />
+                          <Text style={styles.formationBadgeText}>{teamFormations[team.id]?.module}</Text>
+                        </View>
+                      )}
                       {/* Players Accordion */}
                       {expandedTeamId === team.id && (
                         <View style={styles.playersAccordion}>
