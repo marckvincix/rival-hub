@@ -356,7 +356,7 @@ export function FormationModal({
 
           {/* Bench section */}
           <View style={styles.benchSection}>
-            <Text style={styles.benchTitle}>🪑 Panchina ({benchPlayers.length})</Text>
+            <Text style={styles.benchTitle}>🔁 Panchina ({benchPlayers.length})</Text>
             {benchPlayers.length === 0 ? (
               <Text style={styles.benchEmpty}>Nessun giocatore in panchina</Text>
             ) : (
