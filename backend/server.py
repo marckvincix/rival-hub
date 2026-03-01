@@ -1837,6 +1837,16 @@ async def get_player_stats(tournament_id: str):
         
         team = team_map.get(player.get("team_id"))
         
+        # Get average rating for this player
+        ratings = await db.player_ratings.find(
+            {"player_id": player_id, "tournament_id": tournament_id},
+            {"_id": 0}
+        ).to_list(100)
+        avg_rating = 0.0
+        if ratings:
+            total_rating = sum(r.get("rating", 0) for r in ratings)
+            avg_rating = round(total_rating / len(ratings), 2)
+        
         result.append({
             "player_id": player_id,
             "player_name": player.get("full_name"),
@@ -1853,7 +1863,8 @@ async def get_player_stats(tournament_id: str):
             "yellow_cards": stats["yellow_cards"],
             "red_cards": stats["red_cards"],
             "mvp_awards": stats["mvp_awards"],
-            "appearances": len(stats["matches"])
+            "appearances": len(stats["matches"]),
+            "average_rating": avg_rating
         })
     
     result.sort(key=lambda x: (x["goals"], x["assists"]), reverse=True)
