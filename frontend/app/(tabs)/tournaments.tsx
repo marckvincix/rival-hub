@@ -162,7 +162,7 @@ export default function TournamentsScreen() {
         <TouchableOpacity style={styles.addButton} onPress={() => {
           setTournamentDate(null);
           setTournamentTime(null);
-          setFormData({ name: '', description: '', category: 'Open', format: 'league', location: '', start_date: '', start_time: '' });
+          setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
           setShowCreateModal(true);
         }}>
           <Ionicons name="add" size={24} color="#FFF" />
@@ -183,7 +183,7 @@ export default function TournamentsScreen() {
             onAction={() => {
               setTournamentDate(null);
               setTournamentTime(null);
-              setFormData({ name: '', description: '', category: 'Open', format: 'league', location: '', start_date: '', start_time: '' });
+              setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
               setShowCreateModal(true);
             }}
           />
