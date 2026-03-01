@@ -265,6 +265,32 @@ class News(BaseModel):
     published_at: Optional[datetime] = None
     created_at: datetime
 
+# Formation Models
+class FormationPlayer(BaseModel):
+    player_id: str
+    position: str  # goalkeeper, defender, midfielder, forward
+    slot_index: int  # Position in the lineup (0-based index within position group)
+
+class FormationCreate(BaseModel):
+    module: str  # e.g., "4-3-3", "4-4-2", "1-2-1"
+    starters: List[FormationPlayer]  # Players in starting lineup
+    bench: List[str] = []  # List of player_ids on bench
+
+class FormationUpdate(BaseModel):
+    module: Optional[str] = None
+    starters: Optional[List[FormationPlayer]] = None
+    bench: Optional[List[str]] = None
+
+class Formation(BaseModel):
+    id: str
+    team_id: str
+    tournament_id: str
+    module: str
+    starters: List[FormationPlayer]
+    bench: List[str] = []
+    created_at: datetime
+    updated_at: datetime
+
 # Subscription Plans
 SUBSCRIPTION_PLANS = {
     "free": {"price_monthly": 0, "price_yearly": 0, "max_tournaments": 1, "max_teams": 8},
