@@ -2685,7 +2685,7 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: '#000' },
   title: { fontSize: 24, fontWeight: '700', color: '#000' },
   addButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
-  scrollContent: { padding: 16, paddingBottom: 100 },
+  scrollContent: { padding: 16, paddingBottom: 120 },
   tournamentCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, padding: 16, marginBottom: 16 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
   cardIcon: { width: 48, height: 48, borderWidth: 2, borderColor: '#000', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
