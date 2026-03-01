@@ -153,12 +153,12 @@ export function FieldView({ module, starters, gameFormat }: FieldViewProps) {
         }]} />
         
         {/* Top penalty area */}
-        <View style={[styles.penaltyArea, { top: 0 }]} />
-        <View style={[styles.goalArea, { top: 0 }]} />
+        <View style={[styles.penaltyAreaTop, { top: 4 }]} />
+        <View style={[styles.goalAreaTop, { top: 4 }]} />
         
         {/* Bottom penalty area */}
-        <View style={[styles.penaltyArea, { bottom: 0 }]} />
-        <View style={[styles.goalArea, { bottom: 0 }]} />
+        <View style={[styles.penaltyAreaBottom, { bottom: 4 }]} />
+        <View style={[styles.goalAreaBottom, { bottom: 4 }]} />
 
         {/* Players */}
         {renderPositionRow('goalkeeper')}
