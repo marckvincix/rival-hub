@@ -456,7 +456,7 @@ export default function TournamentPublicPage() {
 
               {/* Bench Section */}
               <View style={styles.benchSection}>
-                <Text style={styles.benchSectionTitle}>🪑 Panchina ({selectedFormation.bench?.length || 0})</Text>
+                <Text style={styles.benchSectionTitle}>🔁 Panchina ({selectedFormation.bench?.length || 0})</Text>
                 {selectedFormation.bench && selectedFormation.bench.length > 0 ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.benchScroll}>
                     {selectedFormation.bench.map((player: any, idx: number) => (
