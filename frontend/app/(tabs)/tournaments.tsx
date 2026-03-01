@@ -106,7 +106,7 @@ export default function TournamentsScreen() {
       const response = await api.post('/api/tournaments', formData);
       setTournaments([response.data, ...tournaments]);
       setShowCreateModal(false);
-      setFormData({ name: '', description: '', category: 'Open', format: 'league', location: '' });
+      setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '' });
       setSelectedTournament(response.data);
     } catch (error: any) {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore nella creazione');
