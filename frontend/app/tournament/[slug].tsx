@@ -37,6 +37,7 @@ export default function TournamentPublicPage() {
   const [selectedMatchForStats, setSelectedMatchForStats] = useState<Match | null>(null);
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
   const [showFormationModal, setShowFormationModal] = useState(false);
+  const [publicFormationViewMode, setPublicFormationViewMode] = useState<'list' | 'field'>('field');
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
