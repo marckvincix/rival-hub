@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
 import { Tabs, useRouter, usePathname } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -19,33 +19,35 @@ function CustomTabBar() {
   };
 
   return (
-    <View style={[styles.tabBar, { paddingBottom: insets.bottom || 16 }]}>
-      {/* Dashboard Tab */}
-      <TouchableOpacity
-        style={[styles.tabItem, isActive('dashboard') && styles.tabItemActive]}
-        onPress={() => router.push('/(tabs)/')}
-      >
-        <Ionicons name="grid" size={24} color="#000" />
-        <Text style={styles.tabLabel}>Dashboard</Text>
-      </TouchableOpacity>
+    <View style={[styles.tabBarWrapper, { paddingBottom: Math.max(insets.bottom, 12) }]}>
+      <View style={styles.tabBar}>
+        {/* Dashboard Tab */}
+        <TouchableOpacity
+          style={[styles.tabItem, isActive('dashboard') && styles.tabItemActive]}
+          onPress={() => router.push('/(tabs)/')}
+        >
+          <Text style={styles.tabLabel}>Dashboard</Text>
+          <Ionicons name="grid" size={24} color="#000" />
+        </TouchableOpacity>
 
-      {/* Tornei Tab */}
-      <TouchableOpacity
-        style={[styles.tabItem, isActive('tournaments') && styles.tabItemActive]}
-        onPress={() => router.push('/(tabs)/tournaments')}
-      >
-        <Ionicons name="trophy-outline" size={24} color="#000" />
-        <Text style={styles.tabLabel}>Tornei</Text>
-      </TouchableOpacity>
+        {/* Tornei Tab */}
+        <TouchableOpacity
+          style={[styles.tabItem, isActive('tournaments') && styles.tabItemActive]}
+          onPress={() => router.push('/(tabs)/tournaments')}
+        >
+          <Text style={styles.tabLabel}>Tornei</Text>
+          <Ionicons name="trophy-outline" size={24} color="#000" />
+        </TouchableOpacity>
 
-      {/* PRO Tab */}
-      <TouchableOpacity
-        style={[styles.tabItem, isActive('profile') && styles.tabItemActive]}
-        onPress={() => router.push('/(tabs)/profile')}
-      >
-        <Ionicons name="shield" size={24} color="#000" />
-        <Text style={styles.tabLabel}>PRO</Text>
-      </TouchableOpacity>
+        {/* PRO Tab - Always black background */}
+        <TouchableOpacity
+          style={[styles.tabItem, styles.tabItemPro]}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <Text style={styles.tabLabelPro}>PRO</Text>
+          <Ionicons name="shield" size={24} color="#FFF" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -89,29 +91,63 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFF',
   },
+  tabBarWrapper: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 16,
+    backgroundColor: 'transparent',
+  },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: '#FFF',
-    borderTopWidth: 2,
-    borderTopColor: '#000',
-    paddingTop: 12,
-    paddingHorizontal: 16,
-    alignItems: 'flex-start',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 8,
+    alignItems: 'center',
     justifyContent: 'space-around',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
+      },
+    }),
   },
   tabItem: {
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 16,
+    flex: 1,
+    marginHorizontal: 4,
   },
   tabItemActive: {
     backgroundColor: '#F0F0F0',
   },
+  tabItemPro: {
+    backgroundColor: '#000',
+  },
   tabLabel: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
     color: '#000',
-    marginTop: 4,
+    marginBottom: 6,
+  },
+  tabLabelPro: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#FFF',
+    marginBottom: 6,
   },
 });
