@@ -505,7 +505,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
     borderWidth: 1,
     borderColor: '#E0E0E0',
-    maxHeight: 200,
+    maxHeight: 250,
   },
   dropdownItem: {
     flexDirection: 'row',
