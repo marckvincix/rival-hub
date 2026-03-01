@@ -211,7 +211,8 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.6)',
   },
-  penaltyArea: {
+  // Top penalty area (bottom border visible)
+  penaltyAreaTop: {
     position: 'absolute',
     left: '20%',
     right: '20%',
@@ -220,7 +221,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.6)',
     borderTopWidth: 0,
   },
-  goalArea: {
+  // Top goal area (bottom border visible)
+  goalAreaTop: {
     position: 'absolute',
     left: '35%',
     right: '35%',
@@ -228,6 +230,26 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: 'rgba(255,255,255,0.6)',
     borderTopWidth: 0,
+  },
+  // Bottom penalty area (top border visible)
+  penaltyAreaBottom: {
+    position: 'absolute',
+    left: '20%',
+    right: '20%',
+    height: '18%',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+    borderBottomWidth: 0,
+  },
+  // Bottom goal area (top border visible)
+  goalAreaBottom: {
+    position: 'absolute',
+    left: '35%',
+    right: '35%',
+    height: '8%',
+    borderWidth: 2,
+    borderColor: 'rgba(255,255,255,0.6)',
+    borderBottomWidth: 0,
   },
   playerContainer: {
     position: 'absolute',
