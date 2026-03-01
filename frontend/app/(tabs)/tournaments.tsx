@@ -2728,7 +2728,7 @@ const styles = StyleSheet.create({
   detailHeaderInfo: { flex: 1 },
   detailTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   detailMeta: { fontSize: 13, color: '#666' },
-  tabsContainer: { backgroundColor: '#FFF', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: '#000' },
+  tabsContainer: { backgroundColor: '#FFF', paddingVertical: 12 },
   tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, marginHorizontal: 4, borderRadius: 20, borderWidth: 2, borderColor: '#000' },
   tabActive: { backgroundColor: '#000' },
   tabText: { fontSize: 14, color: '#000', marginLeft: 6, fontWeight: '600' },
