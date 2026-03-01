@@ -30,6 +30,16 @@ const FORMATS = [
   { value: 'groups_knockout', label: 'Gironi + Elim.' },
 ];
 
+// Game format options
+const GAME_FORMATS = [
+  { value: '11v11', label: 'Calcio a 11', emoji: '⚽' },
+  { value: '8v8', label: 'Calcio a 8', emoji: '🏃' },
+  { value: '7v7', label: 'Calcio a 7', emoji: '👟' },
+  { value: '6v6', label: 'Calcio a 6', emoji: '⚡' },
+  { value: '5v5', label: 'Calcio a 5 / Futsal', emoji: '🔥' },
+  { value: 'custom', label: 'Personalizzato', emoji: '✏️' },
+];
+
 export default function TournamentsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
@@ -46,6 +56,8 @@ export default function TournamentsScreen() {
     description: '',
     category: 'Open',
     format: 'league',
+    game_format: '11v11',
+    custom_players_per_side: 11,
     location: '',
     start_date: '',
     start_time: '',
