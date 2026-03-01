@@ -373,16 +373,91 @@ export default function TournamentPublicPage() {
             <View style={{ width: 60 }} />
           </View>
           {selectedFormation && (
-            <>
-              <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
-              <FieldView
-                module={selectedFormation.module}
-                starters={selectedFormation.starters}
-                gameFormat={tournament?.game_format || '11v11'}
-              />
-              {selectedFormation.bench && selectedFormation.bench.length > 0 && (
-                <View style={styles.benchSection}>
-                  <Text style={styles.benchSectionTitle}>🪑 Panchina ({selectedFormation.bench.length})</Text>
+            <ScrollView style={{ flex: 1 }}>
+              {/* View Toggle */}
+              <View style={styles.publicViewToggle}>
+                <TouchableOpacity
+                  style={[styles.publicToggleButton, publicFormationViewMode === 'list' && styles.publicToggleButtonActive]}
+                  onPress={() => setPublicFormationViewMode('list')}
+                >
+                  <Ionicons name="list" size={18} color={publicFormationViewMode === 'list' ? '#FFF' : '#000'} />
+                  <Text style={[styles.publicToggleText, publicFormationViewMode === 'list' && styles.publicToggleTextActive]}>Lista</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.publicToggleButton, publicFormationViewMode === 'field' && styles.publicToggleButtonActive]}
+                  onPress={() => setPublicFormationViewMode('field')}
+                >
+                  <Ionicons name="football" size={18} color={publicFormationViewMode === 'field' ? '#FFF' : '#000'} />
+                  <Text style={[styles.publicToggleText, publicFormationViewMode === 'field' && styles.publicToggleTextActive]}>Campo</Text>
+                </TouchableOpacity>
+              </View>
+
+              {publicFormationViewMode === 'field' ? (
+                <>
+                  <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
+                  <FieldView
+                    module={selectedFormation.module}
+                    starters={selectedFormation.starters}
+                    gameFormat={tournament?.game_format || '11v11'}
+                  />
+                </>
+              ) : (
+                <View style={styles.publicListView}>
+                  {/* Portiere */}
+                  {selectedFormation.starters.filter(s => s.position === 'goalkeeper').length > 0 && (
+                    <View style={styles.publicPositionSection}>
+                      <Text style={styles.publicPositionTitle}>🧤 Portiere</Text>
+                      {selectedFormation.starters.filter(s => s.position === 'goalkeeper').map((player, idx) => (
+                        <View key={idx} style={styles.publicPlayerRow}>
+                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {/* Difensori */}
+                  {selectedFormation.starters.filter(s => s.position === 'defender').length > 0 && (
+                    <View style={styles.publicPositionSection}>
+                      <Text style={styles.publicPositionTitle}>🛡️ Difensori</Text>
+                      {selectedFormation.starters.filter(s => s.position === 'defender').map((player, idx) => (
+                        <View key={idx} style={styles.publicPlayerRow}>
+                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {/* Centrocampisti */}
+                  {selectedFormation.starters.filter(s => s.position === 'midfielder').length > 0 && (
+                    <View style={styles.publicPositionSection}>
+                      <Text style={styles.publicPositionTitle}>⚙️ Centrocampisti</Text>
+                      {selectedFormation.starters.filter(s => s.position === 'midfielder').map((player, idx) => (
+                        <View key={idx} style={styles.publicPlayerRow}>
+                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  {/* Attaccanti */}
+                  {selectedFormation.starters.filter(s => s.position === 'forward').length > 0 && (
+                    <View style={styles.publicPositionSection}>
+                      <Text style={styles.publicPositionTitle}>⚡ Attaccanti</Text>
+                      {selectedFormation.starters.filter(s => s.position === 'forward').map((player, idx) => (
+                        <View key={idx} style={styles.publicPlayerRow}>
+                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+
+              {/* Bench Section */}
+              <View style={styles.benchSection}>
+                <Text style={styles.benchSectionTitle}>🪑 Panchina ({selectedFormation.bench?.length || 0})</Text>
+                {selectedFormation.bench && selectedFormation.bench.length > 0 ? (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.benchScroll}>
                     {selectedFormation.bench.map((player: any, idx: number) => (
                       <View key={idx} style={styles.benchPlayerChip}>
@@ -391,9 +466,11 @@ export default function TournamentPublicPage() {
                       </View>
                     ))}
                   </ScrollView>
-                </View>
-              )}
-            </>
+                ) : (
+                  <Text style={styles.noBenchText}>Nessun giocatore in panchina</Text>
+                )}
+              </View>
+            </ScrollView>
           )}
         </SafeAreaView>
       </Modal>
