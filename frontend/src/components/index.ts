@@ -5,3 +5,5 @@ export { TeamLogo } from './TeamLogo';
 export { Loading } from './Loading';
 export { EmptyState } from './EmptyState';
 export { MatchStatsModal } from './MatchStatsModal';
+export { FieldView } from './FieldView';
+export { FormationModal } from './FormationModal';
