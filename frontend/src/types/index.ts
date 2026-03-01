@@ -133,3 +133,53 @@ export interface PlayerStats {
   mvp_awards: number;
   appearances: number;
 }
+
+// Formation Types
+export interface FormationPlayer {
+  player_id: string;
+  position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
+  slot_index: number;
+  player_name?: string;
+  player_number?: number;
+  player_photo?: string;
+  player_role?: string;
+}
+
+export interface BenchPlayer {
+  player_id: string;
+  player_name?: string;
+  player_number?: number;
+  player_photo?: string;
+  player_role?: string;
+}
+
+export interface Formation {
+  id: string;
+  team_id: string;
+  tournament_id: string;
+  module: string;
+  starters: FormationPlayer[];
+  bench: BenchPlayer[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Game Format Types
+export type GameFormat = '11v11' | '8v8' | '7v7' | '6v6' | '5v5' | 'custom';
+
+export interface GameFormatOption {
+  value: GameFormat;
+  label: string;
+  emoji: string;
+  playersPerSide: number;
+}
+
+export interface TacticalModule {
+  value: string;
+  positions: {
+    goalkeeper: number;
+    defender: number;
+    midfielder: number;
+    forward: number;
+  };
+}
