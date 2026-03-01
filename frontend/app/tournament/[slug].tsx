@@ -45,16 +45,18 @@ export default function TournamentPublicPage() {
       const tournamentRes = await api.get(`/api/tournaments/slug/${slug}`);
       const t = tournamentRes.data;
       setTournament(t);
-      const [teamsRes, matchesRes, standingsRes, scorersRes, statsRes, newsRes] = await Promise.all([
+      const [teamsRes, matchesRes, standingsRes, scorersRes, statsRes, newsRes, formationsRes] = await Promise.all([
         api.get(`/api/tournaments/${t.id}/teams`),
         api.get(`/api/tournaments/${t.id}/matches`),
         api.get(`/api/tournaments/${t.id}/standings`),
         api.get(`/api/tournaments/${t.id}/scorers`),
         api.get(`/api/tournaments/${t.id}/player-stats`),
-        api.get(`/api/tournaments/${t.id}/news?published_only=true`)
+        api.get(`/api/tournaments/${t.id}/news?published_only=true`),
+        api.get(`/api/tournaments/${t.id}/formations`)
       ]);
       setTeams(teamsRes.data); setMatches(matchesRes.data); setStandings(standingsRes.data);
       setScorers(scorersRes.data); setPlayerStats(statsRes.data); setNews(newsRes.data);
+      setFormations(formationsRes.data || []);
     } catch (error) { console.error('Error:', error); } finally { setLoading(false); setRefreshing(false); }
   };
 
