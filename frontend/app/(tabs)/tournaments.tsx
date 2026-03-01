@@ -2355,6 +2355,33 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </SafeAreaView>
         </Modal>
       </Modal>
+
+      {/* Formation Modal */}
+      {selectedTeamForFormation && (
+        <FormationModal
+          visible={showFormationModal}
+          onClose={() => {
+            setShowFormationModal(false);
+            setSelectedTeamForFormation(null);
+          }}
+          teamId={selectedTeamForFormation.id}
+          teamName={selectedTeamForFormation.name}
+          gameFormat={tournament.game_format || '11v11'}
+          players={(teamPlayers[selectedTeamForFormation.id] || []).map((p: any) => ({
+            id: p.id,
+            team_id: selectedTeamForFormation.id,
+            full_name: p.name,
+            number: p.number,
+            role: p.role === 'Portiere' ? 'goalkeeper' : 
+                  p.role === 'Difensore' ? 'defender' :
+                  p.role === 'Centrocampista' ? 'midfielder' :
+                  p.role === 'Attaccante' ? 'forward' : p.role,
+            photo: p.photo,
+          }))}
+          existingFormation={teamFormations[selectedTeamForFormation.id] || null}
+          onSave={handleFormationSave}
+        />
+      )}
     </SafeAreaView>
   );
 }
