@@ -304,6 +304,38 @@ export default function TournamentsScreen() {
               />
             )}
             
+            {/* Formato Gioco - NEW */}
+            <Text style={styles.inputLabel}>Formato Gioco</Text>
+            <View style={styles.gameFormatContainer}>
+              {GAME_FORMATS.map((gf) => (
+                <TouchableOpacity 
+                  key={gf.value} 
+                  style={[styles.gameFormatOption, formData.game_format === gf.value && styles.gameFormatSelected]} 
+                  onPress={() => setFormData({ ...formData, game_format: gf.value })}
+                >
+                  <Text style={styles.gameFormatEmoji}>{gf.emoji}</Text>
+                  <Text style={[styles.gameFormatText, formData.game_format === gf.value && styles.gameFormatTextSelected]}>{gf.label}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            
+            {/* Custom players input */}
+            {formData.game_format === 'custom' && (
+              <View style={styles.customPlayersContainer}>
+                <Text style={styles.customPlayersLabel}>Numero giocatori per squadra:</Text>
+                <TextInput
+                  style={styles.customPlayersInput}
+                  value={String(formData.custom_players_per_side)}
+                  onChangeText={(text) => {
+                    const num = parseInt(text) || 1;
+                    setFormData({ ...formData, custom_players_per_side: Math.min(Math.max(num, 1), 20) });
+                  }}
+                  keyboardType="number-pad"
+                  maxLength={2}
+                />
+              </View>
+            )}
+
             <Text style={styles.inputLabel}>Categoria</Text>
             <View style={styles.chipContainer}>
               {CATEGORIES.map((cat) => (
