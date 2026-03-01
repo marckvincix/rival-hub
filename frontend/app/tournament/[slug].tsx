@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   headerMeta: { fontSize: 13, color: '#666' },
   shareButton: { width: 48, height: 48, borderWidth: 2, borderColor: '#000', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  tabsContainer: { backgroundColor: '#FFF', paddingVertical: 12, borderBottomWidth: 2, borderBottomColor: '#000' },
+  tabsContainer: { backgroundColor: '#FFF', paddingVertical: 12 },
   tab: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 8, marginHorizontal: 4, borderRadius: 16, borderWidth: 2, borderColor: '#000' },
   tabActive: { backgroundColor: '#000' },
   tabText: { fontSize: 12, color: '#000', marginLeft: 4, fontWeight: '600' },
