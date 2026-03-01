@@ -973,6 +973,152 @@ async def delete_player(
     await db.players.delete_one({"id": player_id})
     return {"message": "Giocatore eliminato"}
 
+# ===================== FORMATION ENDPOINTS =====================
+
+@api_router.get("/teams/{team_id}/formation")
+async def get_team_formation(team_id: str):
+    """Get formation for a team (public endpoint)"""
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Squadra non trovata")
+    
+    formation = await db.formations.find_one({"team_id": team_id}, {"_id": 0})
+    if not formation:
+        return None
+    
+    # Enrich with player details
+    enriched_starters = []
+    for starter in formation.get("starters", []):
+        player = await db.players.find_one({"id": starter["player_id"]}, {"_id": 0})
+        if player:
+            enriched_starters.append({
+                **starter,
+                "player_name": player.get("full_name", ""),
+                "player_number": player.get("number"),
+                "player_photo": player.get("photo"),
+                "player_role": player.get("role", "")
+            })
+    
+    enriched_bench = []
+    for player_id in formation.get("bench", []):
+        player = await db.players.find_one({"id": player_id}, {"_id": 0})
+        if player:
+            enriched_bench.append({
+                "player_id": player_id,
+                "player_name": player.get("full_name", ""),
+                "player_number": player.get("number"),
+                "player_photo": player.get("photo"),
+                "player_role": player.get("role", "")
+            })
+    
+    return {
+        **formation,
+        "starters": enriched_starters,
+        "bench": enriched_bench
+    }
+
+@api_router.post("/teams/{team_id}/formation")
+async def save_team_formation(
+    team_id: str,
+    formation_data: FormationCreate,
+    current_user: User = Depends(get_current_user)
+):
+    """Create or update formation for a team"""
+    team = await db.teams.find_one({"id": team_id}, {"_id": 0})
+    if not team:
+        raise HTTPException(status_code=404, detail="Squadra non trovata")
+    
+    # Verify ownership
+    tournament = await db.tournaments.find_one(
+        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    now = datetime.now(timezone.utc)
+    
+    # Check if formation exists
+    existing = await db.formations.find_one({"team_id": team_id}, {"_id": 0})
+    
+    if existing:
+        # Update existing formation
+        await db.formations.update_one(
+            {"team_id": team_id},
+            {"$set": {
+                "module": formation_data.module,
+                "starters": [s.dict() for s in formation_data.starters],
+                "bench": formation_data.bench,
+                "updated_at": now
+            }}
+        )
+        formation_id = existing["id"]
+    else:
+        # Create new formation
+        formation_id = f"formation_{uuid.uuid4().hex[:12]}"
+        formation_doc = {
+            "id": formation_id,
+            "team_id": team_id,
+            "tournament_id": team["tournament_id"],
+            "module": formation_data.module,
+            "starters": [s.dict() for s in formation_data.starters],
+            "bench": formation_data.bench,
+            "created_at": now,
+            "updated_at": now
+        }
+        await db.formations.insert_one(formation_doc)
+    
+    # Return the saved formation
+    saved = await db.formations.find_one({"id": formation_id}, {"_id": 0})
+    return saved
+
+@api_router.get("/tournaments/{tournament_id}/formations")
+async def get_tournament_formations(tournament_id: str):
+    """Get all formations for a tournament (public endpoint)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    formations = await db.formations.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Enrich each formation with player details
+    enriched_formations = []
+    for formation in formations:
+        enriched_starters = []
+        for starter in formation.get("starters", []):
+            player = await db.players.find_one({"id": starter["player_id"]}, {"_id": 0})
+            if player:
+                enriched_starters.append({
+                    **starter,
+                    "player_name": player.get("full_name", ""),
+                    "player_number": player.get("number"),
+                    "player_photo": player.get("photo"),
+                    "player_role": player.get("role", "")
+                })
+        
+        enriched_bench = []
+        for player_id in formation.get("bench", []):
+            player = await db.players.find_one({"id": player_id}, {"_id": 0})
+            if player:
+                enriched_bench.append({
+                    "player_id": player_id,
+                    "player_name": player.get("full_name", ""),
+                    "player_number": player.get("number"),
+                    "player_photo": player.get("photo"),
+                    "player_role": player.get("role", "")
+                })
+        
+        enriched_formations.append({
+            **formation,
+            "starters": enriched_starters,
+            "bench": enriched_bench
+        })
+    
+    return enriched_formations
+
 # ===================== MATCH ENDPOINTS =====================
 
 @api_router.post("/tournaments/{tournament_id}/matches", response_model=Match)
