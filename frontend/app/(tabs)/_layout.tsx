@@ -142,12 +142,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
     color: '#000',
-    marginBottom: 6,
+    marginTop: 6,
   },
   tabLabelPro: {
     fontSize: 13,
     fontWeight: '600',
     color: '#FFF',
-    marginBottom: 6,
+    marginTop: 6,
   },
 });
