@@ -5,7 +5,7 @@ export interface User {
   email: string;
   name: string;
   picture?: string;
-  plan: 'free' | 'pro' | 'club';
+  plan: 'free' | 'pro';
   plan_expiry?: string;
 }
 

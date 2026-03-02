@@ -69,7 +69,7 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
-    plan: str = "free"  # free, pro, club
+    plan: str = "free"  # free, pro
     plan_expiry: Optional[datetime] = None
     stripe_customer_id: Optional[str] = None
     created_at: datetime
@@ -294,8 +294,7 @@ class Formation(BaseModel):
 # Subscription Plans
 SUBSCRIPTION_PLANS = {
     "free": {"price_monthly": 0, "price_yearly": 0, "max_tournaments": 1, "max_teams": 8},
-    "pro": {"price_monthly": 9.99, "price_yearly": 79.00, "max_tournaments": -1, "max_teams": -1},
-    "club": {"price_monthly": 19.99, "price_yearly": 149.00, "max_tournaments": -1, "max_teams": -1}
+    "pro": {"price_monthly": 3.99, "price_yearly": 39.99, "max_tournaments": -1, "max_teams": -1}
 }
 
 # ===================== HELPER FUNCTIONS =====================
@@ -1884,18 +1883,16 @@ async def create_checkout_session(
     )
     
     body = await request.json()
-    plan = body.get("plan")  # pro_monthly, pro_yearly, club_monthly, club_yearly
+    plan = body.get("plan")  # pro_monthly, pro_yearly
     origin_url = body.get("origin_url")
     
     if not plan or not origin_url:
         raise HTTPException(status_code=400, detail="Piano e origin_url richiesti")
     
-    # Define fixed prices
+    # Define fixed prices - Only PRO plan available
     PLANS = {
-        "pro_monthly": 9.99,
-        "pro_yearly": 79.00,
-        "club_monthly": 19.99,
-        "club_yearly": 149.00
+        "pro_monthly": 3.99,
+        "pro_yearly": 39.99
     }
     
     if plan not in PLANS:
@@ -1968,7 +1965,7 @@ async def check_payment_status(
         # If paid and not already processed
         if status.payment_status == "paid" and transaction.get("payment_status") != "paid":
             plan = transaction.get("plan", "")
-            plan_type = "pro" if "pro" in plan else "club"
+            plan_type = "pro"  # Only PRO plan available
             is_yearly = "yearly" in plan
             
             expiry = datetime.now(timezone.utc) + timedelta(days=365 if is_yearly else 30)
@@ -2016,7 +2013,7 @@ async def stripe_webhook(request: Request):
             if transaction:
                 user_id = transaction.get("user_id")
                 plan = transaction.get("plan", "")
-                plan_type = "pro" if "pro" in plan else "club"
+                plan_type = "pro"  # Only PRO plan available
                 is_yearly = "yearly" in plan
                 
                 expiry = datetime.now(timezone.utc) + timedelta(days=365 if is_yearly else 30)

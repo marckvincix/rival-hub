@@ -30,8 +30,7 @@ export default function ProfileScreen() {
 
   const getPlanFeatures = () => {
     switch (user?.plan) {
-      case 'pro': return ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Nessun branding'];
-      case 'club': return ['Tutto del Pro', 'Collaboratori multipli', 'Categorie età', 'Export PDF'];
+      case 'pro': return ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Collaboratori', 'Categorie per età', 'Export PDF', 'Senza pubblicità', 'Senza branding'];
       default: return ['1 torneo attivo', 'Max 8 squadre', 'Statistiche base', 'Branding GoalManager'];
     }
   };
@@ -58,7 +57,7 @@ export default function ProfileScreen() {
           <Text style={styles.userName}>{user?.name || 'Utente'}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
           <View style={styles.planBadge}>
-            <Ionicons name={user?.plan === 'club' ? 'diamond' : user?.plan === 'pro' ? 'star' : 'person'} size={16} color="#FFF" />
+            <Ionicons name={user?.plan === 'pro' ? 'star' : 'person'} size={16} color="#FFF" />
             <Text style={styles.planBadgeText}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
           </View>
         </View>
@@ -69,7 +68,7 @@ export default function ProfileScreen() {
           <View style={styles.planCard}>
             <View style={styles.planHeader}>
               <Text style={styles.planName}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
-              {user?.plan !== 'club' && (
+              {user?.plan !== 'pro' && (
                 <View style={styles.upgradeBadge}>
                   <Text style={styles.upgradeText}>Upgrade</Text>
                 </View>
@@ -98,25 +97,11 @@ export default function ProfileScreen() {
                 </View>
                 <View style={styles.upgradeInfo}>
                   <Text style={styles.upgradeName}>Piano PRO</Text>
-                  <Text style={styles.upgradePrice}>€9.99/mese</Text>
+                  <Text style={styles.upgradePrice}>€39.99/anno</Text>
                 </View>
               </View>
-              <Text style={styles.upgradeDesc}>Tornei e squadre illimitate, statistiche complete</Text>
+              <Text style={styles.upgradeDesc}>Tornei e squadre illimitate, statistiche complete, collaboratori, categorie per età, export PDF, senza pubblicità</Text>
               <Button title="Scegli Pro" onPress={() => Alert.alert('Stripe', 'Pagamento in modalità test')} fullWidth />
-            </View>
-
-            <View style={styles.upgradeCard}>
-              <View style={styles.upgradeHeader}>
-                <View style={[styles.upgradeIconContainer, { backgroundColor: '#10B981' }]}>
-                  <Ionicons name="diamond" size={24} color="#FFF" />
-                </View>
-                <View style={styles.upgradeInfo}>
-                  <Text style={styles.upgradeName}>Piano CLUB</Text>
-                  <Text style={styles.upgradePrice}>€19.99/mese</Text>
-                </View>
-              </View>
-              <Text style={styles.upgradeDesc}>Tutto Pro + collaboratori, categorie età, export PDF</Text>
-              <Button title="Scegli Club" onPress={() => Alert.alert('Stripe', 'Pagamento in modalità test')} variant="outline" fullWidth />
             </View>
           </View>
         )}

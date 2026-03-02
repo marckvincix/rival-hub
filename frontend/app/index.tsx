@@ -62,8 +62,7 @@ export default function LandingPage() {
 
   const plans = [
     { name: 'FREE', price: '0', features: ['1 torneo', 'Max 8 squadre', 'Statistiche base'] },
-    { name: 'PRO', price: '9.99', features: ['Tornei illimitati', 'Squadre illimitate', 'Tutte le statistiche'] },
-    { name: 'CLUB', price: '19.99', features: ['Tutto Pro', 'Collaboratori', 'Export PDF'] },
+    { name: 'PRO', price: '39.99', period: '/anno', features: ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Collaboratori', 'Categorie per età', 'Export PDF', 'Senza pubblicità', 'Senza branding'] },
   ];
 
   return (
