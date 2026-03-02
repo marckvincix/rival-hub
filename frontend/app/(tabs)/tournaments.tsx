@@ -2763,6 +2763,7 @@ const styles = StyleSheet.create({
   matchPillTeam: { fontSize: 14, color: '#000', flex: 1, textAlign: 'center' },
   matchPillScore: { fontSize: 16, fontWeight: '700', color: '#000', marginHorizontal: 12, backgroundColor: '#F5F5F5', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   matchPillMain: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
+  matchPillDateTime: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 6 },
   matchStatsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 10 },
   matchStatsBtnText: { fontSize: 13, color: '#666', fontWeight: '500' },
   warningText: { fontSize: 13, color: '#999', textAlign: 'center', marginTop: 8 },
