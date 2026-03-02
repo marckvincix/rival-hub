@@ -510,11 +510,21 @@ export default function TournamentPublicPage() {
         {/* News Tab */}
         {activeTab === 'news' && (
           <View style={styles.tabContent}>
-            {news.length === 0 ? <EmptyState icon="newspaper-outline" title="Nessuna news" /> : (
+            {news.length === 0 ? <EmptyState icon="newspaper-outline" title="Nessuna news disponibile" /> : (
               news.map((item) => (
-                <View key={item.id} style={styles.newsCard}>
-                  <Text style={styles.newsTitle}>{item.title}</Text>
-                  <Text style={styles.newsContent} numberOfLines={4}>{item.content}</Text>
+                <View key={item.id} style={styles.publicNewsCard}>
+                  {item.photo && (
+                    <Image source={{ uri: item.photo }} style={styles.publicNewsImage} />
+                  )}
+                  <View style={styles.publicNewsContent}>
+                    <Text style={styles.publicNewsTitle}>{item.title}</Text>
+                    {item.content && (
+                      <Text style={styles.publicNewsDescription}>{item.content}</Text>
+                    )}
+                    <Text style={styles.publicNewsDate}>
+                      📅 {item.published_at ? new Date(item.published_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data non disponibile'}
+                    </Text>
+                  </View>
                 </View>
               ))
             )}
@@ -923,4 +933,11 @@ const styles = StyleSheet.create({
   matchFormationsTitle: { fontSize: 14, fontWeight: '700', color: '#000', marginBottom: 10 },
   matchFormationCard: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
   matchFormationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 },
+  // Public News styles
+  publicNewsCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
+  publicNewsImage: { width: '100%', height: 180, backgroundColor: '#F0F0F0' },
+  publicNewsContent: { padding: 16 },
+  publicNewsTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 8 },
+  publicNewsDescription: { fontSize: 14, color: '#333', lineHeight: 22, marginBottom: 12 },
+  publicNewsDate: { fontSize: 12, color: '#666' },
 });

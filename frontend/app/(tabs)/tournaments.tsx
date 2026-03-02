@@ -437,6 +437,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [selectedTeamForFormation, setSelectedTeamForFormation] = useState<any>(null);
   const [teamFormations, setTeamFormations] = useState<Record<string, Formation | null>>({});
+  // News Management state
+  const [tournamentNews, setTournamentNews] = useState<any[]>([]);
+  const [showNewsModal, setShowNewsModal] = useState(false);
+  const [editingNews, setEditingNews] = useState<any>(null);
+  const [newsForm, setNewsForm] = useState({ title: '', content: '', photo: '' });
+  const [savingNews, setSavingNews] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
@@ -1018,6 +1024,111 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     setTeamFormations(prev => ({ ...prev, [formation.team_id]: formation }));
   };
 
+  // ===== NEWS MANAGEMENT =====
+  // Load news for tournament
+  const loadNews = async () => {
+    try {
+      const response = await api.get(`/api/tournaments/${tournament.id}/news?published_only=false`);
+      setTournamentNews(response.data || []);
+    } catch (error) {
+      console.error('Error loading news:', error);
+    }
+  };
+
+  // Open news modal for create/edit
+  const handleOpenNewsModal = (news?: any) => {
+    if (news) {
+      setEditingNews(news);
+      setNewsForm({ title: news.title, content: news.content, photo: news.photo || '' });
+    } else {
+      setEditingNews(null);
+      setNewsForm({ title: '', content: '', photo: '' });
+    }
+    setShowNewsModal(true);
+  };
+
+  // Pick photo for news
+  const handlePickNewsPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.7,
+      base64: true,
+    });
+    if (!result.canceled && result.assets[0].base64) {
+      setNewsForm(prev => ({ ...prev, photo: `data:image/jpeg;base64,${result.assets[0].base64}` }));
+    }
+  };
+
+  // Save news (create or update)
+  const handleSaveNews = async () => {
+    if (!newsForm.title.trim()) {
+      Alert.alert('Errore', 'Il titolo è obbligatorio');
+      return;
+    }
+    setSavingNews(true);
+    try {
+      if (editingNews) {
+        // Update existing news
+        await api.put(`/api/news/${editingNews.id}`, {
+          title: newsForm.title,
+          content: newsForm.content,
+          photo: newsForm.photo || null,
+          is_published: true
+        });
+        Alert.alert('Successo', 'News aggiornata!');
+      } else {
+        // Create new news
+        await api.post(`/api/tournaments/${tournament.id}/news`, {
+          title: newsForm.title,
+          content: newsForm.content,
+          photo: newsForm.photo || null,
+          is_published: true
+        });
+        Alert.alert('Successo', 'News pubblicata!');
+      }
+      setShowNewsModal(false);
+      loadNews();
+    } catch (error) {
+      console.error('Error saving news:', error);
+      Alert.alert('Errore', 'Impossibile salvare la news');
+    } finally {
+      setSavingNews(false);
+    }
+  };
+
+  // Delete news
+  const handleDeleteNews = (newsId: string, title: string) => {
+    Alert.alert(
+      'Elimina News',
+      `Sei sicuro di voler eliminare "${title}"?`,
+      [
+        { text: 'Annulla', style: 'cancel' },
+        {
+          text: 'Elimina',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await api.delete(`/api/news/${newsId}`);
+              loadNews();
+              Alert.alert('Successo', 'News eliminata');
+            } catch (error) {
+              Alert.alert('Errore', 'Impossibile eliminare la news');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Load news when tab changes to news
+  useEffect(() => {
+    if (activeTab === 'news') {
+      loadNews();
+    }
+  }, [activeTab]);
+
   // Format date for display
   const formatMatchDateTime = (match: any) => {
     let result = '';
@@ -1031,10 +1142,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     return result || '';
   };
 
-  const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' }[] = [
+  const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' | 'newspaper' }[] = [
     { id: 'teams', label: 'Squadre', icon: 'people' },
     { id: 'matches', label: 'Partite', icon: 'football' },
     { id: 'results', label: 'Risultati', icon: 'create' },
+    { id: 'news', label: 'News', icon: 'newspaper' },
     { id: 'settings', label: 'Impostazioni', icon: 'settings' }
   ];
 
@@ -1259,6 +1371,56 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </>
                   );
                 })()}
+              </View>
+            )}
+
+            {/* News Tab */}
+            {activeTab === 'news' && (
+              <View>
+                {/* Add News Button */}
+                <TouchableOpacity 
+                  style={styles.addNewsButton} 
+                  onPress={() => handleOpenNewsModal()}
+                >
+                  <Ionicons name="add" size={20} color="#FFF" />
+                  <Text style={styles.addNewsButtonText}>Nuova News</Text>
+                </TouchableOpacity>
+
+                {/* News List */}
+                {tournamentNews.length === 0 ? (
+                  <EmptyState icon="newspaper-outline" title="Nessuna news" />
+                ) : (
+                  tournamentNews.map((news) => (
+                    <View key={news.id} style={styles.newsCard}>
+                      {news.photo && (
+                        <Image source={{ uri: news.photo }} style={styles.newsCardImage} />
+                      )}
+                      <View style={styles.newsCardContent}>
+                        <Text style={styles.newsCardTitle}>{news.title}</Text>
+                        {news.content && (
+                          <Text style={styles.newsCardDescription} numberOfLines={3}>{news.content}</Text>
+                        )}
+                        <Text style={styles.newsCardDate}>
+                          {news.published_at ? new Date(news.published_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Non pubblicata'}
+                        </Text>
+                      </View>
+                      <View style={styles.newsCardActions}>
+                        <TouchableOpacity 
+                          style={styles.newsEditBtn}
+                          onPress={() => handleOpenNewsModal(news)}
+                        >
+                          <Ionicons name="pencil" size={18} color="#000" />
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.newsDeleteBtn}
+                          onPress={() => handleDeleteNews(news.id, news.title)}
+                        >
+                          <Ionicons name="trash" size={18} color="#FFF" />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  ))
+                )}
               </View>
             )}
 
@@ -2400,6 +2562,67 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           onSave={handleFormationSave}
         />
       )}
+
+      {/* News Modal */}
+      <Modal
+        visible={showNewsModal}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowNewsModal(false)}
+      >
+        <SafeAreaView style={styles.newsModalContainer}>
+          <View style={styles.newsModalHeader}>
+            <TouchableOpacity onPress={() => setShowNewsModal(false)}>
+              <Text style={styles.newsModalCancel}>Annulla</Text>
+            </TouchableOpacity>
+            <Text style={styles.newsModalTitle}>{editingNews ? 'Modifica News' : 'Nuova News'}</Text>
+            <TouchableOpacity onPress={handleSaveNews} disabled={savingNews}>
+              {savingNews ? (
+                <ActivityIndicator size="small" color="#000" />
+              ) : (
+                <Text style={styles.newsModalSave}>Pubblica</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView style={styles.newsModalContent} showsVerticalScrollIndicator={false}>
+            {/* Photo Upload */}
+            <TouchableOpacity style={styles.newsPhotoUpload} onPress={handlePickNewsPhoto}>
+              {newsForm.photo ? (
+                <Image source={{ uri: newsForm.photo }} style={styles.newsPhotoPreview} />
+              ) : (
+                <View style={styles.newsPhotoPlaceholder}>
+                  <Ionicons name="camera" size={40} color="#999" />
+                  <Text style={styles.newsPhotoText}>Aggiungi foto (opzionale)</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            {/* Title Input */}
+            <Text style={styles.newsInputLabel}>📝 Titolo *</Text>
+            <TextInput
+              style={styles.newsInput}
+              placeholder="Inserisci il titolo della news..."
+              value={newsForm.title}
+              onChangeText={(text) => setNewsForm(prev => ({ ...prev, title: text }))}
+              placeholderTextColor="#999"
+            />
+
+            {/* Description Input */}
+            <Text style={styles.newsInputLabel}>📄 Descrizione</Text>
+            <TextInput
+              style={[styles.newsInput, styles.newsTextArea]}
+              placeholder="Inserisci la descrizione della news..."
+              value={newsForm.content}
+              onChangeText={(text) => setNewsForm(prev => ({ ...prev, content: text }))}
+              placeholderTextColor="#999"
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -3109,4 +3332,30 @@ const styles = StyleSheet.create({
   averageRatingLabel: { fontSize: 14, color: '#666', marginBottom: 4 },
   averageRatingValue: { fontSize: 32, fontWeight: '700', color: '#FFD700' },
   averageRatingSubtext: { fontSize: 12, color: '#999', marginTop: 4 },
+  // News Management Styles
+  addNewsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#000', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 12, marginBottom: 16 },
+  addNewsButtonText: { color: '#FFF', fontSize: 16, fontWeight: '600' },
+  newsCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
+  newsCardImage: { width: '100%', height: 160, backgroundColor: '#F0F0F0' },
+  newsCardContent: { padding: 16 },
+  newsCardTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 6 },
+  newsCardDescription: { fontSize: 14, color: '#666', lineHeight: 20 },
+  newsCardDate: { fontSize: 12, color: '#999', marginTop: 8 },
+  newsCardActions: { flexDirection: 'row', padding: 12, borderTopWidth: 1, borderTopColor: '#EEE', gap: 8 },
+  newsEditBtn: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#F5F5F5', borderRadius: 8 },
+  newsDeleteBtn: { width: 44, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, backgroundColor: '#EF4444', borderRadius: 8 },
+  // News Modal Styles
+  newsModalContainer: { flex: 1, backgroundColor: '#FFF' },
+  newsModalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  newsModalCancel: { fontSize: 16, color: '#666' },
+  newsModalTitle: { fontSize: 17, fontWeight: '600', color: '#000' },
+  newsModalSave: { fontSize: 16, fontWeight: '600', color: '#000' },
+  newsModalContent: { flex: 1, padding: 16 },
+  newsPhotoUpload: { borderWidth: 2, borderStyle: 'dashed', borderColor: '#CCC', borderRadius: 12, marginBottom: 20, overflow: 'hidden' },
+  newsPhotoPreview: { width: '100%', height: 200 },
+  newsPhotoPlaceholder: { height: 200, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F9F9F9' },
+  newsPhotoText: { fontSize: 14, color: '#999', marginTop: 8 },
+  newsInputLabel: { fontSize: 14, fontWeight: '600', color: '#000', marginBottom: 8 },
+  newsInput: { borderWidth: 2, borderColor: '#000', borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 16 },
+  newsTextArea: { height: 150, textAlignVertical: 'top' },
 });
