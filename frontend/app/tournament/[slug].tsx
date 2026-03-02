@@ -19,7 +19,7 @@ import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView } from '../..
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player } from '../../src/types';
 
-type TabId = 'standings' | 'teams' | 'matches' | 'formations' | 'scorers' | 'stats' | 'news' | 'info';
+type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info';
 
 export default function TournamentPublicPage() {
   const router = useRouter();
