@@ -17,9 +17,9 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView } from '../../src/components';
 import api from '../../src/utils/api';
-import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation } from '../../src/types';
+import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player } from '../../src/types';
 
-type TabId = 'standings' | 'matches' | 'formations' | 'scorers' | 'stats' | 'news' | 'info';
+type TabId = 'standings' | 'teams' | 'matches' | 'formations' | 'scorers' | 'stats' | 'news' | 'info';
 
 export default function TournamentPublicPage() {
   const router = useRouter();
@@ -41,6 +41,13 @@ export default function TournamentPublicPage() {
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [publicFormationViewMode, setPublicFormationViewMode] = useState<'list' | 'field'>('field');
+  // Teams tab state
+  const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
+  const [teamPlayers, setTeamPlayers] = useState<Record<string, any[]>>({});
+  const [showPlayerStatsModal, setShowPlayerStatsModal] = useState(false);
+  const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<any>(null);
+  const [playerStatsData, setPlayerStatsData] = useState<any>(null);
+  const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
