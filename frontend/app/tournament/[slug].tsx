@@ -7,7 +7,10 @@ import {
   TouchableOpacity,
   Share,
   RefreshControl,
-  Modal
+  Modal,
+  Linking,
+  Platform,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
