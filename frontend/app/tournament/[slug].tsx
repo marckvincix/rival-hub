@@ -194,7 +194,6 @@ export default function TournamentPublicPage() {
     { id: 'standings', label: 'Classifica', icon: 'podium-outline' },
     { id: 'teams', label: 'Squadre', icon: 'people-outline' },
     { id: 'matches', label: 'Partite', icon: 'football-outline' },
-    { id: 'formations', label: 'Formazioni', icon: 'grid-outline' },
     { id: 'scorers', label: 'Marcatori', icon: 'trophy-outline' },
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
     { id: 'news', label: 'News', icon: 'newspaper-outline' },
