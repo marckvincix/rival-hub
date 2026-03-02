@@ -1016,6 +1016,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     setTeamFormations(prev => ({ ...prev, [formation.team_id]: formation }));
   };
 
+  // Format date for display
+  const formatMatchDateTime = (match: any) => {
+    let result = '';
+    if (match.match_date) {
+      const date = new Date(match.match_date);
+      result = date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    if (match.match_time) {
+      result += result ? ` • ${match.match_time}` : match.match_time;
+    }
+    return result || '';
+  };
+
   const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' }[] = [
     { id: 'teams', label: 'Squadre', icon: 'people' },
     { id: 'matches', label: 'Partite', icon: 'football' },
