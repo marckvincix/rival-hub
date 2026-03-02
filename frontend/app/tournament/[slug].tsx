@@ -279,6 +279,56 @@ export default function TournamentPublicPage() {
           </View>
         )}
 
+        {/* Teams Tab */}
+        {activeTab === 'teams' && (
+          <View style={styles.tabContent}>
+            {teams.length === 0 ? <EmptyState icon="people-outline" title="Nessuna squadra" /> : (
+              teams.map((team) => (
+                <View key={team.id} style={styles.publicTeamCard}>
+                  <TouchableOpacity 
+                    style={styles.publicTeamHeader}
+                    onPress={() => handleTeamExpand(team.id)}
+                  >
+                    <TeamLogo logo={team.logo} name={team.name} size="medium" />
+                    <Text style={styles.publicTeamName}>{team.name}</Text>
+                    <Ionicons 
+                      name={expandedTeamId === team.id ? 'chevron-up' : 'chevron-down'} 
+                      size={24} 
+                      color="#000" 
+                    />
+                  </TouchableOpacity>
+                  {expandedTeamId === team.id && (
+                    <View style={styles.publicPlayersAccordion}>
+                      {!teamPlayers[team.id] || teamPlayers[team.id].length === 0 ? (
+                        <Text style={styles.noPlayersText}>Nessun giocatore</Text>
+                      ) : (
+                        teamPlayers[team.id].map((player: any) => (
+                          <TouchableOpacity 
+                            key={player.id} 
+                            style={styles.publicPlayerCard}
+                            onPress={() => handleOpenPlayerStats(player)}
+                          >
+                            <View style={styles.publicPlayerAvatar}>
+                              <Text style={styles.publicPlayerAvatarText}>
+                                {player.number || player.full_name?.charAt(0) || '?'}
+                              </Text>
+                            </View>
+                            <View style={styles.publicPlayerInfo}>
+                              <Text style={styles.publicPlayerName}>{player.full_name}</Text>
+                              <Text style={styles.publicPlayerRole}>{player.role}</Text>
+                            </View>
+                            <Ionicons name="stats-chart" size={18} color="#666" />
+                          </TouchableOpacity>
+                        ))
+                      )}
+                    </View>
+                  )}
+                </View>
+              ))
+            )}
+          </View>
+        )}
+
         {/* Matches Tab */}
         {activeTab === 'matches' && (
           <View style={styles.tabContent}>
