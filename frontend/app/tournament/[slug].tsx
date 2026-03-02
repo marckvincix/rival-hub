@@ -335,39 +335,126 @@ export default function TournamentPublicPage() {
               sortedRounds.map(([round, roundMatches]) => (
                 <View key={round} style={styles.matchesGroup}>
                   <Text style={styles.matchesGroupTitle}>{round}</Text>
-                  {roundMatches.map((match) => (
-                    <View key={match.id} style={styles.matchCard}>
-                      <View style={styles.matchRow}>
-                        <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
-                        <View style={styles.matchCenterContent}>
-                          <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
-                          <Text style={styles.matchScore}>
-                            {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
-                          </Text>
-                          <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
+                  {roundMatches.map((match) => {
+                    const homeFormation = formations.find(f => f.team_id === match.home_team_id);
+                    const awayFormation = formations.find(f => f.team_id === match.away_team_id);
+                    return (
+                      <View key={match.id} style={styles.matchCard}>
+                        <View style={styles.matchRow}>
+                          <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
+                          <View style={styles.matchCenterContent}>
+                            <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
+                            <Text style={styles.matchScore}>
+                              {match.status === 'completed' ? `${match.home_goals} - ${match.away_goals}` : '0 - 0'}
+                            </Text>
+                            <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
+                          </View>
+                          <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                         </View>
-                        <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
+                        {/* Date and Time */}
+                        <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
+                        {/* Action Buttons Row */}
+                        <View style={styles.matchActionsRow}>
+                          <TouchableOpacity 
+                            style={styles.statsButton} 
+                            onPress={() => handleOpenMatchStats(match)}
+                          >
+                            <Ionicons name="stats-chart" size={14} color="#666" />
+                            <Text style={styles.statsButtonText}>Statistiche</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity 
+                            style={styles.calendarButton} 
+                            onPress={() => handleAddToCalendar(match)}
+                          >
+                            <Ionicons name="calendar-outline" size={18} color="#000" />
+                          </TouchableOpacity>
+                        </View>
+                        
+                        {/* Formations for this match */}
+                        {(homeFormation || awayFormation) && (
+                          <View style={styles.matchFormationsSection}>
+                            <Text style={styles.matchFormationsTitle}>Formazioni</Text>
+                            {/* Home Team Formation */}
+                            {homeFormation && (
+                              <View style={styles.matchFormationCard}>
+                                <TouchableOpacity 
+                                  style={styles.matchFormationHeader}
+                                  onPress={() => {
+                                    setSelectedFormation(homeFormation);
+                                    setShowFormationModal(true);
+                                  }}
+                                >
+                                  <View style={styles.formationTeamInfo}>
+                                    <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
+                                    <View style={styles.formationTeamDetails}>
+                                      <Text style={styles.formationTeamName}>{getTeamName(match.home_team_id)}</Text>
+                                      <Text style={styles.formationModuleBadge}>Modulo: {homeFormation.module}</Text>
+                                    </View>
+                                  </View>
+                                  <View style={styles.viewFormationBtn}>
+                                    <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                    <Ionicons name="chevron-forward" size={18} color="#FFF" />
+                                  </View>
+                                </TouchableOpacity>
+                                <View style={styles.formationPreview}>
+                                  <Text style={styles.formationPreviewLabel}>Titolari ({homeFormation.starters.length}):</Text>
+                                  <View style={styles.formationPlayersList}>
+                                    {homeFormation.starters.slice(0, 6).map((s: any, idx: number) => (
+                                      <View key={idx} style={styles.formationPlayerChip}>
+                                        <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
+                                        <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
+                                      </View>
+                                    ))}
+                                    {homeFormation.starters.length > 6 && (
+                                      <Text style={styles.formationMorePlayers}>+{homeFormation.starters.length - 6}</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              </View>
+                            )}
+                            {/* Away Team Formation */}
+                            {awayFormation && (
+                              <View style={styles.matchFormationCard}>
+                                <TouchableOpacity 
+                                  style={styles.matchFormationHeader}
+                                  onPress={() => {
+                                    setSelectedFormation(awayFormation);
+                                    setShowFormationModal(true);
+                                  }}
+                                >
+                                  <View style={styles.formationTeamInfo}>
+                                    <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
+                                    <View style={styles.formationTeamDetails}>
+                                      <Text style={styles.formationTeamName}>{getTeamName(match.away_team_id)}</Text>
+                                      <Text style={styles.formationModuleBadge}>Modulo: {awayFormation.module}</Text>
+                                    </View>
+                                  </View>
+                                  <View style={styles.viewFormationBtn}>
+                                    <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                    <Ionicons name="chevron-forward" size={18} color="#FFF" />
+                                  </View>
+                                </TouchableOpacity>
+                                <View style={styles.formationPreview}>
+                                  <Text style={styles.formationPreviewLabel}>Titolari ({awayFormation.starters.length}):</Text>
+                                  <View style={styles.formationPlayersList}>
+                                    {awayFormation.starters.slice(0, 6).map((s: any, idx: number) => (
+                                      <View key={idx} style={styles.formationPlayerChip}>
+                                        <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
+                                        <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
+                                      </View>
+                                    ))}
+                                    {awayFormation.starters.length > 6 && (
+                                      <Text style={styles.formationMorePlayers}>+{awayFormation.starters.length - 6}</Text>
+                                    )}
+                                  </View>
+                                </View>
+                              </View>
+                            )}
+                          </View>
+                        )}
                       </View>
-                      {/* Date and Time */}
-                      <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
-                      {/* Action Buttons Row */}
-                      <View style={styles.matchActionsRow}>
-                        <TouchableOpacity 
-                          style={styles.statsButton} 
-                          onPress={() => handleOpenMatchStats(match)}
-                        >
-                          <Ionicons name="stats-chart" size={14} color="#666" />
-                          <Text style={styles.statsButtonText}>Statistiche</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity 
-                          style={styles.calendarButton} 
-                          onPress={() => handleAddToCalendar(match)}
-                        >
-                          <Ionicons name="calendar-outline" size={18} color="#000" />
-                        </TouchableOpacity>
-                      </View>
-                    </View>
-                  ))}
+                    );
+                  })}
                 </View>
               ))
             )}
