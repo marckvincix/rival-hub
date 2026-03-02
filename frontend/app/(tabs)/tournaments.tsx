@@ -1195,6 +1195,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             </Text>
                             <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
                           </View>
+                          {formatMatchDateTime(match) ? (
+                            <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
+                          ) : null}
                           <TouchableOpacity 
                             style={styles.matchStatsBtn}
                             onPress={() => handleOpenMatchStats(match)}
