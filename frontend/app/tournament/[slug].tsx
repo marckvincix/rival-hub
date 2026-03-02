@@ -81,6 +81,62 @@ export default function TournamentPublicPage() {
     setShowStatsModal(true);
   };
 
+  // Format date for display
+  const formatMatchDateTime = (match: Match) => {
+    let result = '';
+    if (match.match_date) {
+      const date = new Date(match.match_date);
+      result = date.toLocaleDateString('it-IT', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    if (match.match_time) {
+      result += result ? ` • ${match.match_time}` : match.match_time;
+    }
+    return result || 'Data da definire';
+  };
+
+  // Add to calendar function
+  const handleAddToCalendar = async (match: Match) => {
+    const homeTeam = getTeamName(match.home_team_id);
+    const awayTeam = getTeamName(match.away_team_id);
+    const title = `${homeTeam} vs ${awayTeam}`;
+    const location = tournament?.location || '';
+    
+    // Parse date and time
+    let startDate = new Date();
+    if (match.match_date) {
+      startDate = new Date(match.match_date);
+    }
+    if (match.match_time) {
+      const [hours, minutes] = match.match_time.split(':');
+      startDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
+    }
+    
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+    
+    // Format for calendar URLs
+    const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, '');
+    const startStr = formatDate(startDate);
+    const endStr = formatDate(endDate);
+    
+    // Create Google Calendar URL
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(`Partita del torneo ${tournament?.name || ''}`)}`;
+    
+    // For iOS, we can try to open the calendar app
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'Aggiungi al Calendario',
+        'Scegli il calendario',
+        [
+          { text: 'Google Calendar', onPress: () => Linking.openURL(googleUrl) },
+          { text: 'Annulla', style: 'cancel' }
+        ]
+      );
+    } else {
+      // For Android and web, open Google Calendar
+      Linking.openURL(googleUrl);
+    }
+  };
+
   if (loading) return <Loading message="Caricamento..." />;
 
   if (!tournament) {
