@@ -179,21 +179,6 @@ export default function TournamentPublicPage() {
     } finally {
       setLoadingPlayerStats(false);
     }
-  };    
-    // For iOS, we can try to open the calendar app
-    if (Platform.OS === 'ios') {
-      Alert.alert(
-        'Aggiungi al Calendario',
-        'Scegli il calendario',
-        [
-          { text: 'Google Calendar', onPress: () => Linking.openURL(googleUrl) },
-          { text: 'Annulla', style: 'cancel' }
-        ]
-      );
-    } else {
-      // For Android and web, open Google Calendar
-      Linking.openURL(googleUrl);
-    }
   };
 
   if (loading) return <Loading message="Caricamento..." />;
