@@ -906,4 +906,9 @@ const styles = StyleSheet.create({
   playerStatsRatingValue: { fontSize: 24, fontWeight: '700', color: '#EAB308' },
   playerStatsRatingCount: { fontSize: 12, color: '#666' },
   noStatsText: { fontSize: 14, color: '#999', fontStyle: 'italic', textAlign: 'center', paddingVertical: 20 },
+  // Match formations section
+  matchFormationsSection: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#EEE' },
+  matchFormationsTitle: { fontSize: 14, fontWeight: '700', color: '#000', marginBottom: 10 },
+  matchFormationCard: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
+  matchFormationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 },
 });
