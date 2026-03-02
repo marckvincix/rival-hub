@@ -127,7 +127,43 @@ export default function TournamentPublicPage() {
     
     // Create Google Calendar URL
     const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(`Partita del torneo ${tournament?.name || ''}`)}`;
-    
+
+  // Load players for a team
+  const loadTeamPlayers = async (teamId: string) => {
+    if (teamPlayers[teamId]) return; // Already loaded
+    try {
+      const response = await api.get(`/api/teams/${teamId}/players`);
+      setTeamPlayers(prev => ({ ...prev, [teamId]: response.data || [] }));
+    } catch (error) {
+      console.error('Error loading players:', error);
+    }
+  };
+
+  // Toggle team expansion
+  const handleTeamExpand = async (teamId: string) => {
+    if (expandedTeamId === teamId) {
+      setExpandedTeamId(null);
+    } else {
+      setExpandedTeamId(teamId);
+      await loadTeamPlayers(teamId);
+    }
+  };
+
+  // Load player stats
+  const handleOpenPlayerStats = async (player: any) => {
+    setSelectedPlayerForStats(player);
+    setShowPlayerStatsModal(true);
+    setLoadingPlayerStats(true);
+    try {
+      const response = await api.get(`/api/players/${player.id}/stats`);
+      setPlayerStatsData(response.data);
+    } catch (error) {
+      console.error('Error loading player stats:', error);
+      setPlayerStatsData(null);
+    } finally {
+      setLoadingPlayerStats(false);
+    }
+  };    
     // For iOS, we can try to open the calendar app
     if (Platform.OS === 'ios') {
       Alert.alert(
