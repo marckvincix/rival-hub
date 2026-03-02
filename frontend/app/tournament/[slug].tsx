@@ -127,6 +127,22 @@ export default function TournamentPublicPage() {
     
     // Create Google Calendar URL
     const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(`Partita del torneo ${tournament?.name || ''}`)}`;
+    
+    // For iOS, we can try to open the calendar app
+    if (Platform.OS === 'ios') {
+      Alert.alert(
+        'Aggiungi al Calendario',
+        'Scegli il calendario',
+        [
+          { text: 'Google Calendar', onPress: () => Linking.openURL(googleUrl) },
+          { text: 'Annulla', style: 'cancel' }
+        ]
+      );
+    } else {
+      // For Android and web, open Google Calendar
+      Linking.openURL(googleUrl);
+    }
+  };
 
   // Load players for a team
   const loadTeamPlayers = async (teamId: string) => {
