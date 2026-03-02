@@ -348,20 +348,357 @@ class BackendTester:
         
         return all_tests_passed
 
+    def test_authentication_required_endpoints(self):
+        """Test that protected endpoints require authentication"""
+        self.log("🔐 Testing authentication requirements...")
+        
+        # Clear auth headers temporarily
+        original_headers = self.session.headers.copy()
+        if 'Authorization' in self.session.headers:
+            del self.session.headers['Authorization']
+        
+        # Test protected endpoints without auth - should return 401
+        fake_tournament_id = "tournament_fake123"
+        fake_news_id = "news_fake123"
+        
+        test_cases = [
+            ("POST", f"{BASE_URL}/tournaments/{fake_tournament_id}/news", {"title": "Test", "content": "Test"}),
+            ("PUT", f"{BASE_URL}/news/{fake_news_id}", {"title": "Test"}),
+            ("DELETE", f"{BASE_URL}/news/{fake_news_id}", None)
+        ]
+        
+        auth_test_passed = True
+        for method, url, data in test_cases:
+            try:
+                if method == "POST":
+                    response = self.session.post(url, json=data)
+                elif method == "PUT":
+                    response = self.session.put(url, json=data)
+                elif method == "DELETE":
+                    response = self.session.delete(url)
+                
+                if response.status_code == 401:
+                    self.log(f"✅ {method} endpoint correctly requires authentication (401)")
+                else:
+                    self.log(f"❌ {method} endpoint should require auth but got {response.status_code}")
+                    auth_test_passed = False
+            except Exception as e:
+                self.log(f"❌ Auth test error for {method}: {str(e)}")
+                auth_test_passed = False
+        
+        # Restore headers
+        self.session.headers = original_headers
+        return auth_test_passed
+
+    def test_news_crud_api(self):
+        """Test the complete News CRUD API functionality"""
+        self.log("📰 Starting News CRUD API Testing...")
+        self.log("=" * 60)
+        
+        # Step 0: Test authentication requirements first
+        if not self.test_authentication_required_endpoints():
+            return False
+        
+        # Step 1: Login/Register
+        if not self.test_register_or_login():
+            return False
+        
+        # Step 2: Create or get a tournament
+        tournaments = self.test_get_tournaments()
+        tournament = None
+        
+        if tournaments and len(tournaments) > 0:
+            tournament = tournaments[0]
+            self.log(f"✅ Using existing tournament: {tournament['name']} (ID: {tournament['id']})")
+        else:
+            tournament = self.test_create_tournament()
+            if not tournament:
+                return False
+        
+        tournament_id = tournament['id']
+        
+        # Step 3: Test CREATE news (POST /api/tournaments/{tournament_id}/news)
+        self.log("\n🔹 Testing CREATE news...")
+        news_data = {
+            "title": "Test News Title",
+            "content": "Test content for the news article. This is a comprehensive test of the news API functionality.",
+            "photo": None,
+            "is_published": True
+        }
+        
+        try:
+            response = self.session.post(f"{BASE_URL}/tournaments/{tournament_id}/news", json=news_data)
+            if response.status_code == 200:
+                created_news = response.json()
+                news_id = created_news['id']
+                self.log(f"✅ News created successfully - ID: {news_id}, Title: '{created_news['title']}'")
+                
+                # Verify required fields
+                required_fields = ['id', 'tournament_id', 'title', 'content', 'is_published', 'created_at']
+                for field in required_fields:
+                    if field not in created_news:
+                        self.log(f"❌ Created news missing required field: {field}")
+                        return False
+                
+                # Verify data matches
+                if created_news['title'] != news_data['title']:
+                    self.log(f"❌ Title mismatch - Expected: '{news_data['title']}', Got: '{created_news['title']}'")
+                    return False
+                
+                if created_news['tournament_id'] != tournament_id:
+                    self.log(f"❌ Tournament ID mismatch - Expected: {tournament_id}, Got: {created_news['tournament_id']}")
+                    return False
+                    
+            else:
+                self.log(f"❌ Create news failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Create news error: {str(e)}")
+            return False
+        
+        # Step 4: Test GET news list (GET /api/tournaments/{tournament_id}/news)
+        self.log("\n🔹 Testing GET news list...")
+        try:
+            response = self.session.get(f"{BASE_URL}/tournaments/{tournament_id}/news")
+            if response.status_code == 200:
+                news_list = response.json()
+                self.log(f"✅ News list retrieved - Found {len(news_list)} news articles")
+                
+                # Verify our created news appears in the list
+                found_news = None
+                for news in news_list:
+                    if news['id'] == news_id:
+                        found_news = news
+                        break
+                
+                if found_news:
+                    self.log(f"✅ Created news found in list - Title: '{found_news['title']}'")
+                else:
+                    self.log("❌ Created news not found in list")
+                    return False
+                    
+            else:
+                self.log(f"❌ Get news list failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Get news list error: {str(e)}")
+            return False
+        
+        # Step 5: Test GET news list with published_only=false
+        self.log("\n🔹 Testing GET news list with published_only=false...")
+        try:
+            response = self.session.get(f"{BASE_URL}/tournaments/{tournament_id}/news?published_only=false")
+            if response.status_code == 200:
+                all_news_list = response.json()
+                self.log(f"✅ All news list retrieved - Found {len(all_news_list)} news articles (including unpublished)")
+            else:
+                self.log(f"❌ Get all news list failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Get all news list error: {str(e)}")
+            return False
+        
+        # Step 6: Test UPDATE news (PUT /api/news/{news_id})
+        self.log("\n🔹 Testing UPDATE news...")
+        update_data = {
+            "title": "Updated News Title",
+            "content": "Updated content for the news article.",
+            "is_published": True
+        }
+        
+        try:
+            response = self.session.put(f"{BASE_URL}/news/{news_id}", json=update_data)
+            if response.status_code == 200:
+                updated_news = response.json()
+                self.log(f"✅ News updated successfully - New title: '{updated_news['title']}'")
+                
+                # Verify update worked
+                if updated_news['title'] != update_data['title']:
+                    self.log(f"❌ Update failed - Title should be '{update_data['title']}', got '{updated_news['title']}'")
+                    return False
+                    
+                if updated_news['content'] != update_data['content']:
+                    self.log(f"❌ Update failed - Content mismatch")
+                    return False
+                    
+            else:
+                self.log(f"❌ Update news failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Update news error: {str(e)}")
+            return False
+        
+        # Step 7: Verify update by getting news list again
+        self.log("\n🔹 Verifying update by getting news list...")
+        try:
+            response = self.session.get(f"{BASE_URL}/tournaments/{tournament_id}/news")
+            if response.status_code == 200:
+                updated_news_list = response.json()
+                
+                # Find our updated news
+                updated_found = None
+                for news in updated_news_list:
+                    if news['id'] == news_id:
+                        updated_found = news
+                        break
+                
+                if updated_found and updated_found['title'] == "Updated News Title":
+                    self.log(f"✅ Update verified - News title is now '{updated_found['title']}'")
+                else:
+                    self.log("❌ Update verification failed")
+                    return False
+                    
+            else:
+                self.log(f"❌ Verification get failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Update verification error: {str(e)}")
+            return False
+        
+        # Step 8: Test ownership verification
+        if not self.test_ownership_verification(tournament_id):
+            return False
+        
+        # Step 9: Test DELETE news (DELETE /api/news/{news_id})
+        self.log("\n🔹 Testing DELETE news...")
+        try:
+            response = self.session.delete(f"{BASE_URL}/news/{news_id}")
+            if response.status_code == 200:
+                self.log("✅ News deleted successfully")
+            else:
+                self.log(f"❌ Delete news failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Delete news error: {str(e)}")
+            return False
+        
+        # Step 10: Verify deletion by checking news count
+        self.log("\n🔹 Verifying deletion...")
+        try:
+            response = self.session.get(f"{BASE_URL}/tournaments/{tournament_id}/news")
+            if response.status_code == 200:
+                final_news_list = response.json()
+                
+                # Check if our news is gone
+                deleted_found = None
+                for news in final_news_list:
+                    if news['id'] == news_id:
+                        deleted_found = news
+                        break
+                
+                if not deleted_found:
+                    self.log(f"✅ Deletion verified - News removed from list (Total: {len(final_news_list)} news)")
+                else:
+                    self.log("❌ Deletion verification failed - News still exists")
+                    return False
+                    
+            else:
+                self.log(f"❌ Deletion verification failed: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Deletion verification error: {str(e)}")
+            return False
+        
+        return True
+    def test_ownership_verification(self, tournament_id):
+        """Test that users can only modify their own news"""
+        self.log("🔒 Testing ownership verification...")
+        
+        # Create news with current user
+        news_data = {
+            "title": "Ownership Test News",
+            "content": "This news is for testing ownership verification",
+            "is_published": True
+        }
+        
+        try:
+            response = self.session.post(f"{BASE_URL}/tournaments/{tournament_id}/news", json=news_data)
+            if response.status_code == 200:
+                news = response.json()
+                news_id = news['id']
+                self.log(f"✅ News created for ownership test - ID: {news_id}")
+                
+                # Try to access news from different user (should work for GET)
+                # Create a second user
+                test_email2 = f"testuser2{datetime.now().strftime('%Y%m%d%H%M%S')}@goalmanager.test"
+                
+                # Save current session
+                current_session = self.session.headers.copy()
+                
+                # Register second user
+                response2 = requests.post(f"{BASE_URL}/auth/register", json={
+                    "email": test_email2,
+                    "password": "password123",
+                    "name": "Test User 2"
+                })
+                
+                if response2.status_code == 200:
+                    data2 = response2.json()
+                    session_token2 = data2.get("session_token")
+                    
+                    # Try to update news with second user (should fail)
+                    temp_session = requests.Session()
+                    temp_session.headers.update({
+                        "Authorization": f"Bearer {session_token2}"
+                    })
+                    
+                    update_response = temp_session.put(f"{BASE_URL}/news/{news_id}", json={
+                        "title": "Malicious Update"
+                    })
+                    
+                    if update_response.status_code == 403 or update_response.status_code == 404:
+                        self.log("✅ Ownership verification working - Second user cannot modify first user's news")
+                        
+                        # Restore original session and clean up
+                        self.session.headers = current_session
+                        
+                        # Delete the test news
+                        delete_response = self.session.delete(f"{BASE_URL}/news/{news_id}")
+                        if delete_response.status_code == 200:
+                            self.log("✅ Test news cleaned up")
+                        
+                        return True
+                    else:
+                        self.log(f"❌ Ownership verification failed - Second user could modify news: {update_response.status_code}")
+                        return False
+                else:
+                    self.log(f"❌ Could not create second user for ownership test: {response2.status_code}")
+                    return False
+                    
+            else:
+                self.log(f"❌ Could not create news for ownership test: {response.status_code}")
+                return False
+                
+        except Exception as e:
+            self.log(f"❌ Ownership test error: {str(e)}")
+            return False
+
 def main():
     tester = BackendTester()
     
     try:
-        success = tester.test_player_dropdown_functionality()
+        # Test News CRUD API instead of player dropdown
+        success = tester.test_news_crud_api()
         
         print("\n" + "=" * 60)
         if success:
-            print("✅ ALL TESTS PASSED - Player dropdown API is working correctly!")
-            print("📋 The GET /api/teams/{team_id}/players endpoint:")
-            print("   - Returns correct player data for each team")
-            print("   - Includes all required fields (id, full_name, number, role, team_id)")
-            print("   - Properly filters players by team_id")
-            print("   - Can be used for player dropdowns in the frontend")
+            print("✅ ALL NEWS API TESTS PASSED - News CRUD API is working correctly!")
+            print("📰 The News API endpoints:")
+            print("   ✅ POST /api/tournaments/{tournament_id}/news - Create news")
+            print("   ✅ GET /api/tournaments/{tournament_id}/news - Get news list")
+            print("   ✅ GET /api/tournaments/{tournament_id}/news?published_only=false - Get all news")
+            print("   ✅ PUT /api/news/{news_id} - Update news")
+            print("   ✅ DELETE /api/news/{news_id} - Delete news")
+            print("\n🔐 Authentication: ✅ Bearer token authentication working")
+            print("📋 Data integrity: ✅ All CRUD operations verified")
+            print("🎯 API functionality: ✅ Ready for frontend integration")
         else:
             print("❌ SOME TESTS FAILED - Check the logs above for details")
             sys.exit(1)

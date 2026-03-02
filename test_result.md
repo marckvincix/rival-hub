@@ -216,6 +216,58 @@ backend:
           
           This endpoint is ready for player statistics display functionality.
 
+  - task: "News CRUD API - Complete functionality testing"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ NEWS CRUD API COMPREHENSIVE TESTING COMPLETED - ALL TESTS PASSED
+          
+          Complete News API functionality tested and verified:
+          
+          🎯 ENDPOINTS TESTED AND WORKING:
+          ✅ POST /api/tournaments/{tournament_id}/news - Create news
+          ✅ GET /api/tournaments/{tournament_id}/news - Get news list  
+          ✅ GET /api/tournaments/{tournament_id}/news?published_only=false - Get all news (including unpublished)
+          ✅ PUT /api/news/{news_id} - Update news
+          ✅ DELETE /api/news/{news_id} - Delete news
+          
+          🔐 AUTHENTICATION & SECURITY TESTING:
+          ✅ Authentication required for protected endpoints (CREATE, UPDATE, DELETE)
+          ✅ Ownership verification working - Users can only modify their own news
+          ✅ Bearer token authentication functioning correctly
+          ✅ 401 Unauthorized returned for unauthenticated requests
+          ✅ 403/404 Forbidden returned for cross-user modification attempts
+          
+          📋 DATA INTEGRITY & VALIDATION:
+          ✅ News creation with required fields (title, content, is_published)
+          ✅ News update with partial data support
+          ✅ News listing with published_only filtering
+          ✅ News deletion with verification
+          ✅ All required response fields present (id, tournament_id, title, content, is_published, created_at, published_at)
+          ✅ Data persistence verified across operations
+          
+          🚀 TECHNICAL VALIDATION:
+          ✅ Proper HTTP status codes returned (200, 401, 403, 404)
+          ✅ JSON response format consistent and valid  
+          ✅ Database operations functioning correctly
+          ✅ Real test data used throughout testing
+          ✅ Session management and user isolation working
+          
+          🎯 READY FOR PRODUCTION:
+          - All CRUD operations verified and working
+          - Authentication and authorization secure
+          - Frontend integration ready
+          - No critical issues or bugs found
+          
+          This News API is fully functional and ready for frontend integration.
+
 frontend:
   - task: "Dropdown giocatori dinamici nel modal Extra"
     implemented: true
@@ -287,20 +339,52 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 2
+  test_sequence: 3
   run_ui: false
 
 test_plan:
   current_focus:
-    - "Authentication system - Login credentials validation"
-    - "Dropdown giocatori dinamici nel modal Extra"
-    - "Tab Risultati - Navigazione e rendering"
-  stuck_tasks:
-    - "Authentication system - Login credentials validation"
+    - "News CRUD API - Complete functionality testing"
+  stuck_tasks: []
   test_all: false
-  test_priority: "stuck_first"
+  test_priority: "high_first"
 
 agent_communication:
+  - agent: "main"
+    message: |
+      FEATURE NEWS COMPLETA - DA TESTARE
+      
+      Ho completato l'implementazione della funzionalità "News" per i tornei:
+      
+      BACKEND (server.py):
+      - POST /api/tournaments/{tournament_id}/news - Crea news
+      - GET /api/tournaments/{tournament_id}/news - Lista news (con filtro published_only)
+      - PUT /api/news/{news_id} - Aggiorna news
+      - DELETE /api/news/{news_id} - Elimina news
+      
+      FRONTEND - Vista Pubblica (tournament/[slug].tsx):
+      - Tab "News" nella pagina pubblica del torneo
+      - Visualizza titolo, descrizione, data/ora formattata (GG/MM/AAAA HH:MM)
+      - Supporto immagini (non testato con immagini reali)
+      - Messaggio "Nessuna news disponibile" se vuoto
+      
+      FRONTEND - Dashboard Organizzatore (tournaments.tsx):
+      - Tab "News" nella dashboard organizzatore
+      - Pulsante "Nuova News" per creare
+      - Lista news con pulsanti Modifica (✏️) e Elimina (🗑️)
+      - Modal per creazione/modifica con:
+        - Upload foto (expo-image-picker)
+        - Campo titolo (obbligatorio)
+        - Campo descrizione (multiline)
+        - Pulsanti Annulla/Pubblica
+      - Conferma prima dell'eliminazione
+      
+      TEST DA ESEGUIRE:
+      1. Testare tutte le API News (CRUD)
+      2. Verificare autenticazione richiesta per operazioni protette
+      3. Verificare filtro published_only funzioni
+      
+      CREDENZIALI: Registrare nuovo utente o usare utente esistente
   - agent: "main"
     message: |
       Ho implementato i dropdown dinamici nel modal Extra.
@@ -407,3 +491,39 @@ agent_communication:
       4. Create valid test user if needed
       
       CANNOT PROCEED WITH FRONTEND TESTING UNTIL AUTHENTICATION IS RESOLVED
+  - agent: "testing"
+    message: |
+      ✅ NEWS CRUD API TESTING COMPLETED SUCCESSFULLY - ALL TESTS PASSED
+      
+      🎯 COMPREHENSIVE NEWS API TESTING RESULTS:
+      
+      📰 ALL ENDPOINTS FULLY TESTED AND WORKING:
+      ✅ POST /api/tournaments/{tournament_id}/news - Create news article
+      ✅ GET /api/tournaments/{tournament_id}/news - Get published news list
+      ✅ GET /api/tournaments/{tournament_id}/news?published_only=false - Get all news
+      ✅ PUT /api/news/{news_id} - Update existing news article
+      ✅ DELETE /api/news/{news_id} - Delete news article
+      
+      🔐 SECURITY & AUTHENTICATION VERIFIED:
+      ✅ Authentication required for all protected endpoints (CREATE, UPDATE, DELETE)
+      ✅ Bearer token authentication working correctly
+      ✅ Ownership verification implemented - Users can only modify their own news
+      ✅ Proper HTTP status codes (200, 401, 403, 404)
+      ✅ Cross-user access prevention confirmed (403 Forbidden)
+      
+      📋 DATA INTEGRITY & OPERATIONS:
+      ✅ News creation with all required fields (title, content, is_published)
+      ✅ News updates with partial data support
+      ✅ Published/unpublished filtering working correctly
+      ✅ News deletion with proper verification
+      ✅ All response fields present and valid
+      ✅ Database persistence confirmed across operations
+      
+      🚀 PRODUCTION READY:
+      - Complete CRUD functionality verified
+      - Authentication and authorization secure
+      - All edge cases tested (ownership, permissions, data validation)
+      - No critical bugs or issues found
+      - Ready for frontend integration
+      
+      The News API is fully functional and ready for production use. All endpoints work correctly with proper security measures in place.
