@@ -638,6 +638,95 @@ export default function TournamentPublicPage() {
           )}
         </SafeAreaView>
       </Modal>
+
+      {/* Player Stats Modal */}
+      <Modal
+        visible={showPlayerStatsModal}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setShowPlayerStatsModal(false)}
+      >
+        <TouchableOpacity 
+          style={styles.playerStatsOverlay} 
+          activeOpacity={1}
+          onPress={() => setShowPlayerStatsModal(false)}
+        >
+          <TouchableOpacity activeOpacity={1} style={styles.playerStatsContent}>
+            <TouchableOpacity 
+              style={styles.playerStatsClose}
+              onPress={() => setShowPlayerStatsModal(false)}
+            >
+              <Ionicons name="close" size={24} color="#000" />
+            </TouchableOpacity>
+
+            {selectedPlayerForStats && (
+              <>
+                <View style={styles.playerStatsHeader}>
+                  <View style={styles.playerStatsAvatar}>
+                    <Text style={styles.playerStatsAvatarText}>
+                      {selectedPlayerForStats.number || selectedPlayerForStats.full_name?.charAt(0) || '?'}
+                    </Text>
+                  </View>
+                  <View style={styles.playerStatsInfo}>
+                    <Text style={styles.playerStatsName}>{selectedPlayerForStats.full_name}</Text>
+                    <Text style={styles.playerStatsRole}>{selectedPlayerForStats.role}</Text>
+                  </View>
+                </View>
+
+                {loadingPlayerStats ? (
+                  <View style={styles.playerStatsLoading}>
+                    <Text>Caricamento...</Text>
+                  </View>
+                ) : playerStatsData ? (
+                  <>
+                    <View style={styles.playerStatsGrid}>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>⚽</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.goals || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Gol</Text>
+                      </View>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>🅰️</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.assists || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Assist</Text>
+                      </View>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>🟨</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Gialli</Text>
+                      </View>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>🟥</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.red_cards || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Rossi</Text>
+                      </View>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>👟</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Presenze</Text>
+                      </View>
+                      <View style={styles.playerStatBox}>
+                        <Text style={styles.playerStatIcon}>⏱️</Text>
+                        <Text style={styles.playerStatValue}>{playerStatsData.minutes_played || 0}</Text>
+                        <Text style={styles.playerStatLabel}>Minuti</Text>
+                      </View>
+                    </View>
+                    {playerStatsData.average_rating > 0 && (
+                      <View style={styles.playerStatsRating}>
+                        <Text style={styles.playerStatsRatingLabel}>⭐ Media Voto</Text>
+                        <Text style={styles.playerStatsRatingValue}>{playerStatsData.average_rating?.toFixed(1)}</Text>
+                        <Text style={styles.playerStatsRatingCount}>({playerStatsData.ratings_count || 0} voti)</Text>
+                      </View>
+                    )}
+                  </>
+                ) : (
+                  <Text style={styles.noStatsText}>Nessuna statistica disponibile</Text>
+                )}
+              </>
+            )}
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
