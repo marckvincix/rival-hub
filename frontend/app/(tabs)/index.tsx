@@ -75,7 +75,7 @@ export default function DashboardScreen() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active': return 'In corso';
-      case 'completed': return 'Completato';
+      case 'completed': return 'Terminato';
       default: return 'Bozza';
     }
   };

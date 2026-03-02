@@ -79,7 +79,7 @@ export default function TournamentPublicPage() {
   };
 
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
-  const getStatusLabel = (status: string) => status === 'active' ? 'In corso' : status === 'completed' ? 'Completato' : 'Bozza';
+  const getStatusLabel = (status: string) => status === 'active' ? 'In corso' : status === 'completed' ? 'Terminato' : 'Bozza';
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
 
@@ -528,6 +528,16 @@ export default function TournamentPublicPage() {
               <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Nome</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Categoria</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Formato</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
+              {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Data inizio</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
+              <View style={styles.infoRow}>
+                <View style={[styles.statusDot, { backgroundColor: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Stato</Text>
+                  <Text style={[styles.infoValue, { color: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]}>
+                    {tournament.status === 'active' ? 'In corso' : tournament.status === 'completed' ? 'Terminato' : 'In attesa'}
+                  </Text>
+                </View>
+              </View>
               {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Luogo</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
             </View>
             <Text style={styles.teamsTitle}>Squadre ({teams.length})</Text>
@@ -825,6 +835,7 @@ const styles = StyleSheet.create({
   infoContent: { marginLeft: 12, flex: 1 },
   infoLabel: { fontSize: 12, color: '#666', marginBottom: 2 },
   infoValue: { fontSize: 15, fontWeight: '600', color: '#000' },
+  statusDot: { width: 20, height: 20, borderRadius: 10 },
   teamsTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
   teamsList: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 24 },
   teamItem: { borderWidth: 2, borderColor: '#000', borderRadius: 12, padding: 12, alignItems: 'center', width: '47%' },

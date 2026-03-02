@@ -50,7 +50,7 @@ export const getStatusLabel = (status: string): string => {
   const labels: Record<string, string> = {
     'draft': 'Bozza',
     'active': 'In corso',
-    'completed': 'Completato',
+    'completed': 'Terminato',
     'scheduled': 'Programmata',
     'live': 'In diretta'
   };

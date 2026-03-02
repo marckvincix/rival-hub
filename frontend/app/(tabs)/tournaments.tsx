@@ -138,7 +138,7 @@ export default function TournamentsScreen() {
   };
 
   const getStatusLabel = (status: string) => {
-    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Completato'; default: return 'Bozza'; }
+    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Terminato'; default: return 'Bozza'; }
   };
 
   if (loading) return <Loading message="Caricamento..." />;
@@ -986,7 +986,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
 
   const getStatusLabel = (status: string) => {
-    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Completato'; default: return 'Bozza'; }
+    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Terminato'; default: return 'Bozza'; }
   };
 
   // Load formation for a team

@@ -147,7 +147,7 @@ export default function LandingPage() {
                     styles.statusText,
                     tournament.status === 'active' && styles.statusTextActive
                   ]}>
-                    {tournament.status === 'active' ? 'In corso' : tournament.status === 'completed' ? 'Completato' : 'Bozza'}
+                    {tournament.status === 'active' ? 'In corso' : tournament.status === 'completed' ? 'Terminato' : 'Bozza'}
                   </Text>
                 </View>
               </TouchableOpacity>
