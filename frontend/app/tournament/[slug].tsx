@@ -255,14 +255,24 @@ export default function TournamentPublicPage() {
                         </View>
                         <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                       </View>
-                      {/* Statistiche Button */}
-                      <TouchableOpacity 
-                        style={styles.statsButton} 
-                        onPress={() => handleOpenMatchStats(match)}
-                      >
-                        <Ionicons name="stats-chart" size={14} color="#666" />
-                        <Text style={styles.statsButtonText}>Statistiche</Text>
-                      </TouchableOpacity>
+                      {/* Date and Time */}
+                      <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
+                      {/* Action Buttons Row */}
+                      <View style={styles.matchActionsRow}>
+                        <TouchableOpacity 
+                          style={styles.statsButton} 
+                          onPress={() => handleOpenMatchStats(match)}
+                        >
+                          <Ionicons name="stats-chart" size={14} color="#666" />
+                          <Text style={styles.statsButtonText}>Statistiche</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity 
+                          style={styles.calendarButton} 
+                          onPress={() => handleAddToCalendar(match)}
+                        >
+                          <Ionicons name="calendar-outline" size={18} color="#000" />
+                        </TouchableOpacity>
+                      </View>
                     </View>
                   ))}
                 </View>
