@@ -596,8 +596,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         home_team_id: newMatchData.home_team_id,
         away_team_id: newMatchData.away_team_id,
         round: newMatchData.round,
-        date: newMatchData.date || undefined,
-        time: newMatchData.time || undefined,
+        match_date: matchDate ? matchDate.toISOString().split('T')[0] : undefined,
+        match_time: matchTime ? matchTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : undefined,
         venue_name: newMatchData.venue_name || undefined,
         venue_address: newMatchData.venue_address || undefined,
       };
@@ -605,6 +605,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setMatches([...matches, response.data]);
       setShowAddMatchModal(false);
       setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
+      setMatchDate(null);
+      setMatchTime(null);
       setShowHomeDropdown(false);
       setShowAwayDropdown(false);
     } catch (error: any) { Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere'); }
