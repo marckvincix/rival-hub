@@ -461,57 +461,6 @@ export default function TournamentPublicPage() {
           </View>
         )}
 
-        {/* Formations Tab */}
-        {activeTab === 'formations' && (
-          <View style={styles.tabContent}>
-            {formations.length === 0 ? (
-              <EmptyState icon="grid-outline" title="Nessuna formazione" description="Le squadre non hanno ancora impostato le formazioni" />
-            ) : (
-              formations.map((formation) => {
-                const team = teams.find(t => t.id === formation.team_id);
-                return (
-                  <View key={formation.id} style={styles.formationCard}>
-                    <TouchableOpacity 
-                      style={styles.formationCardHeader}
-                      onPress={() => {
-                        setSelectedFormation(formation);
-                        setShowFormationModal(true);
-                      }}
-                    >
-                      <View style={styles.formationTeamInfo}>
-                        <TeamLogo logo={team?.logo} name={team?.name || 'Squadra'} size="small" />
-                        <View style={styles.formationTeamDetails}>
-                          <Text style={styles.formationTeamName}>{team?.name || 'Squadra'}</Text>
-                          <Text style={styles.formationModuleBadge}>Modulo: {formation.module}</Text>
-                        </View>
-                      </View>
-                      <View style={styles.viewFormationBtn}>
-                        <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
-                        <Ionicons name="chevron-forward" size={18} color="#FFF" />
-                      </View>
-                    </TouchableOpacity>
-                    {/* Mini formation preview */}
-                    <View style={styles.formationPreview}>
-                      <Text style={styles.formationPreviewLabel}>Titolari ({formation.starters.length}):</Text>
-                      <View style={styles.formationPlayersList}>
-                        {formation.starters.slice(0, 6).map((s, idx) => (
-                          <View key={idx} style={styles.formationPlayerChip}>
-                            <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
-                            <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
-                          </View>
-                        ))}
-                        {formation.starters.length > 6 && (
-                          <Text style={styles.formationMorePlayers}>+{formation.starters.length - 6}</Text>
-                        )}
-                      </View>
-                    </View>
-                  </View>
-                );
-              })
-            )}
-          </View>
-        )}
-
         {/* Scorers Tab */}
         {activeTab === 'scorers' && (
           <View style={styles.tabContent}>
