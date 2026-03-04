@@ -501,10 +501,11 @@ async def exchange_session(request: Request):
         raise HTTPException(status_code=400, detail="session_id richiesto")
     
     # Exchange session_id with Emergent Auth
+    oauth_session_url = os.getenv("OAUTH_SESSION_URL", "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data")
     async with httpx.AsyncClient() as client:
         try:
             resp = await client.get(
-                "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data",
+                oauth_session_url,
                 headers={"X-Session-ID": session_id}
             )
             if resp.status_code != 200:
