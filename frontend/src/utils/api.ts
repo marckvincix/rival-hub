@@ -2,8 +2,7 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 
 const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_BACKEND_URL || 
-                process.env.EXPO_PUBLIC_BACKEND_URL || 
-                'https://torneo-live.preview.emergentagent.com';
+                process.env.EXPO_PUBLIC_BACKEND_URL;
 
 const api = axios.create({
   baseURL: API_URL,
