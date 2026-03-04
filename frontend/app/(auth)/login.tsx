@@ -52,7 +52,7 @@ export default function LoginScreen() {
     try {
       // For web platform, use window.location.origin for proper redirect
       const callbackUrl = Platform.OS === 'web' 
-        ? `${typeof window !== 'undefined' ? window.location.origin : ''}/(auth)/callback`
+        ? `${window.location.origin}/(auth)/callback`
         : Linking.createURL('(auth)/callback');
       const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(callbackUrl)}`;
       const result = await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
