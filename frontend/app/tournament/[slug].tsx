@@ -17,6 +17,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView } from '../../src/components';
+import { FavoriteButton } from '../../src/components/FavoriteButton';
+import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player } from '../../src/types';
 
@@ -25,6 +27,7 @@ type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 
 export default function TournamentPublicPage() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
+  const { user } = useAuthStore();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -228,6 +231,12 @@ export default function TournamentPublicPage() {
           <Text style={styles.headerTitle} numberOfLines={1}>{tournament.name}</Text>
           <Text style={styles.headerMeta}>{getCategoryLabel(tournament.category)} • {getStatusLabel(tournament.status)}</Text>
         </View>
+        <FavoriteButton
+          type="tournament"
+          referenceId={tournament.id}
+          isAuthenticated={!!user}
+          size={22}
+        />
         <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
           <Ionicons name="share-outline" size={24} color="#000" />
         </TouchableOpacity>
@@ -292,6 +301,13 @@ export default function TournamentPublicPage() {
                   >
                     <TeamLogo logo={team.logo} name={team.name} size="medium" />
                     <Text style={styles.publicTeamName}>{team.name}</Text>
+                    <FavoriteButton
+                      type="team"
+                      referenceId={team.id}
+                      isAuthenticated={!!user}
+                      size={20}
+                      style={{ marginRight: 4 }}
+                    />
                     <Ionicons 
                       name={expandedTeamId === team.id ? 'chevron-up' : 'chevron-down'} 
                       size={24} 

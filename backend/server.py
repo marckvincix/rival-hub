@@ -297,6 +297,38 @@ SUBSCRIPTION_PLANS = {
     "pro": {"price_monthly": 3.99, "price_yearly": 39.99, "max_tournaments": -1, "max_teams": -1}
 }
 
+# ===================== FAVORITES & NOTIFICATIONS MODELS =====================
+
+class FavoriteCreate(BaseModel):
+    type: str  # "tournament" or "team"
+    reference_id: str  # tournament_id or team_id
+    notifications_enabled: bool = True
+
+class FavoriteUpdate(BaseModel):
+    notifications_enabled: bool
+
+class Favorite(BaseModel):
+    id: str
+    user_id: str
+    type: str  # "tournament" or "team"
+    reference_id: str
+    notifications_enabled: bool = True
+    created_at: datetime
+
+class PushTokenCreate(BaseModel):
+    token: str
+    device_type: str = "unknown"  # ios, android, web
+
+class PushToken(BaseModel):
+    id: str
+    user_id: str
+    token: str
+    device_type: str
+    created_at: datetime
+
+class NotificationSettingsUpdate(BaseModel):
+    notifications_enabled: bool  # Global toggle
+
 # ===================== HELPER FUNCTIONS =====================
 
 def generate_slug(name: str) -> str:
@@ -1157,6 +1189,35 @@ async def create_match(
     await db.matches.insert_one(match_doc)
     del match_doc["_id"]
     
+    # Send notification to tournament followers
+    home_team = await db.teams.find_one({"id": match_data.home_team_id}, {"_id": 0, "name": 1})
+    away_team = await db.teams.find_one({"id": match_data.away_team_id}, {"_id": 0, "name": 1})
+    
+    if home_team and away_team:
+        date_str = match_data.match_date if match_data.match_date else "data da definire"
+        time_str = match_data.match_time if match_data.match_time else ""
+        
+        await notify_tournament_followers(
+            tournament_id,
+            f"Nuova partita nel Torneo {tournament['name']}",
+            f"{home_team['name']} vs {away_team['name']} il {date_str} {time_str}".strip(),
+            {"type": "new_match", "match_id": match_id, "tournament_id": tournament_id}
+        )
+        
+        # Notify team followers
+        await notify_team_followers(
+            match_data.home_team_id,
+            f"Partita programmata per {home_team['name']}",
+            f"Gioca il {date_str} {time_str} contro {away_team['name']}".strip(),
+            {"type": "team_match_scheduled", "match_id": match_id}
+        )
+        await notify_team_followers(
+            match_data.away_team_id,
+            f"Partita programmata per {away_team['name']}",
+            f"Gioca il {date_str} {time_str} contro {home_team['name']}".strip(),
+            {"type": "team_match_scheduled", "match_id": match_id}
+        )
+    
     return Match(**match_doc)
 
 @api_router.get("/tournaments/{tournament_id}/matches", response_model=List[Match])
@@ -1190,15 +1251,60 @@ async def update_match(
     
     update_data = {k: v for k, v in match_data.dict().items() if v is not None}
     
+    # Track if match is being completed
+    is_completing = False
+    
     # If goals are being set, mark as completed
     if "home_goals" in update_data and "away_goals" in update_data:
         if update_data["home_goals"] is not None and update_data["away_goals"] is not None:
             update_data["status"] = "completed"
+            is_completing = match.get("status") != "completed"
     
     if update_data:
         await db.matches.update_one({"id": match_id}, {"$set": update_data})
     
     updated = await db.matches.find_one({"id": match_id}, {"_id": 0})
+    
+    # Send notifications for score updates
+    if "home_goals" in update_data or "away_goals" in update_data:
+        home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
+        away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
+        
+        if home_team and away_team:
+            home_goals = updated.get("home_goals", 0) or 0
+            away_goals = updated.get("away_goals", 0) or 0
+            
+            if is_completing:
+                # Match ended notification
+                await notify_tournament_followers(
+                    match["tournament_id"],
+                    f"Risultato finale - {tournament['name']}",
+                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                    {"type": "match_ended", "match_id": match_id}
+                )
+                
+                # Team followers
+                await notify_team_followers(
+                    match["home_team_id"],
+                    "Partita terminata",
+                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                    {"type": "team_match_ended", "match_id": match_id}
+                )
+                await notify_team_followers(
+                    match["away_team_id"],
+                    "Partita terminata",
+                    f"{away_team['name']} {away_goals} - {home_goals} {home_team['name']}",
+                    {"type": "team_match_ended", "match_id": match_id}
+                )
+            else:
+                # Score update notification
+                await notify_tournament_followers(
+                    match["tournament_id"],
+                    f"Aggiornamento - {tournament['name']}",
+                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                    {"type": "score_update", "match_id": match_id}
+                )
+    
     return Match(**updated)
 
 @api_router.delete("/matches/{match_id}")
@@ -1262,6 +1368,33 @@ async def create_match_event(
     
     await db.match_events.insert_one(event_doc)
     del event_doc["_id"]
+    
+    # Send notification for goals
+    if event_data.event_type == "goal":
+        scoring_team = await db.teams.find_one({"id": event_data.team_id}, {"_id": 0, "name": 1})
+        home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
+        away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
+        
+        if scoring_team and home_team and away_team:
+            # Count current goals
+            home_goals = await db.match_events.count_documents({
+                "match_id": match_id,
+                "team_id": match["home_team_id"],
+                "event_type": "goal"
+            })
+            away_goals = await db.match_events.count_documents({
+                "match_id": match_id,
+                "team_id": match["away_team_id"],
+                "event_type": "goal"
+            })
+            
+            # Notify team followers of the goal
+            await notify_team_followers(
+                event_data.team_id,
+                f"GOOOL! {scoring_team['name']} segna!",
+                f"Risultato: {home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                {"type": "goal", "match_id": match_id, "team_id": event_data.team_id}
+            )
     
     return MatchEvent(**event_doc)
 
@@ -1766,7 +1899,7 @@ async def get_top_scorers(tournament_id: str):
     return scorers
 
 @api_router.get("/tournaments/{tournament_id}/player-stats")
-async def get_player_stats(tournament_id: str):
+async def get_tournament_player_stats(tournament_id: str):
     """Get detailed player statistics"""
     # Get all events
     events = await db.match_events.find(
@@ -2038,6 +2171,281 @@ async def root():
 @api_router.get("/health")
 async def health():
     return {"status": "healthy"}
+
+# ===================== FAVORITES ENDPOINTS =====================
+
+@api_router.post("/favorites")
+async def add_favorite(favorite: FavoriteCreate, user: User = Depends(get_current_user)):
+    """Add a tournament or team to user's favorites"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    # Check if already favorited
+    existing = await db.user_favorites.find_one({
+        "user_id": user.user_id,
+        "type": favorite.type,
+        "reference_id": favorite.reference_id
+    })
+    
+    if existing:
+        raise HTTPException(status_code=400, detail="Già nei preferiti")
+    
+    # Validate reference exists
+    if favorite.type == "tournament":
+        ref = await db.tournaments.find_one({"id": favorite.reference_id})
+        if not ref:
+            raise HTTPException(status_code=404, detail="Torneo non trovato")
+    elif favorite.type == "team":
+        ref = await db.teams.find_one({"id": favorite.reference_id})
+        if not ref:
+            raise HTTPException(status_code=404, detail="Squadra non trovata")
+    else:
+        raise HTTPException(status_code=400, detail="Tipo non valido")
+    
+    favorite_doc = {
+        "id": f"fav_{uuid.uuid4().hex[:12]}",
+        "user_id": user.user_id,
+        "type": favorite.type,
+        "reference_id": favorite.reference_id,
+        "notifications_enabled": favorite.notifications_enabled,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.user_favorites.insert_one(favorite_doc)
+    
+    return {"id": favorite_doc["id"], "message": "Aggiunto ai preferiti"}
+
+@api_router.get("/favorites")
+async def get_favorites(user: User = Depends(get_current_user)):
+    """Get all favorites for current user with details"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    favorites = await db.user_favorites.find(
+        {"user_id": user.user_id},
+        {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+    
+    # Enrich with details
+    result = []
+    for fav in favorites:
+        item = {**fav}
+        if fav["type"] == "tournament":
+            tournament = await db.tournaments.find_one(
+                {"id": fav["reference_id"]},
+                {"_id": 0, "id": 1, "name": 1, "category": 1, "location": 1, "status": 1, "slug": 1}
+            )
+            item["details"] = tournament
+        elif fav["type"] == "team":
+            team = await db.teams.find_one(
+                {"id": fav["reference_id"]},
+                {"_id": 0, "id": 1, "name": 1, "logo": 1, "tournament_id": 1}
+            )
+            if team:
+                # Get tournament name for team
+                tournament = await db.tournaments.find_one(
+                    {"id": team.get("tournament_id")},
+                    {"_id": 0, "name": 1, "slug": 1}
+                )
+                item["details"] = {**team, "tournament_name": tournament.get("name") if tournament else None}
+            else:
+                item["details"] = team
+        result.append(item)
+    
+    return result
+
+@api_router.get("/favorites/check/{type}/{reference_id}")
+async def check_favorite(type: str, reference_id: str, user: User = Depends(get_current_user)):
+    """Check if an item is in user's favorites"""
+    if not user:
+        return {"is_favorite": False, "notifications_enabled": False}
+    
+    favorite = await db.user_favorites.find_one({
+        "user_id": user.user_id,
+        "type": type,
+        "reference_id": reference_id
+    })
+    
+    if favorite:
+        return {"is_favorite": True, "notifications_enabled": favorite.get("notifications_enabled", True)}
+    return {"is_favorite": False, "notifications_enabled": False}
+
+@api_router.put("/favorites/{favorite_id}")
+async def update_favorite(favorite_id: str, update: FavoriteUpdate, user: User = Depends(get_current_user)):
+    """Update favorite notification settings"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    result = await db.user_favorites.update_one(
+        {"id": favorite_id, "user_id": user.user_id},
+        {"$set": {"notifications_enabled": update.notifications_enabled}}
+    )
+    
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Preferito non trovato")
+    
+    return {"message": "Impostazioni aggiornate"}
+
+@api_router.delete("/favorites/{type}/{reference_id}")
+async def remove_favorite(type: str, reference_id: str, user: User = Depends(get_current_user)):
+    """Remove an item from user's favorites"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    result = await db.user_favorites.delete_one({
+        "user_id": user.user_id,
+        "type": type,
+        "reference_id": reference_id
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Preferito non trovato")
+    
+    return {"message": "Rimosso dai preferiti"}
+
+# ===================== PUSH NOTIFICATIONS ENDPOINTS =====================
+
+@api_router.post("/push-tokens")
+async def register_push_token(token_data: PushTokenCreate, user: User = Depends(get_current_user)):
+    """Register a push notification token for user"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    # Check if token already exists for this user
+    existing = await db.push_tokens.find_one({
+        "user_id": user.user_id,
+        "token": token_data.token
+    })
+    
+    if existing:
+        return {"message": "Token già registrato"}
+    
+    # Remove old tokens for same device if any
+    await db.push_tokens.delete_many({
+        "user_id": user.user_id,
+        "device_type": token_data.device_type
+    })
+    
+    token_doc = {
+        "id": f"token_{uuid.uuid4().hex[:12]}",
+        "user_id": user.user_id,
+        "token": token_data.token,
+        "device_type": token_data.device_type,
+        "created_at": datetime.now(timezone.utc)
+    }
+    
+    await db.push_tokens.insert_one(token_doc)
+    
+    return {"message": "Token registrato"}
+
+@api_router.delete("/push-tokens/{token}")
+async def remove_push_token(token: str, user: User = Depends(get_current_user)):
+    """Remove a push notification token"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    await db.push_tokens.delete_one({
+        "user_id": user.user_id,
+        "token": token
+    })
+    
+    return {"message": "Token rimosso"}
+
+@api_router.put("/users/notification-settings")
+async def update_notification_settings(settings: NotificationSettingsUpdate, user: User = Depends(get_current_user)):
+    """Update global notification settings"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    await db.users.update_one(
+        {"user_id": user.user_id},
+        {"$set": {"notifications_enabled": settings.notifications_enabled}}
+    )
+    
+    return {"message": "Impostazioni aggiornate"}
+
+@api_router.get("/users/notification-settings")
+async def get_notification_settings(user: User = Depends(get_current_user)):
+    """Get user's global notification settings"""
+    if not user:
+        raise HTTPException(status_code=401, detail="Non autenticato")
+    
+    user_doc = await db.users.find_one(
+        {"user_id": user.user_id},
+        {"_id": 0, "notifications_enabled": 1}
+    )
+    
+    return {"notifications_enabled": user_doc.get("notifications_enabled", True) if user_doc else True}
+
+# ===================== INTERNAL NOTIFICATION HELPERS =====================
+
+async def send_push_notification(user_ids: List[str], title: str, body: str, data: dict = None):
+    """Send push notifications to specified users via Expo Push API"""
+    if not user_ids:
+        return
+    
+    # Get all push tokens for users with notifications enabled
+    users_with_notifications = await db.users.find(
+        {"user_id": {"$in": user_ids}, "notifications_enabled": {"$ne": False}},
+        {"_id": 0, "user_id": 1}
+    ).to_list(1000)
+    
+    enabled_user_ids = [u["user_id"] for u in users_with_notifications]
+    
+    if not enabled_user_ids:
+        return
+    
+    tokens = await db.push_tokens.find(
+        {"user_id": {"$in": enabled_user_ids}},
+        {"_id": 0, "token": 1}
+    ).to_list(1000)
+    
+    if not tokens:
+        return
+    
+    # Send via Expo Push API
+    messages = []
+    for t in tokens:
+        message = {
+            "to": t["token"],
+            "sound": "default",
+            "title": title,
+            "body": body,
+        }
+        if data:
+            message["data"] = data
+        messages.append(message)
+    
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                "https://exp.host/--/api/v2/push/send",
+                json=messages,
+                headers={"Content-Type": "application/json"}
+            )
+            logger.info(f"Push notification sent: {response.status_code}")
+    except Exception as e:
+        logger.error(f"Failed to send push notification: {e}")
+
+async def notify_tournament_followers(tournament_id: str, title: str, body: str, data: dict = None):
+    """Send notification to all users following a tournament"""
+    favorites = await db.user_favorites.find(
+        {"type": "tournament", "reference_id": tournament_id, "notifications_enabled": True},
+        {"_id": 0, "user_id": 1}
+    ).to_list(1000)
+    
+    user_ids = [f["user_id"] for f in favorites]
+    await send_push_notification(user_ids, title, body, data)
+
+async def notify_team_followers(team_id: str, title: str, body: str, data: dict = None):
+    """Send notification to all users following a team"""
+    favorites = await db.user_favorites.find(
+        {"type": "team", "reference_id": team_id, "notifications_enabled": True},
+        {"_id": 0, "user_id": 1}
+    ).to_list(1000)
+    
+    user_ids = [f["user_id"] for f in favorites]
+    await send_push_notification(user_ids, title, body, data)
 
 # Include the router
 app.include_router(api_router)
