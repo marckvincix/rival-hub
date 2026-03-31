@@ -598,7 +598,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Open match result modal and load events
   const handleOpenMatchResult = async (match: any) => {
     // Check if this is a basketball tournament
-    if (selectedTournament?.sport === 'basket') {
+    if (tournament?.sport === 'basket') {
       // Load players for both teams
       try {
         const [homePlayersRes, awayPlayersRes] = await Promise.all([
@@ -1068,7 +1068,24 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     }
   };
 
-  const PLAYER_ROLES = ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
+  // Dynamic player roles based on sport
+  const getPlayerRoles = () => {
+    const sport = tournament?.sport || 'calcio';
+    switch (sport) {
+      case 'basket':
+        return ['Playmaker', 'Guardia', 'Ala Piccola', 'Ala Grande', 'Centro'];
+      case 'pallavolo':
+        return ['Palleggiatore', 'Schiacciatore', 'Opposto', 'Libero', 'Centrale'];
+      case 'rugby':
+        return ['Pilone', 'Tallonatore', 'Flanker', 'Mediano', 'Ala', 'Centro', 'Estremo'];
+      case 'baseball':
+        return ['Lanciatore', 'Ricevitore', 'Prima Base', 'Seconda Base', 'Terza Base', 'Interbase', 'Esterno'];
+      default:
+        return ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
+    }
+  };
+
+  const PLAYER_ROLES = getPlayerRoles();
 
   const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(
@@ -1244,9 +1261,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     return result || '';
   };
 
-  const tabs: { id: string; label: string; icon: 'people' | 'football' | 'create' | 'settings' | 'newspaper' }[] = [
+  // Get sport-specific icon
+  const getSportIcon = (): 'football' | 'basketball' | 'tennisball' | 'american-football' | 'baseball' | 'fitness' => {
+    const sport = tournament?.sport || 'calcio';
+    switch (sport) {
+      case 'basket': return 'basketball';
+      case 'tennis':
+      case 'padel': return 'tennisball';
+      case 'rugby': return 'american-football';
+      case 'baseball': return 'baseball';
+      case 'nuoto':
+      case 'ciclismo':
+      case 'atletica': return 'fitness';
+      default: return 'football';
+    }
+  };
+
+  const sportIcon = getSportIcon();
+
+  const tabs: { id: string; label: string; icon: string }[] = [
     { id: 'teams', label: 'Squadre', icon: 'people' },
-    { id: 'matches', label: 'Partite', icon: 'football' },
+    { id: 'matches', label: 'Partite', icon: sportIcon },
     { id: 'results', label: 'Risultati', icon: 'create' },
     { id: 'news', label: 'News', icon: 'newspaper' },
     { id: 'settings', label: 'Impostazioni', icon: 'settings' }
@@ -1384,7 +1419,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 }} icon="add" fullWidth disabled={teams.length < 2} />
                 {teams.length < 2 && <Text style={styles.warningText}>Aggiungi almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
-                {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
+                {matches.length === 0 ? <EmptyState icon={`${sportIcon}-outline` as any} title="Nessuna partita" /> : (
                   groupedMatches.map(([round, roundMatches]) => (
                     <View key={round} style={styles.matchDayGroup}>
                       <View style={styles.matchDayHeader}>
@@ -1436,7 +1471,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   const matchesInCorso = matches.filter(m => m.status !== 'completed');
                   
                   if (matchesInCorso.length === 0) {
-                    return <EmptyState icon="football-outline" title="Nessuna partita in corso" />;
+                    return <EmptyState icon={`${sportIcon}-outline` as any} title="Nessuna partita in corso" />;
                   }
                   
                   return (
@@ -2232,7 +2267,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 value={newMatchData.venue_name}
                 onChangeText={(text) => setNewMatchData({ ...newMatchData, venue_name: text })}
               />
-              <Ionicons name="football-outline" size={22} color="#000" />
+              <Ionicons name={`${sportIcon}-outline` as any} size={22} color="#000" />
             </View>
             <View style={[styles.newMatchInputWithIcon, { marginTop: 12 }]}>
               <TextInput
@@ -3002,8 +3037,8 @@ function TeamRatingsAccordion({
         awayTeam={teams.find(t => t.id === selectedBasketballMatch?.away_team_id)}
         homePlayers={homeTeamPlayers}
         awayPlayers={awayTeamPlayers}
-        tournamentName={selectedTournament?.name || ''}
-        gameStructure={selectedTournament?.game_structure || '4_quarters'}
+        tournamentName={tournament?.name || ''}
+        gameStructure={tournament?.game_structure || '4_quarters'}
         onSave={(updatedMatch) => {
           setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
           setShowBasketballMatchModal(false);
