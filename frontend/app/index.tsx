@@ -17,6 +17,7 @@ import api from '../src/utils/api';
 import { Tournament } from '../src/types';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
+const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
 
 export default function LandingPage() {
   const router = useRouter();
@@ -205,7 +206,7 @@ export default function LandingPage() {
         {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerLogo}>
-            <Image source={RivalHubLogo} style={styles.footerLogoImage} resizeMode="contain" />
+            <Image source={RivalHubLogoWhite} style={styles.footerLogoImage} resizeMode="contain" />
           </View>
           <Text style={styles.copyright}>© 2026 Rival Hub</Text>
         </View>
@@ -438,9 +439,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   footerLogoImage: {
-    width: 80,
-    height: 32,
-    tintColor: '#FFF',
+    width: 100,
+    height: 50,
   },
   copyright: {
     fontSize: 12,
