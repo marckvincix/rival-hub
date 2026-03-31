@@ -39,13 +39,13 @@ function CustomTabBar() {
           <Text style={styles.tabLabel}>Tornei</Text>
         </TouchableOpacity>
 
-        {/* PRO Tab - Always black background */}
+        {/* Profilo Tab */}
         <TouchableOpacity
-          style={[styles.tabItem, styles.tabItemPro]}
+          style={[styles.tabItem, isActive('profile') && styles.tabItemActive]}
           onPress={() => router.push('/(tabs)/profile')}
         >
-          <Ionicons name="shield" size={24} color="#FFF" />
-          <Text style={styles.tabLabelPro}>PRO</Text>
+          <Ionicons name="person-outline" size={24} color="#000" />
+          <Text style={styles.tabLabel}>Profilo</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -135,19 +135,10 @@ const styles = StyleSheet.create({
   tabItemActive: {
     backgroundColor: '#F0F0F0',
   },
-  tabItemPro: {
-    backgroundColor: '#000',
-  },
   tabLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#000',
-    marginTop: 6,
-  },
-  tabLabelPro: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#FFF',
     marginTop: 6,
   },
 });

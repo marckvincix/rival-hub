@@ -183,8 +183,6 @@ export interface User {
   email: string;
   name: string;
   picture?: string;
-  plan: 'free' | 'pro';
-  plan_expiry?: string;
 }
 
 export interface Tournament {

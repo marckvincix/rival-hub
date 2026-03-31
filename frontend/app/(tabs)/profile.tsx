@@ -128,13 +128,6 @@ export default function ProfileScreen() {
     ]);
   };
 
-  const getPlanFeatures = () => {
-    switch (user?.plan) {
-      case 'pro': return ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Collaboratori', 'Categorie per età', 'Export PDF', 'Senza pubblicità', 'Senza branding'];
-      default: return ['1 torneo attivo', 'Max 8 squadre', 'Statistiche base', 'Branding Rival Hub'];
-    }
-  };
-
   const firstName = user?.name?.split(' ')[0] || 'Utente';
 
   return (
@@ -161,10 +154,6 @@ export default function ProfileScreen() {
           </View>
           <Text style={styles.userName}>{user?.name || 'Utente'}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
-          <View style={styles.planBadge}>
-            <Ionicons name={user?.plan === 'pro' ? 'star' : 'person'} size={16} color="#FFF" />
-            <Text style={styles.planBadgeText}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
-          </View>
         </View>
 
         {/* My Favorites Section */}
@@ -253,50 +242,6 @@ export default function ProfileScreen() {
             </>
           )}
         </View>
-
-        {/* Current Plan */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Il tuo Piano</Text>
-          <View style={styles.planCard}>
-            <View style={styles.planHeader}>
-              <Text style={styles.planName}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
-              {user?.plan !== 'pro' && (
-                <View style={styles.upgradeBadge}>
-                  <Text style={styles.upgradeText}>Upgrade</Text>
-                </View>
-              )}
-            </View>
-            <View style={styles.planFeatures}>
-              {getPlanFeatures().map((feature, index) => (
-                <View key={index} style={styles.featureRow}>
-                  <Ionicons name="checkmark" size={18} color="#000" />
-                  <Text style={styles.featureText}>{feature}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        </View>
-
-        {/* Upgrade Options */}
-        {user?.plan === 'free' && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Passa a Pro</Text>
-            
-            <View style={styles.upgradeCard}>
-              <View style={styles.upgradeHeader}>
-                <View style={styles.upgradeIconContainer}>
-                  <Ionicons name="star" size={24} color="#FFF" />
-                </View>
-                <View style={styles.upgradeInfo}>
-                  <Text style={styles.upgradeName}>Piano PRO</Text>
-                  <Text style={styles.upgradePrice}>€39.99/anno</Text>
-                </View>
-              </View>
-              <Text style={styles.upgradeDesc}>Tornei e squadre illimitate, statistiche complete, collaboratori, categorie per età, export PDF, senza pubblicità</Text>
-              <Button title="Scegli Pro" onPress={() => Alert.alert('Stripe', 'Pagamento in modalità test')} fullWidth />
-            </View>
-          </View>
-        )}
 
         {/* Settings */}
         <View style={styles.section}>
@@ -405,20 +350,6 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 12,
   },
-  planBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    gap: 6,
-  },
-  planBadgeText: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#FFF',
-  },
   section: {
     padding: 16,
   },
@@ -428,84 +359,20 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 12,
   },
-  planCard: {
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 16,
-    padding: 16,
-  },
-  planHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 16,
   },
-  planName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-  },
-  upgradeBadge: {
-    borderWidth: 1,
-    borderColor: '#000',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-  },
-  upgradeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#000',
-  },
-  planFeatures: {
-    gap: 8,
-  },
-  featureRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  featureText: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 8,
-  },
-  upgradeCard: {
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  upgradeHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  upgradeIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: '#000',
+  emptyFavorites: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 12,
-  },
-  upgradeInfo: {
-    flex: 1,
-  },
-  upgradeName: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-  },
-  upgradePrice: {
-    fontSize: 14,
-    color: '#666',
-  },
-  upgradeDesc: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 16,
+    padding: 32,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    borderRadius: 12,
+    borderStyle: 'dashed',
   },
   settingItem: {
     flexDirection: 'row',

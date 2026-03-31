@@ -64,11 +64,6 @@ export default function LandingPage() {
     { icon: 'newspaper-outline' as const, title: 'News', desc: 'Pubblica aggiornamenti' },
   ];
 
-  const plans = [
-    { name: 'FREE', price: '0', features: ['1 torneo', 'Max 8 squadre', 'Statistiche base'] },
-    { name: 'PRO', price: '39.99', period: '/anno', features: ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Collaboratori', 'Categorie per età', 'Export PDF', 'Senza pubblicità', 'Senza branding'] },
-  ];
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -92,7 +87,7 @@ export default function LandingPage() {
             La piattaforma per creare, seguire ed organizzare tornei sportivi
           </Text>
           <Button
-            title="Inizia Gratis"
+            title="Inizia Ora"
             onPress={() => router.push('/(auth)/register')}
             variant="outline"
             size="large"
@@ -170,37 +165,6 @@ export default function LandingPage() {
               </View>
             ))}
           </View>
-        </View>
-
-        {/* Pricing Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Piani</Text>
-          {plans.map((plan, index) => (
-            <View key={index} style={styles.planCard}>
-              <View style={styles.planHeader}>
-                <Text style={styles.planName}>{plan.name}</Text>
-                <View style={styles.priceContainer}>
-                  <Text style={styles.currency}>€</Text>
-                  <Text style={styles.price}>{plan.price}</Text>
-                  <Text style={styles.period}>/mese</Text>
-                </View>
-              </View>
-              <View style={styles.planFeatures}>
-                {plan.features.map((feature, fIndex) => (
-                  <View key={fIndex} style={styles.planFeature}>
-                    <Ionicons name="checkmark" size={18} color="#000" />
-                    <Text style={styles.planFeatureText}>{feature}</Text>
-                  </View>
-                ))}
-              </View>
-              <Button
-                title={plan.price === '0' ? 'Inizia Gratis' : 'Scegli Piano'}
-                onPress={() => router.push('/(auth)/register')}
-                variant={plan.name === 'PRO' ? 'primary' : 'outline'}
-                fullWidth
-              />
-            </View>
-          ))}
         </View>
 
         {/* Footer */}
@@ -380,56 +344,6 @@ const styles = StyleSheet.create({
   featureDesc: {
     fontSize: 13,
     color: '#666',
-  },
-  planCard: {
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
-  },
-  planHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  planName: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-  },
-  priceContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-  },
-  currency: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-  },
-  price: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#000',
-  },
-  period: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 2,
-  },
-  planFeatures: {
-    marginBottom: 16,
-  },
-  planFeature: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  planFeatureText: {
-    fontSize: 14,
-    color: '#000',
-    marginLeft: 8,
   },
   footer: {
     padding: 24,

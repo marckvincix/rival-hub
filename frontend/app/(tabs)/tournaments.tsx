@@ -91,13 +91,6 @@ export default function TournamentsScreen() {
       Alert.alert('Errore', 'Il nome del torneo è richiesto');
       return;
     }
-    if (user?.plan === 'free' && tournaments.length >= 1) {
-      Alert.alert('Limite Raggiunto', 'Piano Free: solo 1 torneo. Passa a Pro!', [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Upgrade', onPress: () => router.push('/(tabs)/profile') }
-      ]);
-      return;
-    }
     try {
       setFormLoading(true);
       const response = await api.post('/api/tournaments', formData);

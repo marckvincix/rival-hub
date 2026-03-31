@@ -69,9 +69,6 @@ class User(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
-    plan: str = "free"  # free, pro
-    plan_expiry: Optional[datetime] = None
-    stripe_customer_id: Optional[str] = None
     created_at: datetime
 
 class UserResponse(BaseModel):
@@ -79,8 +76,6 @@ class UserResponse(BaseModel):
     email: str
     name: str
     picture: Optional[str] = None
-    plan: str = "free"
-    plan_expiry: Optional[datetime] = None
 
 # Tournament Models
 class TournamentCreate(BaseModel):
@@ -296,12 +291,6 @@ class Formation(BaseModel):
     bench: List[str] = []
     created_at: datetime
     updated_at: datetime
-
-# Subscription Plans
-SUBSCRIPTION_PLANS = {
-    "free": {"price_monthly": 0, "price_yearly": 0, "max_tournaments": 1, "max_teams": 8},
-    "pro": {"price_monthly": 3.99, "price_yearly": 39.99, "max_tournaments": -1, "max_teams": -1}
-}
 
 # ===================== FAVORITES & NOTIFICATIONS MODELS =====================
 
@@ -566,19 +555,14 @@ async def exchange_session(request: Request):
             {"$set": {"name": auth_data["name"], "picture": auth_data.get("picture")}}
         )
         user_id = user_doc["user_id"]
-        plan = user_doc.get("plan", "free")
     else:
         # Create new user
         user_id = f"user_{uuid.uuid4().hex[:12]}"
-        plan = "free"
         user_doc = {
             "user_id": user_id,
             "email": auth_data["email"],
             "name": auth_data["name"],
             "picture": auth_data.get("picture"),
-            "plan": plan,
-            "plan_expiry": None,
-            "stripe_customer_id": None,
             "created_at": now
         }
         await db.users.insert_one(user_doc)
@@ -598,7 +582,6 @@ async def exchange_session(request: Request):
         "email": auth_data["email"],
         "name": auth_data["name"],
         "picture": auth_data.get("picture"),
-        "plan": plan,
         "session_token": session_token
     })
     
@@ -621,9 +604,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         user_id=current_user.user_id,
         email=current_user.email,
         name=current_user.name,
-        picture=current_user.picture,
-        plan=current_user.plan,
-        plan_expiry=current_user.plan_expiry
+        picture=current_user.picture
     )
 
 @api_router.post("/auth/logout")
@@ -646,15 +627,6 @@ async def create_tournament(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new tournament"""
-    # Check plan limits
-    if current_user.plan == "free":
-        count = await db.tournaments.count_documents({"organizer_id": current_user.user_id})
-        if count >= SUBSCRIPTION_PLANS["free"]["max_tournaments"]:
-            raise HTTPException(
-                status_code=403,
-                detail="Limite tornei raggiunto. Passa al piano Pro per creare più tornei."
-            )
-    
     now = datetime.now(timezone.utc)
     tournament_id = f"tournament_{uuid.uuid4().hex[:12]}"
     slug = await get_unique_slug(tournament_data.name)
@@ -817,15 +789,6 @@ async def create_team(
     
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
-    # Check plan limits
-    if current_user.plan == "free":
-        count = await db.teams.count_documents({"tournament_id": tournament_id})
-        if count >= SUBSCRIPTION_PLANS["free"]["max_teams"]:
-            raise HTTPException(
-                status_code=403,
-                detail="Limite squadre raggiunto. Passa al piano Pro per aggiungere più squadre."
-            )
     
     now = datetime.now(timezone.utc)
     team_id = f"team_{uuid.uuid4().hex[:12]}"

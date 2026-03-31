@@ -105,9 +105,6 @@ export default function DashboardScreen() {
             <Text style={styles.greeting}>Ciao, {firstName}</Text>
             <Text style={styles.subtitle}>Gestisci i tuoi tornei</Text>
           </View>
-          <View style={styles.planBadge}>
-            <Text style={styles.planText}>{user?.plan?.toUpperCase() || 'FREE'}</Text>
-          </View>
         </View>
 
         {/* Stats Grid */}
@@ -248,17 +245,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     marginTop: 2,
-  },
-  planBadge: {
-    backgroundColor: '#10B981',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-  },
-  planText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: '700',
   },
   // Stats Grid
   statsGrid: {
