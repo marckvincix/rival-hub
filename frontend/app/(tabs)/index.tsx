@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity,
-  RefreshControl
+  RefreshControl,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
@@ -14,6 +15,8 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Loading } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Match } from '../../src/types';
+
+const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
 export default function DashboardScreen() {
   const router = useRouter();
@@ -97,9 +100,7 @@ export default function DashboardScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.avatarContainer}>
-            <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
-          </View>
+          <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
           <View style={styles.headerTextContainer}>
             <Text style={styles.greeting}>Ciao, {firstName}</Text>
             <Text style={styles.subtitle}>Gestisci i tuoi tornei</Text>
@@ -229,18 +230,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
   },
-  avatarContainer: {
-    width: 48,
+  logoImage: {
+    width: 60,
     height: 48,
-    borderRadius: 24,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  avatarText: {
-    color: '#FFF',
-    fontSize: 20,
-    fontWeight: '600',
+    marginRight: 8,
   },
   headerTextContainer: {
     flex: 1,

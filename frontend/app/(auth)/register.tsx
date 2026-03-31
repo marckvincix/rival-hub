@@ -7,7 +7,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -16,6 +17,8 @@ import { Button, Input } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+
+const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -97,9 +100,7 @@ export default function RegisterScreen() {
           </TouchableOpacity>
 
           <View style={styles.header}>
-            <View style={styles.logoContainer}>
-              <Ionicons name="football" size={48} color="#FFF" />
-            </View>
+            <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
             <Text style={styles.title}>Crea Account</Text>
             <Text style={styles.subtitle}>Inizia a gestire i tuoi tornei</Text>
           </View>
@@ -202,13 +203,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 32,
   },
-  logoContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 24,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
+  logoImage: {
+    width: 120,
+    height: 60,
     marginBottom: 16,
   },
   title: {

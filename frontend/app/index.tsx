@@ -5,7 +5,8 @@ import {
   StyleSheet, 
   ScrollView, 
   TouchableOpacity, 
-  TextInput
+  TextInput,
+  Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,6 +15,8 @@ import { useAuthStore } from '../src/store/authStore';
 import { Button } from '../src/components';
 import api from '../src/utils/api';
 import { Tournament } from '../src/types';
+
+const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 
 export default function LandingPage() {
   const router = useRouter();
@@ -71,10 +74,7 @@ export default function LandingPage() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
-            <View style={styles.logoIcon}>
-              <Ionicons name="trophy" size={24} color="#FFF" />
-            </View>
-            <Text style={styles.logoText}>Rival Hub</Text>
+            <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
           </View>
           <TouchableOpacity 
             style={styles.loginButton}
@@ -205,8 +205,7 @@ export default function LandingPage() {
         {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerLogo}>
-            <Ionicons name="trophy" size={24} color="#FFF" />
-            <Text style={styles.footerLogoText}>Rival Hub</Text>
+            <Image source={RivalHubLogo} style={styles.footerLogoImage} resizeMode="contain" />
           </View>
           <Text style={styles.copyright}>© 2026 Rival Hub</Text>
         </View>
@@ -232,19 +231,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  logoIcon: {
-    width: 40,
+  logoImage: {
+    width: 100,
     height: 40,
-    borderRadius: 20,
-    backgroundColor: '#000',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  logoText: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#000',
-    marginLeft: 10,
   },
   loginButton: {
     borderWidth: 2,
@@ -448,11 +437,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
-  footerLogoText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#FFF',
-    marginLeft: 8,
+  footerLogoImage: {
+    width: 80,
+    height: 32,
+    tintColor: '#FFF',
   },
   copyright: {
     fontSize: 12,
