@@ -147,6 +147,68 @@ backend:
           
           This endpoint is fully ready for frontend player dropdown functionality.
 
+  - task: "Basketball Tournament Endpoints - Complete functionality testing"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ BASKETBALL TOURNAMENT ENDPOINTS COMPREHENSIVE TESTING COMPLETED - ALL TESTS PASSED
+          
+          Complete basketball tournament functionality tested and verified:
+          
+          🏀 BASKETBALL ENDPOINTS TESTED AND WORKING:
+          ✅ GET /api/tournaments - Returns tournaments including basketball ones
+          ✅ GET /api/tournaments/{tournament_id}/basketball-standings - Basketball standings with wins/losses
+          ✅ GET /api/tournaments/{tournament_id}/basketball-scorers - Basketball top scorers with points breakdown
+          ✅ GET /api/tournaments/{tournament_id}/basketball-stats - Detailed basketball player statistics
+          ✅ POST /api/matches/{match_id}/events/batch - Batch save with basketball events
+          
+          🏀 BASKETBALL EVENTS TESTED:
+          ✅ points_1pt, points_2pt, points_3pt - Point scoring events
+          ✅ rebound - Defensive and offensive rebounds
+          ✅ basketball_assist - Basketball assists (different from football assists)
+          ✅ foul - Personal fouls tracking
+          ✅ steal - Steal events
+          ✅ block - Block events
+          
+          🔐 AUTHENTICATION & SECURITY TESTING:
+          ✅ Authentication required for protected endpoints (CREATE, UPDATE, DELETE)
+          ✅ Session-based authentication functioning correctly
+          ✅ Tournament creation with basketball sport type working
+          ✅ Team and player management for basketball tournaments
+          
+          📊 DATA INTEGRITY & VALIDATION:
+          ✅ Basketball tournament creation with sport="basket", game_format="5v5", game_structure="4_quarters"
+          ✅ Basketball match creation and management
+          ✅ Basketball events batch save with periods_score, team_fouls tracking
+          ✅ Basketball statistics aggregation (points, rebounds, assists, steals, blocks, fouls)
+          ✅ Basketball standings calculation (2 points per win, 0 per loss, no draws)
+          ✅ Basketball scorers ranking by total points with PPG calculation
+          
+          🚀 TECHNICAL VALIDATION:
+          ✅ Proper HTTP status codes returned (200, 401, 403, 404)
+          ✅ JSON response format consistent and valid for all endpoints
+          ✅ Database operations functioning correctly with basketball-specific data
+          ✅ Real basketball player test data used (Lakers vs Warriors players)
+          ✅ Basketball-specific scoring system working (1pt, 2pt, 3pt events)
+          ✅ Period-based game structure supported (Q1, Q2, Q3, Q4, OT)
+          
+          🎯 READY FOR PRODUCTION:
+          - All basketball tournament endpoints verified and working
+          - Basketball match management fully functional
+          - Basketball statistics and standings calculation accurate
+          - Basketball events batch save working with all event types
+          - No critical issues or bugs found
+          - Ready for basketball tournament management frontend integration
+          
+          This Basketball Tournament API is fully functional and ready for basketball match management.
+
   - task: "API POST /api/matches/{match_id}/events/batch - Batch save match events with score update"
     implemented: true
     working: true
@@ -344,7 +406,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "News CRUD API - Complete functionality testing"
+    - "Basketball Tournament Endpoints - Complete functionality testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -399,6 +461,51 @@ agent_communication:
       
       CREDENZIALI: newuser@test.com / password123
       oppure registrare un nuovo utente
+  - agent: "testing"
+    message: |
+      ✅ BASKETBALL TOURNAMENT ENDPOINTS TESTING COMPLETED SUCCESSFULLY - ALL TESTS PASSED
+      
+      🏀 COMPREHENSIVE BASKETBALL TOURNAMENT TESTING RESULTS:
+      
+      📰 ALL BASKETBALL ENDPOINTS FULLY TESTED AND WORKING:
+      ✅ GET /api/tournaments - Returns tournaments including basketball ones
+      ✅ GET /api/tournaments/{tournament_id}/basketball-standings - Basketball standings with wins/losses
+      ✅ GET /api/tournaments/{tournament_id}/basketball-scorers - Basketball top scorers with points breakdown  
+      ✅ GET /api/tournaments/{tournament_id}/basketball-stats - Detailed basketball player statistics
+      ✅ POST /api/matches/{match_id}/events/batch - Batch save with basketball events
+      
+      🏀 BASKETBALL EVENTS COMPREHENSIVELY TESTED:
+      ✅ points_1pt, points_2pt, points_3pt - All point scoring events working
+      ✅ rebound - Defensive and offensive rebounds tracking
+      ✅ basketball_assist - Basketball assists (separate from football assists)
+      ✅ foul - Personal fouls tracking and team foul accumulation
+      ✅ steal - Steal events properly recorded
+      ✅ block - Block events properly recorded
+      
+      🔐 SECURITY & AUTHENTICATION VERIFIED:
+      ✅ Authentication required for all protected endpoints (CREATE, UPDATE, DELETE)
+      ✅ Session-based authentication working correctly
+      ✅ Tournament creation with basketball sport type functioning
+      ✅ Team and player management for basketball tournaments working
+      
+      📊 DATA INTEGRITY & BASKETBALL-SPECIFIC FEATURES:
+      ✅ Basketball tournament creation with sport="basket", game_format="5v5", game_structure="4_quarters"
+      ✅ Basketball match creation and management with period-based scoring
+      ✅ Basketball events batch save with periods_score and team_fouls tracking
+      ✅ Basketball statistics aggregation (points breakdown, rebounds, assists, steals, blocks, fouls)
+      ✅ Basketball standings calculation (2 points per win, 0 per loss, no draws like football)
+      ✅ Basketball scorers ranking by total points with PPG (points per game) calculation
+      ✅ Period-based game structure supported (Q1, Q2, Q3, Q4, OT)
+      
+      🚀 PRODUCTION READY:
+      - Complete basketball tournament management functionality verified
+      - Basketball match events system working with all event types
+      - Basketball statistics and standings calculation accurate
+      - Basketball-specific scoring system working (1pt, 2pt, 3pt events)
+      - No critical bugs or issues found
+      - Ready for basketball tournament management frontend integration
+      
+      The Basketball Tournament API is fully functional and ready for production use with comprehensive basketball match management capabilities.
   - agent: "testing"
     message: |
       ✅ BACKEND TESTING COMPLETATO CON SUCCESSO - API PRONTA PER USO
