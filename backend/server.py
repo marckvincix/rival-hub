@@ -2255,7 +2255,7 @@ async def get_favorites(user: User = Depends(get_current_user)):
     return result
 
 @api_router.get("/favorites/check/{type}/{reference_id}")
-async def check_favorite(type: str, reference_id: str, user: User = Depends(get_current_user)):
+async def check_favorite(type: str, reference_id: str, user: User = Depends(get_optional_user)):
     """Check if an item is in user's favorites"""
     if not user:
         return {"is_favorite": False, "notifications_enabled": False}

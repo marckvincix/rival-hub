@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { favoritesApi } from '../utils/favoritesApi';
@@ -28,52 +28,75 @@ export function FavoriteButton({
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      checkFavorite();
-    } else {
+  const checkFavorite = useCallback(async () => {
+    if (!isAuthenticated || !referenceId) {
       setChecking(false);
+      return;
     }
-  }, [referenceId, isAuthenticated]);
-
-  const checkFavorite = async () => {
+    
     try {
+      console.log(`Checking favorite: ${type}/${referenceId}`);
       const result = await favoritesApi.checkFavorite(type, referenceId);
+      console.log(`Check result:`, result);
       setIsFavorite(result.is_favorite);
     } catch (error) {
       console.log('Error checking favorite:', error);
+      setIsFavorite(false);
     } finally {
       setChecking(false);
     }
-  };
+  }, [type, referenceId, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated && referenceId) {
+      checkFavorite();
+    } else {
+      setChecking(false);
+      setIsFavorite(false);
+    }
+  }, [referenceId, isAuthenticated, checkFavorite]);
 
   const toggleFavorite = async () => {
-    if (!isAuthenticated) {
+    if (!isAuthenticated || loading) {
+      console.log('Toggle blocked: not authenticated or loading');
       return;
     }
 
+    const previousState = isFavorite;
+    
+    // OPTIMISTIC UPDATE - cambia subito lo stato visivo
+    setIsFavorite(!previousState);
     setLoading(true);
+    
+    console.log(`Toggling favorite: ${type}/${referenceId} from ${previousState} to ${!previousState}`);
+
     try {
-      if (isFavorite) {
+      if (previousState) {
+        // Era nei preferiti, rimuovi
         await favoritesApi.removeFavorite(type, referenceId);
-        setIsFavorite(false);
-        onToggle?.(false);
+        console.log('Removed from favorites successfully');
       } else {
+        // Non era nei preferiti, aggiungi
         await favoritesApi.addFavorite(type, referenceId);
-        setIsFavorite(true);
-        onToggle?.(true);
+        console.log('Added to favorites successfully');
       }
-    } catch (error) {
+      onToggle?.(!previousState);
+    } catch (error: any) {
+      // Se fallisce, ripristina lo stato precedente
       console.log('Error toggling favorite:', error);
+      console.log('Error details:', error.response?.data);
+      setIsFavorite(previousState);
     } finally {
       setLoading(false);
     }
   };
 
+  // Non mostrare nulla se non autenticato
   if (!isAuthenticated) {
     return null;
   }
 
+  // Mostra loading durante il check iniziale
   if (checking) {
     return (
       <TouchableOpacity style={[styles.button, style]} disabled>
@@ -87,16 +110,13 @@ export function FavoriteButton({
       style={[styles.button, style]}
       onPress={toggleFavorite}
       disabled={loading}
+      activeOpacity={0.6}
     >
-      {loading ? (
-        <ActivityIndicator size="small" color={activeColor} />
-      ) : (
-        <Ionicons
-          name={isFavorite ? 'star' : 'star-outline'}
-          size={size}
-          color={isFavorite ? activeColor : color}
-        />
-      )}
+      <Ionicons
+        name={isFavorite ? 'star' : 'star-outline'}
+        size={size}
+        color={isFavorite ? activeColor : color}
+      />
     </TouchableOpacity>
   );
 }

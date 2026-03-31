@@ -79,7 +79,7 @@ export default function TournamentPublicPage() {
 
   const handleShare = async () => {
     if (!tournament) return;
-    try { await Share.share({ message: `Segui "${tournament.name}" su GoalManager!` }); } catch (e) {}
+    try { await Share.share({ message: `Segui "${tournament.name}" su Rival Hub!` }); } catch (e) {}
   };
 
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';

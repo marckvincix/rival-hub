@@ -54,9 +54,9 @@ export default function LandingPage() {
   };
 
   const features = [
-    { icon: 'trophy-outline' as const, title: 'Gestione Tornei', desc: 'Crea e gestisci tornei facilmente' },
+    { icon: 'trophy-outline' as const, title: 'Gestione Tornei', desc: 'Crea e gestisci tornei di qualsiasi sport' },
     { icon: 'people-outline' as const, title: 'Squadre', desc: 'Organizza rose e statistiche' },
-    { icon: 'stats-chart-outline' as const, title: 'Classifiche', desc: 'Aggiornamenti in tempo reale' },
+    { icon: 'stats-chart-outline' as const, title: 'Classifiche', desc: 'Classifiche e risultati in tempo reale' },
     { icon: 'newspaper-outline' as const, title: 'News', desc: 'Pubblica aggiornamenti' },
   ];
 
@@ -72,9 +72,9 @@ export default function LandingPage() {
         <View style={styles.header}>
           <View style={styles.logoContainer}>
             <View style={styles.logoIcon}>
-              <Ionicons name="football" size={24} color="#FFF" />
+              <Ionicons name="trophy" size={24} color="#FFF" />
             </View>
-            <Text style={styles.logoText}>GoalManager</Text>
+            <Text style={styles.logoText}>Rival Hub</Text>
           </View>
           <TouchableOpacity 
             style={styles.loginButton}
@@ -86,9 +86,9 @@ export default function LandingPage() {
 
         {/* Hero Section */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Gestisci i tuoi tornei di calcio</Text>
+          <Text style={styles.heroTitle}>Crea e gestisci i tuoi tornei</Text>
           <Text style={styles.heroSubtitle}>
-            La piattaforma per scuole calcio e organizzatori
+            La piattaforma per creare, seguire ed organizzare tornei sportivi
           </Text>
           <Button
             title="Inizia Gratis"
@@ -205,10 +205,10 @@ export default function LandingPage() {
         {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerLogo}>
-            <Ionicons name="football" size={24} color="#FFF" />
-            <Text style={styles.footerLogoText}>GoalManager</Text>
+            <Ionicons name="trophy" size={24} color="#FFF" />
+            <Text style={styles.footerLogoText}>Rival Hub</Text>
           </View>
-          <Text style={styles.copyright}>© 2025 GoalManager</Text>
+          <Text style={styles.copyright}>© 2026 Rival Hub</Text>
         </View>
       </ScrollView>
     </SafeAreaView>

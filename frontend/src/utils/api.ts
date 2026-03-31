@@ -12,4 +12,21 @@ const api = axios.create({
   }
 });
 
+// Response interceptor for debugging
+api.interceptors.response.use(
+  (response) => {
+    return response;
+  },
+  (error) => {
+    if (error.response) {
+      console.log('API Error:', error.response.status, error.response.data);
+    } else if (error.request) {
+      console.log('API No Response:', error.request);
+    } else {
+      console.log('API Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
+
 export default api;

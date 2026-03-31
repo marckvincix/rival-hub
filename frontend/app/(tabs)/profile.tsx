@@ -131,7 +131,7 @@ export default function ProfileScreen() {
   const getPlanFeatures = () => {
     switch (user?.plan) {
       case 'pro': return ['Tornei illimitati', 'Squadre illimitate', 'Statistiche complete', 'Collaboratori', 'Categorie per età', 'Export PDF', 'Senza pubblicità', 'Senza branding'];
-      default: return ['1 torneo attivo', 'Max 8 squadre', 'Statistiche base', 'Branding GoalManager'];
+      default: return ['1 torneo attivo', 'Max 8 squadre', 'Statistiche base', 'Branding Rival Hub'];
     }
   };
 
@@ -346,7 +346,7 @@ export default function ProfileScreen() {
         {/* App Info */}
         <View style={styles.appInfo}>
           <Ionicons name="football" size={24} color="#999" />
-          <Text style={styles.appName}>GoalManager</Text>
+          <Text style={styles.appName}>Rival Hub</Text>
           <Text style={styles.appVersion}>Versione 1.0.0</Text>
         </View>
       </ScrollView>

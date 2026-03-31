@@ -13,19 +13,19 @@ export interface Favorite {
 export const favoritesApi = {
   // Get all user favorites
   async getFavorites(): Promise<Favorite[]> {
-    const response = await api.get('/favorites');
+    const response = await api.get('/api/favorites');
     return response.data;
   },
 
   // Check if item is favorited
   async checkFavorite(type: 'tournament' | 'team', referenceId: string): Promise<{ is_favorite: boolean; notifications_enabled: boolean }> {
-    const response = await api.get(`/favorites/check/${type}/${referenceId}`);
+    const response = await api.get(`/api/favorites/check/${type}/${referenceId}`);
     return response.data;
   },
 
   // Add to favorites
   async addFavorite(type: 'tournament' | 'team', referenceId: string, notificationsEnabled: boolean = true): Promise<{ id: string; message: string }> {
-    const response = await api.post('/favorites', {
+    const response = await api.post('/api/favorites', {
       type,
       reference_id: referenceId,
       notifications_enabled: notificationsEnabled,
@@ -35,13 +35,13 @@ export const favoritesApi = {
 
   // Remove from favorites
   async removeFavorite(type: 'tournament' | 'team', referenceId: string): Promise<{ message: string }> {
-    const response = await api.delete(`/favorites/${type}/${referenceId}`);
+    const response = await api.delete(`/api/favorites/${type}/${referenceId}`);
     return response.data;
   },
 
   // Update favorite notifications setting
   async updateFavoriteNotifications(favoriteId: string, notificationsEnabled: boolean): Promise<{ message: string }> {
-    const response = await api.put(`/favorites/${favoriteId}`, {
+    const response = await api.put(`/api/favorites/${favoriteId}`, {
       notifications_enabled: notificationsEnabled,
     });
     return response.data;
@@ -49,13 +49,13 @@ export const favoritesApi = {
 
   // Get global notification settings
   async getNotificationSettings(): Promise<{ notifications_enabled: boolean }> {
-    const response = await api.get('/users/notification-settings');
+    const response = await api.get('/api/users/notification-settings');
     return response.data;
   },
 
   // Update global notification settings
   async updateNotificationSettings(notificationsEnabled: boolean): Promise<{ message: string }> {
-    const response = await api.put('/users/notification-settings', {
+    const response = await api.put('/api/users/notification-settings', {
       notifications_enabled: notificationsEnabled,
     });
     return response.data;
