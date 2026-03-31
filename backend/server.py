@@ -1477,14 +1477,24 @@ async def save_match_events_batch(
         await db.match_events.insert_one(event_doc)
         created_events.append(event_doc)
     
-    # Update match score
+    # Update match score (with basketball specific fields if present)
+    match_update = {
+        "home_goals": data.home_goals,
+        "away_goals": data.away_goals,
+        "updated_at": now
+    }
+    
+    # Add basketball specific fields if present
+    if data.periods_score is not None:
+        match_update["periods_score"] = data.periods_score
+    if data.home_team_fouls is not None:
+        match_update["home_team_fouls"] = data.home_team_fouls
+    if data.away_team_fouls is not None:
+        match_update["away_team_fouls"] = data.away_team_fouls
+    
     await db.matches.update_one(
         {"id": match_id},
-        {"$set": {
-            "home_goals": data.home_goals,
-            "away_goals": data.away_goals,
-            "updated_at": now
-        }}
+        {"$set": match_update}
     )
     
     # Save player ratings for this match in a separate collection
@@ -1502,37 +1512,76 @@ async def save_match_events_batch(
                 upsert=True
             )
     
-    # Update player statistics based on events
+    # Update player statistics based on events (Football + Basketball)
     player_updates = {}
     
     for event in data.events:
         pid = event.player_id
         if pid not in player_updates:
             player_updates[pid] = {
+                # Football stats
                 "goals": 0,
                 "assists": 0,
                 "yellow_cards": 0,
-                "red_cards": 0
+                "red_cards": 0,
+                # Basketball stats
+                "points_1pt": 0,
+                "points_2pt": 0,
+                "points_3pt": 0,
+                "rebounds": 0,
+                "basketball_assists": 0,
+                "fouls": 0,
+                "steals": 0,
+                "blocks": 0
             }
         
-        if event.event_type in ["goal", "penalty_goal"]:
+        et = event.event_type
+        # Football events
+        if et in ["goal", "penalty_goal"]:
             player_updates[pid]["goals"] += 1
-        elif event.event_type == "assist":
+        elif et == "assist":
             player_updates[pid]["assists"] += 1
-        elif event.event_type == "yellow_card":
+        elif et == "yellow_card":
             player_updates[pid]["yellow_cards"] += 1
-        elif event.event_type == "red_card":
+        elif et == "red_card":
             player_updates[pid]["red_cards"] += 1
+        # Basketball events
+        elif et == "points_1pt":
+            player_updates[pid]["points_1pt"] += 1
+        elif et == "points_2pt":
+            player_updates[pid]["points_2pt"] += 1
+        elif et == "points_3pt":
+            player_updates[pid]["points_3pt"] += 1
+        elif et == "rebound":
+            player_updates[pid]["rebounds"] += 1
+        elif et == "basketball_assist":
+            player_updates[pid]["basketball_assists"] += 1
+        elif et == "foul":
+            player_updates[pid]["fouls"] += 1
+        elif et == "steal":
+            player_updates[pid]["steals"] += 1
+        elif et == "block":
+            player_updates[pid]["blocks"] += 1
     
     # Apply updates to player_stats collection (cumulative stats)
     for player_id, updates in player_updates.items():
         await db.player_stats.update_one(
             {"player_id": player_id},
             {"$inc": {
+                # Football
                 "goals": updates["goals"],
                 "assists": updates["assists"],
                 "yellow_cards": updates["yellow_cards"],
-                "red_cards": updates["red_cards"]
+                "red_cards": updates["red_cards"],
+                # Basketball
+                "points_1pt": updates["points_1pt"],
+                "points_2pt": updates["points_2pt"],
+                "points_3pt": updates["points_3pt"],
+                "rebounds": updates["rebounds"],
+                "basketball_assists": updates["basketball_assists"],
+                "fouls": updates["fouls"],
+                "steals": updates["steals"],
+                "blocks": updates["blocks"]
             }},
             upsert=True
         )
@@ -1572,7 +1621,7 @@ async def get_match_events(match_id: str):
 
 @api_router.get("/players/{player_id}/stats", response_model=PlayerStatsResponse)
 async def get_player_stats(player_id: str):
-    """Get cumulative statistics for a player"""
+    """Get cumulative statistics for a player (Football and Basketball)"""
     # Get player info
     player = await db.players.find_one({"id": player_id}, {"_id": 0})
     if not player:
@@ -1597,14 +1646,21 @@ async def get_player_stats(player_id: str):
     all_matches = set(matches_with_events + matches_with_ratings)
     appearances = len(all_matches)
     
-    # Calculate minutes (assuming 90 minutes per appearance for now)
+    # Calculate minutes (assuming 90 minutes per appearance for football, 40 for basketball)
     minutes_played = appearances * 90
+    
+    # Basketball stats
+    points_1pt = stats.get("points_1pt", 0) if stats else 0
+    points_2pt = stats.get("points_2pt", 0) if stats else 0
+    points_3pt = stats.get("points_3pt", 0) if stats else 0
+    total_points = points_1pt + (points_2pt * 2) + (points_3pt * 3)
     
     return PlayerStatsResponse(
         player_id=player_id,
         full_name=player.get("full_name", ""),
         role=player.get("role", ""),
         photo=player.get("photo"),
+        # Football stats
         goals=stats.get("goals", 0) if stats else 0,
         assists=stats.get("assists", 0) if stats else 0,
         yellow_cards=stats.get("yellow_cards", 0) if stats else 0,
@@ -1612,7 +1668,17 @@ async def get_player_stats(player_id: str):
         appearances=appearances,
         minutes_played=minutes_played,
         average_rating=avg_rating,
-        ratings_count=ratings_count
+        ratings_count=ratings_count,
+        # Basketball stats
+        points_1pt=points_1pt,
+        points_2pt=points_2pt,
+        points_3pt=points_3pt,
+        total_points=total_points,
+        rebounds=stats.get("rebounds", 0) if stats else 0,
+        basketball_assists=stats.get("basketball_assists", 0) if stats else 0,
+        fouls=stats.get("fouls", 0) if stats else 0,
+        steals=stats.get("steals", 0) if stats else 0,
+        blocks=stats.get("blocks", 0) if stats else 0
     )
 
 # ===================== NEWS ENDPOINTS =====================
@@ -1814,6 +1880,95 @@ async def get_standings(tournament_id: str):
     
     return sorted_standings
 
+@api_router.get("/tournaments/{tournament_id}/basketball-standings")
+async def get_basketball_standings(tournament_id: str):
+    """Get standings for a basketball tournament (2 pts win, 0 pts loss)"""
+    # Get tournament to check sport
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    # Get all teams
+    teams = await db.teams.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    # Get completed matches
+    matches = await db.matches.find(
+        {"tournament_id": tournament_id, "status": "completed"},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Initialize standings (basketball style)
+    standings = {}
+    for team in teams:
+        standings[team["id"]] = {
+            "team_id": team["id"],
+            "team_name": team["name"],
+            "team_logo": team.get("logo"),
+            "played": 0,
+            "wins": 0,
+            "losses": 0,
+            "points_for": 0,
+            "points_against": 0,
+            "point_difference": 0,
+            "points": 0,  # 2 per vittoria, 0 per sconfitta
+            "form": []
+        }
+    
+    # Calculate standings from matches
+    for match in matches:
+        home_id = match["home_team_id"]
+        away_id = match["away_team_id"]
+        home_score = match.get("home_goals", 0) or 0
+        away_score = match.get("away_goals", 0) or 0
+        
+        if home_id not in standings or away_id not in standings:
+            continue
+        
+        # Update played
+        standings[home_id]["played"] += 1
+        standings[away_id]["played"] += 1
+        
+        # Update points scored
+        standings[home_id]["points_for"] += home_score
+        standings[home_id]["points_against"] += away_score
+        standings[away_id]["points_for"] += away_score
+        standings[away_id]["points_against"] += home_score
+        
+        # Determine winner (no draws in basketball)
+        if home_score > away_score:
+            standings[home_id]["wins"] += 1
+            standings[home_id]["points"] += 2
+            standings[home_id]["form"].append("W")
+            standings[away_id]["losses"] += 1
+            standings[away_id]["form"].append("L")
+        else:
+            standings[away_id]["wins"] += 1
+            standings[away_id]["points"] += 2
+            standings[away_id]["form"].append("W")
+            standings[home_id]["losses"] += 1
+            standings[home_id]["form"].append("L")
+    
+    # Calculate point difference and keep only last 5 form
+    for team in standings.values():
+        team["point_difference"] = team["points_for"] - team["points_against"]
+        team["form"] = team["form"][-5:]
+    
+    # Sort standings (points, then point difference, then points scored)
+    sorted_standings = sorted(
+        standings.values(),
+        key=lambda x: (x["points"], x["point_difference"], x["points_for"]),
+        reverse=True
+    )
+    
+    # Add position
+    for i, team in enumerate(sorted_standings):
+        team["position"] = i + 1
+    
+    return sorted_standings
+
 @api_router.get("/tournaments/{tournament_id}/scorers")
 async def get_top_scorers(tournament_id: str):
     """Get top scorers for a tournament"""
@@ -1894,6 +2049,106 @@ async def get_top_scorers(tournament_id: str):
     
     # Sort by goals
     scorers.sort(key=lambda x: (x["goals"], x["assists"]), reverse=True)
+    
+    # Add position
+    for i, scorer in enumerate(scorers):
+        scorer["position"] = i + 1
+    
+    return scorers
+
+@api_router.get("/tournaments/{tournament_id}/basketball-scorers")
+async def get_basketball_top_scorers(tournament_id: str):
+    """Get top scorers for a basketball tournament"""
+    # Get all point events
+    point_events = await db.match_events.find(
+        {
+            "tournament_id": tournament_id,
+            "event_type": {"$in": ["points_1pt", "points_2pt", "points_3pt"]}
+        },
+        {"_id": 0}
+    ).to_list(3000)
+    
+    # Get all assist events
+    assist_events = await db.match_events.find(
+        {"tournament_id": tournament_id, "event_type": "basketball_assist"},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    # Aggregate stats by player
+    player_stats = {}
+    
+    for event in point_events:
+        player_id = event["player_id"]
+        if player_id not in player_stats:
+            player_stats[player_id] = {"total_points": 0, "points_1pt": 0, "points_2pt": 0, "points_3pt": 0, "assists": 0, "matches": set()}
+        
+        if event["event_type"] == "points_1pt":
+            player_stats[player_id]["points_1pt"] += 1
+            player_stats[player_id]["total_points"] += 1
+        elif event["event_type"] == "points_2pt":
+            player_stats[player_id]["points_2pt"] += 1
+            player_stats[player_id]["total_points"] += 2
+        elif event["event_type"] == "points_3pt":
+            player_stats[player_id]["points_3pt"] += 1
+            player_stats[player_id]["total_points"] += 3
+        
+        player_stats[player_id]["matches"].add(event["match_id"])
+    
+    for event in assist_events:
+        player_id = event["player_id"]
+        if player_id not in player_stats:
+            player_stats[player_id] = {"total_points": 0, "points_1pt": 0, "points_2pt": 0, "points_3pt": 0, "assists": 0, "matches": set()}
+        player_stats[player_id]["assists"] += 1
+        player_stats[player_id]["matches"].add(event["match_id"])
+    
+    # Get player details
+    player_ids = list(player_stats.keys())
+    players = await db.players.find(
+        {"id": {"$in": player_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    player_map = {p["id"]: p for p in players}
+    
+    # Get team details
+    team_ids = list(set(p.get("team_id") for p in players if p.get("team_id")))
+    teams = await db.teams.find(
+        {"id": {"$in": team_ids}},
+        {"_id": 0}
+    ).to_list(50)
+    
+    team_map = {t["id"]: t for t in teams}
+    
+    # Build scorers list
+    scorers = []
+    for player_id, stats in player_stats.items():
+        player = player_map.get(player_id)
+        if not player:
+            continue
+        
+        team = team_map.get(player.get("team_id"))
+        total_points = stats["total_points"]
+        matches_played = len(stats["matches"])
+        
+        scorers.append({
+            "player_id": player_id,
+            "player_name": player.get("full_name"),
+            "player_photo": player.get("photo"),
+            "player_number": player.get("number"),
+            "team_id": player.get("team_id"),
+            "team_name": team.get("name") if team else None,
+            "team_logo": team.get("logo") if team else None,
+            "total_points": total_points,
+            "points_1pt": stats["points_1pt"],
+            "points_2pt": stats["points_2pt"],
+            "points_3pt": stats["points_3pt"],
+            "assists": stats["assists"],
+            "matches_played": matches_played,
+            "ppg": round(total_points / matches_played, 1) if matches_played > 0 else 0
+        })
+    
+    # Sort by total points
+    scorers.sort(key=lambda x: (x["total_points"], x["assists"]), reverse=True)
     
     # Add position
     for i, scorer in enumerate(scorers):
@@ -2004,6 +2259,112 @@ async def get_tournament_player_stats(tournament_id: str):
         })
     
     result.sort(key=lambda x: (x["goals"], x["assists"]), reverse=True)
+    
+    return result
+
+@api_router.get("/tournaments/{tournament_id}/basketball-stats")
+async def get_tournament_basketball_stats(tournament_id: str):
+    """Get detailed basketball player statistics for a tournament"""
+    # Get all basketball events
+    events = await db.match_events.find(
+        {"tournament_id": tournament_id, "event_type": {"$in": ["points_1pt", "points_2pt", "points_3pt", "rebound", "basketball_assist", "foul", "steal", "block"]}},
+        {"_id": 0}
+    ).to_list(5000)
+    
+    # Aggregate stats
+    player_stats = {}
+    
+    for event in events:
+        player_id = event["player_id"]
+        if player_id not in player_stats:
+            player_stats[player_id] = {
+                "points_1pt": 0,
+                "points_2pt": 0,
+                "points_3pt": 0,
+                "total_points": 0,
+                "rebounds": 0,
+                "assists": 0,
+                "fouls": 0,
+                "steals": 0,
+                "blocks": 0,
+                "matches": set()
+            }
+        
+        stats = player_stats[player_id]
+        event_type = event["event_type"]
+        stats["matches"].add(event["match_id"])
+        
+        if event_type == "points_1pt":
+            stats["points_1pt"] += 1
+            stats["total_points"] += 1
+        elif event_type == "points_2pt":
+            stats["points_2pt"] += 1
+            stats["total_points"] += 2
+        elif event_type == "points_3pt":
+            stats["points_3pt"] += 1
+            stats["total_points"] += 3
+        elif event_type == "rebound":
+            stats["rebounds"] += 1
+        elif event_type == "basketball_assist":
+            stats["assists"] += 1
+        elif event_type == "foul":
+            stats["fouls"] += 1
+        elif event_type == "steal":
+            stats["steals"] += 1
+        elif event_type == "block":
+            stats["blocks"] += 1
+    
+    # Get player and team details
+    player_ids = list(player_stats.keys())
+    players = await db.players.find(
+        {"id": {"$in": player_ids}},
+        {"_id": 0}
+    ).to_list(500)
+    
+    player_map = {p["id"]: p for p in players}
+    
+    team_ids = list(set(p.get("team_id") for p in players if p.get("team_id")))
+    teams = await db.teams.find(
+        {"id": {"$in": team_ids}},
+        {"_id": 0}
+    ).to_list(100)
+    
+    team_map = {t["id"]: t for t in teams}
+    
+    # Build result
+    result = []
+    for player_id, stats in player_stats.items():
+        player = player_map.get(player_id)
+        if not player:
+            continue
+        
+        team = team_map.get(player.get("team_id"))
+        
+        result.append({
+            "player_id": player_id,
+            "player_name": player.get("full_name"),
+            "player_photo": player.get("photo"),
+            "player_number": player.get("number"),
+            "role": player.get("role"),
+            "team_id": player.get("team_id"),
+            "team_name": team.get("name") if team else None,
+            "team_logo": team.get("logo") if team else None,
+            "points_1pt": stats["points_1pt"],
+            "points_2pt": stats["points_2pt"],
+            "points_3pt": stats["points_3pt"],
+            "total_points": stats["total_points"],
+            "rebounds": stats["rebounds"],
+            "assists": stats["assists"],
+            "fouls": stats["fouls"],
+            "steals": stats["steals"],
+            "blocks": stats["blocks"],
+            "appearances": len(stats["matches"]),
+            # MVP calc: most points, tie-breaker: most assists
+            "mvp_score": stats["total_points"] * 100 + stats["assists"]
+        })
+    
+    # Sort by total points (for scoring leaders) then assists
+    result.sort(key=lambda x: (x["total_points"], x["assists"]), reverse=True)
     
     return result
 
