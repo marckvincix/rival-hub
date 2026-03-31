@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
 import { Button } from '../src/components';
 import api from '../src/utils/api';
-import { Tournament } from '../src/types';
+import { Tournament, getSportEmoji } from '../src/types';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
@@ -132,7 +132,7 @@ export default function LandingPage() {
                 onPress={() => router.push(`/tournament/${tournament.slug}`)}
               >
                 <View style={styles.tournamentIconContainer}>
-                  <Ionicons name="trophy" size={24} color="#000" />
+                  <Text style={styles.sportEmojiBadge}>{getSportEmoji(tournament.sport || 'calcio')}</Text>
                 </View>
                 <View style={styles.tournamentInfo}>
                   <Text style={styles.tournamentName}>{tournament.name}</Text>
@@ -317,6 +317,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,
+  },
+  sportEmojiBadge: {
+    fontSize: 24,
   },
   tournamentInfo: {
     flex: 1,

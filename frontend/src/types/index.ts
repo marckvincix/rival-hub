@@ -1,5 +1,183 @@
 // GoalManager Types
 
+export type Sport = 'calcio' | 'basket' | 'padel' | 'tennis' | 'pallavolo' | 'rugby' | 'baseball' | 'nuoto' | 'ciclismo' | 'atletica';
+
+export interface SportConfig {
+  id: Sport;
+  name: string;
+  emoji: string;
+  formats: { value: string; label: string }[];
+  structures?: { value: string; label: string }[];
+  roles?: { value: string; label: string }[];
+  hideRoles?: boolean;
+}
+
+export const SPORTS_CONFIG: SportConfig[] = [
+  {
+    id: 'calcio',
+    name: 'Calcio',
+    emoji: '⚽',
+    formats: [
+      { value: '11v11', label: 'Calcio a 11' },
+      { value: '8v8', label: 'Calcio a 8' },
+      { value: '7v7', label: 'Calcio a 7' },
+      { value: '5v5', label: 'Calcio a 5' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    roles: [
+      { value: 'goalkeeper', label: 'Portiere' },
+      { value: 'defender', label: 'Difensore' },
+      { value: 'midfielder', label: 'Centrocampista' },
+      { value: 'forward', label: 'Attaccante' },
+    ],
+  },
+  {
+    id: 'basket',
+    name: 'Basket',
+    emoji: '🏀',
+    formats: [
+      { value: '5v5', label: '5 vs 5' },
+      { value: '3v3', label: '3 vs 3' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    structures: [
+      { value: '4_quarters', label: '4 Quarti' },
+      { value: '2_halves', label: '2 Tempi' },
+    ],
+    roles: [
+      { value: 'playmaker', label: 'Playmaker' },
+      { value: 'guardia', label: 'Guardia' },
+      { value: 'ala_piccola', label: 'Ala Piccola' },
+      { value: 'ala_grande', label: 'Ala Grande' },
+      { value: 'centro', label: 'Centro' },
+    ],
+  },
+  {
+    id: 'padel',
+    name: 'Padel',
+    emoji: '🎾',
+    formats: [
+      { value: 'doppio', label: 'Doppio' },
+      { value: 'singolo', label: 'Singolo' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    structures: [
+      { value: '3_sets', label: '3 Set' },
+    ],
+    hideRoles: true,
+  },
+  {
+    id: 'tennis',
+    name: 'Tennis',
+    emoji: '🎾',
+    formats: [
+      { value: 'singolo', label: 'Singolo' },
+      { value: 'doppio', label: 'Doppio' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    structures: [
+      { value: '3_sets', label: '3 Set' },
+      { value: '5_sets', label: '5 Set' },
+    ],
+    hideRoles: true,
+  },
+  {
+    id: 'pallavolo',
+    name: 'Pallavolo',
+    emoji: '🏐',
+    formats: [
+      { value: '6v6', label: '6 vs 6' },
+      { value: '3v3', label: '3 vs 3' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    roles: [
+      { value: 'palleggiatore', label: 'Palleggiatore' },
+      { value: 'schiacciatore', label: 'Schiacciatore' },
+      { value: 'opposto', label: 'Opposto' },
+      { value: 'libero', label: 'Libero' },
+      { value: 'centrale', label: 'Centrale' },
+    ],
+  },
+  {
+    id: 'rugby',
+    name: 'Rugby',
+    emoji: '🏉',
+    formats: [
+      { value: '15v15', label: '15 vs 15' },
+      { value: '7v7', label: '7 vs 7' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    roles: [
+      { value: 'pilone', label: 'Pilone' },
+      { value: 'tallonatore', label: 'Tallonatore' },
+      { value: 'flanker', label: 'Flanker' },
+      { value: 'mediano', label: 'Mediano' },
+      { value: 'ala', label: 'Ala' },
+      { value: 'centro', label: 'Centro' },
+      { value: 'estremo', label: 'Estremo' },
+    ],
+  },
+  {
+    id: 'baseball',
+    name: 'Baseball',
+    emoji: '⚾',
+    formats: [
+      { value: '9v9', label: '9 vs 9' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    roles: [
+      { value: 'lanciatore', label: 'Lanciatore' },
+      { value: 'ricevitore', label: 'Ricevitore' },
+      { value: 'prima_base', label: 'Prima Base' },
+      { value: 'seconda_base', label: 'Seconda Base' },
+      { value: 'terza_base', label: 'Terza Base' },
+      { value: 'interbase', label: 'Interbase' },
+      { value: 'esterno', label: 'Esterno' },
+    ],
+  },
+  {
+    id: 'nuoto',
+    name: 'Nuoto',
+    emoji: '🏊',
+    formats: [
+      { value: 'individuale', label: 'Individuale' },
+      { value: 'staffetta', label: 'Staffetta' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    hideRoles: true,
+  },
+  {
+    id: 'ciclismo',
+    name: 'Ciclismo',
+    emoji: '🚴',
+    formats: [
+      { value: 'individuale', label: 'Individuale' },
+      { value: 'squadre', label: 'Squadre' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    hideRoles: true,
+  },
+  {
+    id: 'atletica',
+    name: 'Atletica',
+    emoji: '🏃',
+    formats: [
+      { value: 'individuale', label: 'Individuale' },
+      { value: 'staffetta', label: 'Staffetta' },
+      { value: 'custom', label: 'Personalizzato' },
+    ],
+    hideRoles: true,
+  },
+];
+
+export const getSportConfig = (sport: Sport): SportConfig | undefined => {
+  return SPORTS_CONFIG.find(s => s.id === sport);
+};
+
+export const getSportEmoji = (sport: Sport): string => {
+  return SPORTS_CONFIG.find(s => s.id === sport)?.emoji || '🏆';
+};
+
 export interface User {
   user_id: string;
   email: string;
@@ -15,10 +193,12 @@ export interface Tournament {
   name: string;
   description?: string;
   organizer_id: string;
-  category: 'U10' | 'U12' | 'U14' | 'U16' | 'U18' | 'Open';
+  sport: Sport;
+  category: 'U8' | 'U10' | 'U12' | 'U14' | 'U16' | 'U18' | 'Senior' | 'Open';
   format: 'league' | 'knockout' | 'groups_knockout' | 'mixed';
-  game_format: '11v11' | '8v8' | '7v7' | '6v6' | '5v5' | 'custom';
+  game_format: string;
   custom_players_per_side?: number;
+  game_structure?: string;
   status: 'draft' | 'active' | 'completed';
   start_date?: string;
   end_date?: string;

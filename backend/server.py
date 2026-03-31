@@ -86,10 +86,12 @@ class UserResponse(BaseModel):
 class TournamentCreate(BaseModel):
     name: str
     description: Optional[str] = None
-    category: str = "Open"  # U10, U12, U14, U16, U18, Open
+    sport: str = "calcio"  # calcio, basket, padel, tennis, pallavolo, rugby, baseball, nuoto, ciclismo, atletica
+    category: str = "Open"  # U8, U10, U12, U14, U16, U18, Senior, Open
     format: str = "league"  # league, knockout, groups_knockout, mixed
-    game_format: str = "11v11"  # 11v11, 8v8, 7v7, 6v6, 5v5, custom
+    game_format: str = "11v11"  # Dynamic based on sport
     custom_players_per_side: Optional[int] = None  # For custom format
+    game_structure: Optional[str] = None  # e.g., "4_quarters", "2_halves", "3_sets", "5_sets"
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
@@ -99,10 +101,12 @@ class TournamentCreate(BaseModel):
 class TournamentUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    sport: Optional[str] = None
     category: Optional[str] = None
     format: Optional[str] = None
     game_format: Optional[str] = None
     custom_players_per_side: Optional[int] = None
+    game_structure: Optional[str] = None
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
@@ -116,10 +120,12 @@ class Tournament(BaseModel):
     name: str
     description: Optional[str] = None
     organizer_id: str
+    sport: str = "calcio"
     category: str = "Open"
     format: str = "league"
     game_format: str = "11v11"
     custom_players_per_side: Optional[int] = None
+    game_structure: Optional[str] = None
     status: str = "draft"  # draft, active, completed
     start_date: Optional[str] = None
     end_date: Optional[str] = None

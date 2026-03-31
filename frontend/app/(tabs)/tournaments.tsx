@@ -17,27 +17,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector } from '../../src/components';
 import api from '../../src/utils/api';
-import { Tournament, Formation, Player } from '../../src/types';
+import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
-const CATEGORIES = ['U10', 'U12', 'U14', 'U16', 'U18', 'Open'];
+const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
   { value: 'league', label: 'Campionato' },
   { value: 'knockout', label: 'Eliminazione' },
   { value: 'groups_knockout', label: 'Gironi + Elim.' },
-];
-
-// Game format options
-const GAME_FORMATS = [
-  { value: '11v11', label: 'Calcio a 11', emoji: '⚽' },
-  { value: '8v8', label: 'Calcio a 8', emoji: '🏃' },
-  { value: '7v7', label: 'Calcio a 7', emoji: '👟' },
-  { value: '6v6', label: 'Calcio a 6', emoji: '⚡' },
-  { value: '5v5', label: 'Calcio a 5 / Futsal', emoji: '🔥' },
-  { value: 'custom', label: 'Personalizzato', emoji: '✏️' },
 ];
 
 export default function TournamentsScreen() {
@@ -51,12 +41,19 @@ export default function TournamentsScreen() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTournament, setSelectedTournament] = useState<Tournament | null>(null);
   
+  // Sport selection states
+  const [showSportSelector, setShowSportSelector] = useState(false);
+  const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
+  const [sportFilter, setSportFilter] = useState<Sport | 'all'>('all');
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    sport: 'calcio' as Sport,
     category: 'Open',
     format: 'league',
     game_format: '11v11',
+    game_structure: '',
     custom_players_per_side: 11,
     location: '',
     start_date: '',
@@ -106,7 +103,8 @@ export default function TournamentsScreen() {
       const response = await api.post('/api/tournaments', formData);
       setTournaments([response.data, ...tournaments]);
       setShowCreateModal(false);
-      setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '' });
+      setSelectedSport(null);
+      setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
       setSelectedTournament(response.data);
     } catch (error: any) {
       Alert.alert('Errore', error.response?.data?.detail || 'Errore nella creazione');
@@ -143,6 +141,40 @@ export default function TournamentsScreen() {
 
   if (loading) return <Loading message="Caricamento..." />;
 
+  // Handle sport selection
+  const handleSportSelect = (sport: Sport) => {
+    setSelectedSport(sport);
+    const sportConfig = getSportConfig(sport);
+    const defaultFormat = sportConfig?.formats[0]?.value || '11v11';
+    const defaultStructure = sportConfig?.structures?.[0]?.value || '';
+    
+    setFormData({
+      ...formData,
+      sport,
+      game_format: defaultFormat,
+      game_structure: defaultStructure,
+    });
+    setShowSportSelector(false);
+    setShowCreateModal(true);
+  };
+
+  // Filter tournaments by sport
+  const filteredTournaments = sportFilter === 'all' 
+    ? tournaments 
+    : tournaments.filter(t => t.sport === sportFilter);
+
+  // Get unique sports from tournaments
+  const sportsWithTournaments = [...new Set(tournaments.map(t => t.sport || 'calcio'))];
+
+  if (showSportSelector) {
+    return (
+      <SportSelector
+        onSelectSport={handleSportSelect}
+        onBack={() => setShowSportSelector(false)}
+      />
+    );
+  }
+
   if (selectedTournament) {
     return (
       <TournamentDetail
@@ -162,68 +194,102 @@ export default function TournamentsScreen() {
         <TouchableOpacity style={styles.addButton} onPress={() => {
           setTournamentDate(null);
           setTournamentTime(null);
-          setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
-          setShowCreateModal(true);
+          setShowSportSelector(true);
         }}>
           <Ionicons name="add" size={24} color="#FFF" />
         </TouchableOpacity>
       </View>
+
+      {/* Sport Filter Pills */}
+      {tournaments.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.filterContainer}
+          contentContainerStyle={styles.filterContent}
+        >
+          <TouchableOpacity
+            style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
+            onPress={() => setSportFilter('all')}
+          >
+            <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
+          </TouchableOpacity>
+          {sportsWithTournaments.map((sport) => {
+            const sportConfig = getSportConfig(sport as Sport);
+            return (
+              <TouchableOpacity
+                key={sport}
+                style={[styles.filterPill, sportFilter === sport && styles.filterPillActive]}
+                onPress={() => setSportFilter(sport as Sport)}
+              >
+                <Text style={[styles.filterPillText, sportFilter === sport && styles.filterPillTextActive]}>
+                  {sportConfig?.emoji} {sportConfig?.name}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      )}
 
       <ScrollView 
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         contentContainerStyle={styles.scrollContent}
       >
-        {tournaments.length === 0 ? (
+        {filteredTournaments.length === 0 ? (
           <EmptyState
             icon="trophy-outline"
-            title="Nessun torneo"
-            description="Crea il tuo primo torneo"
+            title={sportFilter === 'all' ? "Nessun torneo" : "Nessun torneo per questo sport"}
+            description={sportFilter === 'all' ? "Crea il tuo primo torneo" : "Prova un altro filtro o crea un nuovo torneo"}
             actionLabel="Crea Torneo"
             onAction={() => {
               setTournamentDate(null);
               setTournamentTime(null);
-              setFormData({ name: '', description: '', category: 'Open', format: 'league', game_format: '11v11', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
-              setShowCreateModal(true);
+              setShowSportSelector(true);
             }}
           />
         ) : (
-          tournaments.map((tournament) => (
-            <TouchableOpacity
-              key={tournament.id}
-              style={styles.tournamentCard}
-              onPress={() => setSelectedTournament(tournament)}
-            >
-              <View style={styles.cardHeader}>
-                <View style={styles.cardIcon}>
-                  <Ionicons name="trophy" size={24} color="#000" />
+          filteredTournaments.map((tournament) => {
+            const sportConfig = getSportConfig(tournament.sport || 'calcio');
+            return (
+              <TouchableOpacity
+                key={tournament.id}
+                style={styles.tournamentCard}
+                onPress={() => setSelectedTournament(tournament)}
+              >
+                <View style={styles.cardHeader}>
+                  <View style={styles.cardIcon}>
+                    <Text style={styles.sportEmojiBadge}>{sportConfig?.emoji || '🏆'}</Text>
+                  </View>
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardTitle}>{tournament.name}</Text>
+                    <Text style={styles.cardMeta}>{tournament.category} • {tournament.location || 'Nessun luogo'}</Text>
+                  </View>
                 </View>
-                <View style={styles.cardInfo}>
-                  <Text style={styles.cardTitle}>{tournament.name}</Text>
-                  <Text style={styles.cardMeta}>{tournament.category} • {tournament.location || 'Nessun luogo'}</Text>
+                <View style={styles.cardFooter}>
+                  <View style={[styles.statusBadge, tournament.status === 'active' && styles.statusActive]}>
+                    <Text style={[styles.statusText, tournament.status === 'active' && styles.statusTextActive]}>
+                      {getStatusLabel(tournament.status)}
+                    </Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={20} color="#000" />
                 </View>
-              </View>
-              <View style={styles.cardFooter}>
-                <View style={[styles.statusBadge, tournament.status === 'active' && styles.statusActive]}>
-                  <Text style={[styles.statusText, tournament.status === 'active' && styles.statusTextActive]}>
-                    {getStatusLabel(tournament.status)}
-                  </Text>
-                </View>
-                <Ionicons name="chevron-forward" size={20} color="#000" />
-              </View>
-            </TouchableOpacity>
-          ))
+              </TouchableOpacity>
+            );
+          })
         )}
       </ScrollView>
 
       {/* Create Modal */}
-      <Modal visible={showCreateModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowCreateModal(false)}>
+      <Modal visible={showCreateModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { setShowCreateModal(false); setSelectedSport(null); }}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowCreateModal(false)}>
+            <TouchableOpacity onPress={() => { setShowCreateModal(false); setSelectedSport(null); }}>
               <Text style={styles.modalCancel}>Annulla</Text>
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Nuovo Torneo</Text>
+            <Text style={styles.modalTitle}>
+              {selectedSport ? `${getSportConfig(selectedSport)?.emoji} ${getSportConfig(selectedSport)?.name}` : 'Nuovo Torneo'}
+            </Text>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -304,20 +370,41 @@ export default function TournamentsScreen() {
               />
             )}
             
-            {/* Formato Gioco - NEW */}
-            <Text style={styles.inputLabel}>Formato Gioco</Text>
-            <View style={styles.gameFormatContainer}>
-              {GAME_FORMATS.map((gf) => (
-                <TouchableOpacity 
-                  key={gf.value} 
-                  style={[styles.gameFormatOption, formData.game_format === gf.value && styles.gameFormatSelected]} 
-                  onPress={() => setFormData({ ...formData, game_format: gf.value })}
-                >
-                  <Text style={styles.gameFormatEmoji}>{gf.emoji}</Text>
-                  <Text style={[styles.gameFormatText, formData.game_format === gf.value && styles.gameFormatTextSelected]}>{gf.label}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            {/* Formato Gioco - Dynamic based on sport */}
+            {selectedSport && getSportConfig(selectedSport)?.formats && (
+              <>
+                <Text style={styles.inputLabel}>Formato</Text>
+                <View style={styles.gameFormatContainer}>
+                  {getSportConfig(selectedSport)?.formats.map((gf) => (
+                    <TouchableOpacity 
+                      key={gf.value} 
+                      style={[styles.gameFormatOption, formData.game_format === gf.value && styles.gameFormatSelected]} 
+                      onPress={() => setFormData({ ...formData, game_format: gf.value })}
+                    >
+                      <Text style={[styles.gameFormatText, formData.game_format === gf.value && styles.gameFormatTextSelected]}>{gf.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+            
+            {/* Game Structure - if sport has structures */}
+            {selectedSport && getSportConfig(selectedSport)?.structures && (
+              <>
+                <Text style={styles.inputLabel}>Struttura Gara</Text>
+                <View style={styles.gameFormatContainer}>
+                  {getSportConfig(selectedSport)?.structures?.map((gs) => (
+                    <TouchableOpacity 
+                      key={gs.value} 
+                      style={[styles.gameFormatOption, formData.game_structure === gs.value && styles.gameFormatSelected]} 
+                      onPress={() => setFormData({ ...formData, game_structure: gs.value })}
+                    >
+                      <Text style={[styles.gameFormatText, formData.game_structure === gs.value && styles.gameFormatTextSelected]}>{gs.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
             
             {/* Custom players input */}
             {formData.game_format === 'custom' && (
@@ -2926,6 +3013,14 @@ const styles = StyleSheet.create({
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: '#000' },
   title: { fontSize: 24, fontWeight: '700', color: '#000' },
   addButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  // Sport Filter Pills
+  filterContainer: { maxHeight: 50, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  filterContent: { paddingHorizontal: 16, paddingVertical: 8, gap: 8, flexDirection: 'row' },
+  filterPill: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 2, borderColor: '#000' },
+  filterPillActive: { backgroundColor: '#000' },
+  filterPillText: { fontSize: 14, fontWeight: '600', color: '#000' },
+  filterPillTextActive: { color: '#FFF' },
+  sportEmojiBadge: { fontSize: 24 },
   scrollContent: { padding: 16, paddingBottom: 140 },
   tournamentCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, padding: 16, marginBottom: 16 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
