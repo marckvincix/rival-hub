@@ -188,6 +188,13 @@ class MatchUpdate(BaseModel):
     venue: Optional[str] = None
     round: Optional[str] = None
     status: Optional[str] = None
+    # Basketball specific fields
+    periods_score: Optional[Dict[str, Dict[str, int]]] = None  # {"Q1": {"home": 20, "away": 18}, ...}
+    home_team_fouls: Optional[Dict[str, int]] = None  # {"Q1": 3, "Q2": 2, ...}
+    away_team_fouls: Optional[Dict[str, int]] = None
+    current_period: Optional[str] = None  # Q1, Q2, Q3, Q4, OT, T1, T2
+    timer_seconds: Optional[int] = None
+    timer_running: Optional[bool] = None
 
 class Match(BaseModel):
     id: str
@@ -201,15 +208,25 @@ class Match(BaseModel):
     venue: Optional[str] = None
     round: str = "Giornata 1"
     status: str = "scheduled"  # scheduled, live, completed
+    # Basketball specific fields
+    periods_score: Optional[Dict[str, Dict[str, int]]] = None
+    home_team_fouls: Optional[Dict[str, int]] = None
+    away_team_fouls: Optional[Dict[str, int]] = None
+    current_period: Optional[str] = None
+    timer_seconds: Optional[int] = None
+    timer_running: Optional[bool] = None
     created_at: datetime
 
 # Match Event Models
 class MatchEventCreate(BaseModel):
     player_id: str
     team_id: str
-    event_type: str  # goal, assist, penalty_goal, own_goal, yellow_card, red_card, substitution_in, substitution_out, mvp
+    event_type: str  # Football: goal, assist, penalty_goal, own_goal, yellow_card, red_card, substitution_in, substitution_out, mvp
+                     # Basketball: points_1pt, points_2pt, points_3pt, rebound, assist, foul, steal, block
     minute: Optional[int] = None
     note: Optional[str] = None
+    period: Optional[str] = None  # For basketball: Q1, Q2, Q3, Q4, OT, T1, T2
+    points_value: Optional[int] = None  # 1, 2, or 3 for basketball
 
 class MatchEvent(BaseModel):
     id: str
@@ -219,6 +236,8 @@ class MatchEvent(BaseModel):
     event_type: str
     minute: Optional[int] = None
     note: Optional[str] = None
+    period: Optional[str] = None
+    points_value: Optional[int] = None
     created_at: datetime
 
 # Match Events Batch Save Model
@@ -227,6 +246,10 @@ class MatchEventsBatchSave(BaseModel):
     ratings: Dict[str, float] = {}  # player_id -> rating
     home_goals: int = 0
     away_goals: int = 0
+    # Basketball specific
+    periods_score: Optional[Dict[str, Dict[str, int]]] = None
+    home_team_fouls: Optional[Dict[str, int]] = None
+    away_team_fouls: Optional[Dict[str, int]] = None
 
 # Player Stats Response Model (for the stats modal)
 class PlayerStatsResponse(BaseModel):
@@ -234,6 +257,7 @@ class PlayerStatsResponse(BaseModel):
     full_name: str
     role: str
     photo: Optional[str] = None
+    # Football stats
     goals: int = 0
     assists: int = 0
     yellow_cards: int = 0
@@ -242,6 +266,16 @@ class PlayerStatsResponse(BaseModel):
     minutes_played: int = 0
     average_rating: float = 0.0
     ratings_count: int = 0
+    # Basketball stats
+    points_1pt: int = 0
+    points_2pt: int = 0
+    points_3pt: int = 0
+    total_points: int = 0
+    rebounds: int = 0
+    basketball_assists: int = 0
+    fouls: int = 0
+    steals: int = 0
+    blocks: int = 0
 
 # News Models
 class NewsCreate(BaseModel):

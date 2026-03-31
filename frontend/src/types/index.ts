@@ -237,6 +237,13 @@ export interface Match {
   venue?: string;
   round: string;
   status: 'scheduled' | 'live' | 'completed';
+  // Basketball specific fields
+  periods_score?: { [period: string]: { home: number; away: number } };
+  home_team_fouls?: { [period: string]: number };
+  away_team_fouls?: { [period: string]: number };
+  current_period?: string;
+  timer_seconds?: number;
+  timer_running?: boolean;
   created_at: string;
 }
 
@@ -245,10 +252,26 @@ export interface MatchEvent {
   match_id: string;
   player_id: string;
   team_id: string;
-  event_type: 'goal' | 'assist' | 'penalty_goal' | 'own_goal' | 'yellow_card' | 'red_card' | 'substitution_in' | 'substitution_out' | 'mvp';
+  event_type: 'goal' | 'assist' | 'penalty_goal' | 'own_goal' | 'yellow_card' | 'red_card' | 'substitution_in' | 'substitution_out' | 'mvp' | 'points_1pt' | 'points_2pt' | 'points_3pt' | 'rebound' | 'basketball_assist' | 'foul' | 'steal' | 'block';
   minute?: number;
   note?: string;
+  period?: string;
+  points_value?: number;
   created_at: string;
+}
+
+// Basketball specific stats
+export interface BasketballPlayerStats {
+  player_id: string;
+  points_1pt: number;
+  points_2pt: number;
+  points_3pt: number;
+  total_points: number;
+  rebounds: number;
+  assists: number;
+  fouls: number;
+  steals: number;
+  blocks: number;
 }
 
 export interface News {

@@ -8,3 +8,4 @@ export { MatchStatsModal } from './MatchStatsModal';
 export { FieldView } from './FieldView';
 export { FormationModal } from './FormationModal';
 export { default as SportSelector } from './SportSelector';
+export { BasketballCourtView } from './BasketballCourtView';
