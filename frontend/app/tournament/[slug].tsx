@@ -16,11 +16,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
-import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player } from '../../src/types';
+import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player, Sport, getSportEmoji } from '../../src/types';
 
 type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info';
 
@@ -60,12 +60,23 @@ export default function TournamentPublicPage() {
       const tournamentRes = await api.get(`/api/tournaments/slug/${slug}`);
       const t = tournamentRes.data;
       setTournament(t);
+      
+      // Determine if this is a basketball tournament
+      const isBasketball = t.sport === 'basket';
+      
       const [teamsRes, matchesRes, standingsRes, scorersRes, statsRes, newsRes, formationsRes] = await Promise.all([
         api.get(`/api/tournaments/${t.id}/teams`),
         api.get(`/api/tournaments/${t.id}/matches`),
-        api.get(`/api/tournaments/${t.id}/standings`),
-        api.get(`/api/tournaments/${t.id}/scorers`),
-        api.get(`/api/tournaments/${t.id}/player-stats`),
+        // Use basketball-specific endpoints for basketball tournaments
+        isBasketball 
+          ? api.get(`/api/tournaments/${t.id}/basketball-standings`)
+          : api.get(`/api/tournaments/${t.id}/standings`),
+        isBasketball
+          ? api.get(`/api/tournaments/${t.id}/basketball-scorers`)
+          : api.get(`/api/tournaments/${t.id}/scorers`),
+        isBasketball
+          ? api.get(`/api/tournaments/${t.id}/basketball-stats`)
+          : api.get(`/api/tournaments/${t.id}/player-stats`),
         api.get(`/api/tournaments/${t.id}/news?published_only=true`),
         api.get(`/api/tournaments/${t.id}/formations`)
       ]);
@@ -86,6 +97,22 @@ export default function TournamentPublicPage() {
   const getStatusLabel = (status: string) => status === 'active' ? 'In corso' : status === 'completed' ? 'Terminato' : 'Bozza';
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
+  
+  // Check if tournament is basketball
+  const isBasketball = tournament?.sport === 'basket';
+  
+  // Get sport-specific icon
+  const getSportIcon = (): string => {
+    const sport = tournament?.sport || 'calcio';
+    switch (sport) {
+      case 'basket': return 'basketball';
+      case 'tennis':
+      case 'padel': return 'tennisball';
+      case 'rugby': return 'american-football';
+      case 'baseball': return 'baseball';
+      default: return 'football';
+    }
+  };
 
   const handleOpenMatchStats = (match: Match) => {
     setSelectedMatchForStats(match);
@@ -266,11 +293,12 @@ export default function TournamentPublicPage() {
                   <Text style={[styles.standingsHeaderText, { flex: 1 }]}>Squadra</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>G</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>V</Text>
-                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>
-                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>S</Text>
+                  {!isBasketball && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
+                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>{isBasketball ? 'P' : 'S'}</Text>
+                  {isBasketball && <Text style={[styles.standingsHeaderText, { width: 40 }]}>+/-</Text>}
                   <Text style={[styles.standingsHeaderText, { width: 40, fontWeight: '700' }]}>Pt</Text>
                 </View>
-                {standings.map((team, index) => (
+                {standings.map((team: any, index) => (
                   <View key={team.team_id} style={[styles.standingsRow, index % 2 === 0 && styles.standingsRowAlt]}>
                     <Text style={[styles.standingsCell, { width: 30, fontWeight: '700' }]}>{team.position}</Text>
                     <View style={[styles.teamCell, { flex: 1 }]}>
@@ -279,8 +307,9 @@ export default function TournamentPublicPage() {
                     </View>
                     <Text style={[styles.standingsCell, { width: 30 }]}>{team.played}</Text>
                     <Text style={[styles.standingsCell, { width: 30 }]}>{team.wins}</Text>
-                    <Text style={[styles.standingsCell, { width: 30 }]}>{team.draws}</Text>
+                    {!isBasketball && <Text style={[styles.standingsCell, { width: 30 }]}>{team.draws}</Text>}
                     <Text style={[styles.standingsCell, { width: 30 }]}>{team.losses}</Text>
+                    {isBasketball && <Text style={[styles.standingsCell, { width: 40, color: (team.point_difference || 0) >= 0 ? '#10B981' : '#EF4444' }]}>{(team.point_difference || 0) >= 0 ? '+' : ''}{team.point_difference || 0}</Text>}
                     <Text style={[styles.standingsCell, { width: 40, fontWeight: '700' }]}>{team.points}</Text>
                   </View>
                 ))}
@@ -482,8 +511,8 @@ export default function TournamentPublicPage() {
         {/* Scorers Tab */}
         {activeTab === 'scorers' && (
           <View style={styles.tabContent}>
-            {scorers.length === 0 ? <EmptyState icon="trophy-outline" title="Nessun marcatore" /> : (
-              scorers.slice(0, 20).map((scorer) => (
+            {scorers.length === 0 ? <EmptyState icon="trophy-outline" title={isBasketball ? "Nessun marcatore punti" : "Nessun marcatore"} /> : (
+              scorers.slice(0, 20).map((scorer: any) => (
                 <View key={scorer.player_id} style={styles.scorerCard}>
                   <View style={styles.scorerPosition}><Text style={styles.positionText}>{scorer.position}</Text></View>
                   <View style={styles.scorerInfo}>
@@ -491,8 +520,17 @@ export default function TournamentPublicPage() {
                     <Text style={styles.scorerTeam}>{scorer.team_name}</Text>
                   </View>
                   <View style={styles.scorerStats}>
-                    <View style={styles.statItem}><Ionicons name="football" size={16} color="#000" /><Text style={styles.statValue}>{scorer.goals}</Text></View>
-                    <View style={styles.statItem}><Ionicons name="hand-left" size={16} color="#666" /><Text style={styles.statValue}>{scorer.assists}</Text></View>
+                    {isBasketball ? (
+                      <>
+                        <View style={styles.statItem}><Ionicons name="basketball" size={16} color="#000" /><Text style={styles.statValue}>{scorer.total_points || 0}</Text></View>
+                        <View style={styles.statItem}><Text style={styles.statLabel}>PPG</Text><Text style={styles.statValue}>{scorer.ppg || 0}</Text></View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.statItem}><Ionicons name="football" size={16} color="#000" /><Text style={styles.statValue}>{scorer.goals}</Text></View>
+                        <View style={styles.statItem}><Ionicons name="hand-left" size={16} color="#666" /><Text style={styles.statValue}>{scorer.assists}</Text></View>
+                      </>
+                    )}
                   </View>
                 </View>
               ))
@@ -504,19 +542,32 @@ export default function TournamentPublicPage() {
         {activeTab === 'stats' && (
           <View style={styles.tabContent}>
             {playerStats.length === 0 ? <EmptyState icon="stats-chart-outline" title="Nessuna statistica" /> : (
-              playerStats.slice(0, 30).map((player) => (
+              playerStats.slice(0, 30).map((player: any) => (
                 <View key={player.player_id} style={styles.statsCard}>
                   <View style={styles.statsHeader}>
                     <Text style={styles.statsPlayerName}>{player.player_name}</Text>
                     <Text style={styles.statsTeamName}>{player.team_name}</Text>
                   </View>
                   <View style={styles.statsGrid}>
-                    <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.goals}</Text><Text style={styles.statBoxLabel}>Gol</Text></View>
-                    <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.assists}</Text><Text style={styles.statBoxLabel}>Assist</Text></View>
-                    <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EAB308' }]}>{player.yellow_cards}</Text><Text style={styles.statBoxLabel}>Amm.</Text></View>
-                    <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#DC2626' }]}>{player.red_cards}</Text><Text style={styles.statBoxLabel}>Esp.</Text></View>
-                    <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.appearances}</Text><Text style={styles.statBoxLabel}>Pres.</Text></View>
-                    <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#2563EB' }]}>{player.average_rating ? player.average_rating.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>Media</Text></View>
+                    {isBasketball ? (
+                      <>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.total_points || 0}</Text><Text style={styles.statBoxLabel}>Punti</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.rebounds || 0}</Text><Text style={styles.statBoxLabel}>Rimb.</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.assists || 0}</Text><Text style={styles.statBoxLabel}>Assist</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.steals || 0}</Text><Text style={styles.statBoxLabel}>Rubate</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.blocks || 0}</Text><Text style={styles.statBoxLabel}>Stopp.</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EF4444' }]}>{player.fouls || 0}</Text><Text style={styles.statBoxLabel}>Falli</Text></View>
+                      </>
+                    ) : (
+                      <>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.goals}</Text><Text style={styles.statBoxLabel}>Gol</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.assists}</Text><Text style={styles.statBoxLabel}>Assist</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EAB308' }]}>{player.yellow_cards}</Text><Text style={styles.statBoxLabel}>Amm.</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#DC2626' }]}>{player.red_cards}</Text><Text style={styles.statBoxLabel}>Esp.</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.appearances}</Text><Text style={styles.statBoxLabel}>Pres.</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#2563EB' }]}>{player.average_rating ? player.average_rating.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>Media</Text></View>
+                      </>
+                    )}
                   </View>
                 </View>
               ))
@@ -846,6 +897,7 @@ const styles = StyleSheet.create({
   scorerStats: { flexDirection: 'row', gap: 16 },
   statItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   statValue: { fontSize: 16, fontWeight: '700', color: '#000' },
+  statLabel: { fontSize: 10, fontWeight: '600', color: '#666' },
   statsCard: { borderWidth: 2, borderColor: '#000', borderRadius: 12, padding: 14, marginBottom: 8 },
   statsHeader: { marginBottom: 12 },
   statsPlayerName: { fontSize: 15, fontWeight: '700', color: '#000' },
