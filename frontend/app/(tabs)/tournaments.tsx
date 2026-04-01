@@ -2787,6 +2787,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </ScrollView>
         </SafeAreaView>
       </Modal>
+
+      {/* Basketball Match Modal */}
+      <BasketballMatchModal
+        visible={showBasketballMatchModal}
+        onClose={() => {
+          setShowBasketballMatchModal(false);
+          setSelectedBasketballMatch(null);
+        }}
+        match={selectedBasketballMatch}
+        homeTeam={teams.find(t => t.id === selectedBasketballMatch?.home_team_id)}
+        awayTeam={teams.find(t => t.id === selectedBasketballMatch?.away_team_id)}
+        homePlayers={homeTeamPlayers}
+        awayPlayers={awayTeamPlayers}
+        tournamentName={tournament?.name || ''}
+        gameStructure={tournament?.game_structure || '4_quarters'}
+        onSave={(updatedMatch) => {
+          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          setShowBasketballMatchModal(false);
+          setSelectedBasketballMatch(null);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -3051,27 +3072,6 @@ function TeamRatingsAccordion({
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
-
-      {/* Basketball Match Modal */}
-      <BasketballMatchModal
-        visible={showBasketballMatchModal}
-        onClose={() => {
-          setShowBasketballMatchModal(false);
-          setSelectedBasketballMatch(null);
-        }}
-        match={selectedBasketballMatch}
-        homeTeam={teams.find(t => t.id === selectedBasketballMatch?.home_team_id)}
-        awayTeam={teams.find(t => t.id === selectedBasketballMatch?.away_team_id)}
-        homePlayers={homeTeamPlayers}
-        awayPlayers={awayTeamPlayers}
-        tournamentName={tournament?.name || ''}
-        gameStructure={tournament?.game_structure || '4_quarters'}
-        onSave={(updatedMatch) => {
-          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
-          setShowBasketballMatchModal(false);
-          setSelectedBasketballMatch(null);
-        }}
-      />
     </View>
   );
 }
