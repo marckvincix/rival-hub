@@ -1237,6 +1237,70 @@ async def get_matches(tournament_id: str):
     
     return [Match(**m) for m in matches]
 
+@api_router.get("/tournaments/{tournament_id}/matches-live")
+async def get_matches_live(tournament_id: str):
+    """Get all matches for a tournament with LIVE scores calculated from events"""
+    matches = await db.matches.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).sort([("match_date", 1), ("match_time", 1)]).to_list(500)
+    
+    # Get tournament to know the sport type
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0, "sport": 1})
+    sport = tournament.get("sport", "calcio") if tournament else "calcio"
+    is_basketball = sport == "basket"
+    
+    result = []
+    for match in matches:
+        match_id = match.get("id")
+        
+        # Get events for this match
+        events = await db.match_events.find(
+            {"match_id": match_id},
+            {"_id": 0}
+        ).to_list(1000)
+        
+        # Calculate live score
+        home_score = 0
+        away_score = 0
+        
+        if is_basketball:
+            # Basketball scoring
+            for event in events:
+                event_type = event.get("event_type", "")
+                team_id = event.get("team_id")
+                
+                pts = 0
+                if event_type == "points_3pt":
+                    pts = 3
+                elif event_type == "points_2pt":
+                    pts = 2
+                elif event_type == "points_1pt":
+                    pts = 1
+                
+                if pts > 0:
+                    if team_id == match.get("home_team_id"):
+                        home_score += pts
+                    else:
+                        away_score += pts
+        else:
+            # Soccer scoring
+            for event in events:
+                if event.get("event_type") == "goal":
+                    if event.get("team_id") == match.get("home_team_id"):
+                        home_score += 1
+                    else:
+                        away_score += 1
+        
+        # Add live_score to match data
+        match_data = {**match}
+        match_data["live_home_score"] = home_score
+        match_data["live_away_score"] = away_score
+        match_data["has_events"] = len(events) > 0
+        result.append(match_data)
+    
+    return result
+
 @api_router.put("/matches/{match_id}", response_model=Match)
 async def update_match(
     match_id: str,
