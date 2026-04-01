@@ -401,7 +401,10 @@ export default function TournamentPublicPage() {
                                   ? `${match.home_goals} - ${match.away_goals}` 
                                   : `0 - 0`}
                             </Text>
-                            {(match as any).has_events && <Text style={styles.liveIndicator}>LIVE</Text>}
+                            {/* Show LIVE badge only if match has events AND is not completed */}
+                            {(match as any).has_events && match.status !== 'completed' && (
+                              <Text style={styles.liveIndicator}>LIVE</Text>
+                            )}
                           </View>
                           <View style={styles.matchTeamColumn}>
                             <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
