@@ -406,7 +406,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Basketball Tournament Endpoints - Complete functionality testing"
+    - "Basketball Formation Modal - Basketball roles and court view"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

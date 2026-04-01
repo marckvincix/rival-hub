@@ -12,10 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FieldView } from './FieldView';
+import { BasketballCourtView } from './BasketballCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
 
-// Game format configurations
+// Game format configurations for SOCCER
 const GAME_FORMATS_MODULES: Record<string, string[]> = {
   '11v11': ['4-3-3', '4-4-2', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '4-1-4-1'],
   '8v8': ['1-3-3', '1-2-4', '1-4-2', '1-3-2-1', '1-2-2-2'],
@@ -25,7 +26,14 @@ const GAME_FORMATS_MODULES: Record<string, string[]> = {
   'custom': ['Personalizzato'],
 };
 
-// Module position breakdown
+// Game format configurations for BASKETBALL
+const BASKETBALL_MODULES: Record<string, string[]> = {
+  '5v5': ['1-2-2', '2-1-2', '1-3-1', '2-2-1', '1-2-1-1'],
+  '3v3': ['1-2', '2-1', '1-1-1'],
+  'custom': ['Personalizzato'],
+};
+
+// Module position breakdown for SOCCER
 const MODULE_POSITIONS: Record<string, { goalkeeper: number; defender: number; midfielder: number; forward: number }> = {
   // 11v11
   '4-3-3': { goalkeeper: 1, defender: 4, midfielder: 3, forward: 3 },
@@ -57,6 +65,20 @@ const MODULE_POSITIONS: Record<string, { goalkeeper: number; defender: number; m
   '2-2': { goalkeeper: 1, defender: 2, midfielder: 0, forward: 2 },
 };
 
+// Module position breakdown for BASKETBALL
+const BASKETBALL_MODULE_POSITIONS: Record<string, { playmaker: number; guardia: number; ala_piccola: number; ala_grande: number; centro: number }> = {
+  // 5v5
+  '1-2-2': { playmaker: 1, guardia: 2, ala_piccola: 1, ala_grande: 1, centro: 0 },
+  '2-1-2': { playmaker: 2, guardia: 1, ala_piccola: 1, ala_grande: 1, centro: 0 },
+  '1-3-1': { playmaker: 1, guardia: 1, ala_piccola: 1, ala_grande: 1, centro: 1 },
+  '2-2-1': { playmaker: 2, guardia: 1, ala_piccola: 1, ala_grande: 0, centro: 1 },
+  '1-2-1-1': { playmaker: 1, guardia: 2, ala_piccola: 0, ala_grande: 1, centro: 1 },
+  // 3v3
+  '1-2': { playmaker: 1, guardia: 1, ala_piccola: 1, ala_grande: 0, centro: 0 },
+  '2-1': { playmaker: 1, guardia: 1, ala_piccola: 0, ala_grande: 0, centro: 1 },
+  '1-1-1': { playmaker: 1, guardia: 1, ala_piccola: 0, ala_grande: 0, centro: 1 },
+};
+
 interface FormationModalProps {
   visible: boolean;
   onClose: () => void;
@@ -66,15 +88,27 @@ interface FormationModalProps {
   players: Player[];
   existingFormation?: Formation | null;
   onSave: (formation: Formation) => void;
+  sport?: string; // 'calcio' | 'basket' | 'padel' | 'tennis' etc.
 }
 
-type PositionType = 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
+// Soccer position types
+type SoccerPositionType = 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
+// Basketball position types
+type BasketballPositionType = 'playmaker' | 'guardia' | 'ala_piccola' | 'ala_grande' | 'centro';
 
-const POSITION_LABELS: Record<PositionType, string> = {
+const POSITION_LABELS: Record<SoccerPositionType, string> = {
   goalkeeper: '🧤 Portiere',
   defender: '🛡️ Difensori',
   midfielder: '⚙️ Centrocampisti',
   forward: '⚡ Attaccanti',
+};
+
+const BASKETBALL_POSITION_LABELS: Record<BasketballPositionType, string> = {
+  playmaker: '🎯 Playmaker',
+  guardia: '🏀 Guardia',
+  ala_piccola: '🦅 Ala Piccola',
+  ala_grande: '💪 Ala Grande',
+  centro: '🗼 Centro',
 };
 
 export function FormationModal({
@@ -86,7 +120,10 @@ export function FormationModal({
   players,
   existingFormation,
   onSave,
+  sport = 'calcio',
 }: FormationModalProps) {
+  const isBasketball = sport === 'basket';
+  
   const [viewMode, setViewMode] = useState<'list' | 'field'>('list');
   const [selectedModule, setSelectedModule] = useState<string>('');
   const [starters, setStarters] = useState<FormationPlayer[]>([]);
@@ -94,8 +131,10 @@ export function FormationModal({
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
-  // Get available modules for the game format
-  const availableModules = GAME_FORMATS_MODULES[gameFormat] || GAME_FORMATS_MODULES['11v11'];
+  // Get available modules for the game format (depends on sport)
+  const availableModules = isBasketball
+    ? (BASKETBALL_MODULES[gameFormat] || BASKETBALL_MODULES['5v5'])
+    : (GAME_FORMATS_MODULES[gameFormat] || GAME_FORMATS_MODULES['11v11']);
 
   // Initialize from existing formation
   useEffect(() => {
@@ -110,31 +149,50 @@ export function FormationModal({
 
   // Initialize starters when module changes
   useEffect(() => {
-    if (selectedModule && MODULE_POSITIONS[selectedModule]) {
-      const positions = MODULE_POSITIONS[selectedModule];
+    if (selectedModule) {
       const newStarters: FormationPlayer[] = [];
-
-      // Create empty slots for each position
-      (['goalkeeper', 'defender', 'midfielder', 'forward'] as PositionType[]).forEach(position => {
-        const count = positions[position];
-        for (let i = 0; i < count; i++) {
-          // Keep existing player if slot exists
-          const existingPlayer = starters.find(
-            s => s.position === position && s.slot_index === i
-          );
-          newStarters.push(
-            existingPlayer || {
-              player_id: '',
-              position,
-              slot_index: i,
-            }
-          );
-        }
-      });
+      
+      if (isBasketball && BASKETBALL_MODULE_POSITIONS[selectedModule]) {
+        // Basketball positions
+        const positions = BASKETBALL_MODULE_POSITIONS[selectedModule];
+        (['playmaker', 'guardia', 'ala_piccola', 'ala_grande', 'centro'] as BasketballPositionType[]).forEach(position => {
+          const count = positions[position];
+          for (let i = 0; i < count; i++) {
+            const existingPlayer = starters.find(
+              s => s.position === position && s.slot_index === i
+            );
+            newStarters.push(
+              existingPlayer || {
+                player_id: '',
+                position,
+                slot_index: i,
+              }
+            );
+          }
+        });
+      } else if (MODULE_POSITIONS[selectedModule]) {
+        // Soccer positions
+        const positions = MODULE_POSITIONS[selectedModule];
+        (['goalkeeper', 'defender', 'midfielder', 'forward'] as SoccerPositionType[]).forEach(position => {
+          const count = positions[position];
+          for (let i = 0; i < count; i++) {
+            const existingPlayer = starters.find(
+              s => s.position === position && s.slot_index === i
+            );
+            newStarters.push(
+              existingPlayer || {
+                player_id: '',
+                position,
+                slot_index: i,
+              }
+            );
+          }
+        });
+      }
 
       setStarters(newStarters);
     }
-  }, [selectedModule]);
+  }, [selectedModule, isBasketball]);
 
   // Get assigned player IDs
   const getAssignedPlayerIds = (): string[] => {
@@ -150,7 +208,7 @@ export function FormationModal({
   };
 
   // Handle player selection for a slot
-  const handlePlayerSelect = (position: PositionType, slotIndex: number, playerId: string) => {
+  const handlePlayerSelect = (position: string, slotIndex: number, playerId: string) => {
     setStarters(prev =>
       prev.map(s =>
         s.position === position && s.slot_index === slotIndex
@@ -209,13 +267,42 @@ export function FormationModal({
   );
 
   // Render position section with dropdowns
-  const renderPositionSection = (position: PositionType) => {
+  const renderPositionSection = (position: string) => {
     const slots = starters.filter(s => s.position === position);
     if (slots.length === 0) return null;
 
+    // Get the label based on sport
+    const label = isBasketball 
+      ? BASKETBALL_POSITION_LABELS[position as BasketballPositionType] || position
+      : POSITION_LABELS[position as SoccerPositionType] || position;
+
+    // Get role abbreviation based on sport
+    const getRoleAbbrev = (role: string) => {
+      if (isBasketball) {
+        const basketRoles: Record<string, string> = {
+          'playmaker': 'PM',
+          'guardia': 'G',
+          'ala_piccola': 'AP',
+          'ala piccola': 'AP',
+          'ala_grande': 'AG',
+          'ala grande': 'AG',
+          'centro': 'C',
+        };
+        return basketRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
+      } else {
+        const soccerRoles: Record<string, string> = {
+          'goalkeeper': 'P',
+          'defender': 'D',
+          'midfielder': 'C',
+          'forward': 'A',
+        };
+        return soccerRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
+      }
+    };
+
     return (
       <View style={styles.positionSection} key={position}>
-        <Text style={styles.positionTitle}>{POSITION_LABELS[position]}</Text>
+        <Text style={styles.positionTitle}>{label}</Text>
         {slots.map((slot, idx) => {
           const dropdownKey = `${position}-${idx}`;
           const selectedPlayer = players.find(p => p.id === slot.player_id);
@@ -230,7 +317,7 @@ export function FormationModal({
                 <Text style={selectedPlayer ? styles.dropdownText : styles.dropdownPlaceholder}>
                   {selectedPlayer
                     ? `${selectedPlayer.number || ''} ${selectedPlayer.full_name}`
-                    : `Seleziona ${position === 'goalkeeper' ? 'portiere' : 'giocatore'}...`}
+                    : `Seleziona giocatore...`}
                 </Text>
                 <Ionicons
                   name={showDropdown === dropdownKey ? 'chevron-up' : 'chevron-down'}
@@ -261,9 +348,7 @@ export function FormationModal({
                       </Text>
                       <Text style={styles.dropdownItemName}>{player.full_name}</Text>
                       <Text style={styles.dropdownItemRole}>
-                        {player.role === 'goalkeeper' ? 'P' : 
-                         player.role === 'defender' ? 'D' :
-                         player.role === 'midfielder' ? 'C' : 'A'}
+                        {getRoleAbbrev(player.role)}
                       </Text>
                     </TouchableOpacity>
                   ))}
@@ -315,8 +400,8 @@ export function FormationModal({
             style={[styles.toggleButton, viewMode === 'field' && styles.toggleButtonActive]}
             onPress={() => setViewMode('field')}
           >
-            <Ionicons name="football" size={18} color={viewMode === 'field' ? '#FFF' : '#000'} />
-            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>Campo</Text>
+            <Ionicons name={isBasketball ? 'basketball' : 'football'} size={18} color={viewMode === 'field' ? '#FFF' : '#000'} />
+            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>{isBasketball ? 'Campo' : 'Campo'}</Text>
           </TouchableOpacity>
         </View>
 
@@ -338,19 +423,44 @@ export function FormationModal({
           </ScrollView>
 
           {viewMode === 'field' ? (
-            /* Field View */
-            <FieldView
-              module={selectedModule}
-              starters={starters.filter(s => s.player_id)}
-              gameFormat={gameFormat}
-            />
+            /* Field View - Show Basketball Court or Soccer Field based on sport */
+            isBasketball ? (
+              <BasketballCourtView
+                module={selectedModule}
+                starters={starters.filter(s => s.player_id).map(s => ({
+                  ...s,
+                  full_name: players.find(p => p.id === s.player_id)?.full_name,
+                  number: players.find(p => p.id === s.player_id)?.number,
+                  photo: players.find(p => p.id === s.player_id)?.photo,
+                }))}
+                gameFormat={gameFormat}
+              />
+            ) : (
+              <FieldView
+                module={selectedModule}
+                starters={starters.filter(s => s.player_id)}
+                gameFormat={gameFormat}
+              />
+            )
           ) : (
             /* List View */
             <View style={styles.listView}>
-              {renderPositionSection('goalkeeper')}
-              {renderPositionSection('defender')}
-              {renderPositionSection('midfielder')}
-              {renderPositionSection('forward')}
+              {isBasketball ? (
+                <>
+                  {renderPositionSection('playmaker')}
+                  {renderPositionSection('guardia')}
+                  {renderPositionSection('ala_piccola')}
+                  {renderPositionSection('ala_grande')}
+                  {renderPositionSection('centro')}
+                </>
+              ) : (
+                <>
+                  {renderPositionSection('goalkeeper')}
+                  {renderPositionSection('defender')}
+                  {renderPositionSection('midfielder')}
+                  {renderPositionSection('forward')}
+                </>
+              )}
             </View>
           )}
 

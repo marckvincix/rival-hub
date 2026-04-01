@@ -2684,17 +2684,44 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           teamId={selectedTeamForFormation.id}
           teamName={selectedTeamForFormation.name}
           gameFormat={tournament.game_format || '11v11'}
-          players={(teamPlayers[selectedTeamForFormation.id] || []).map((p: any) => ({
-            id: p.id,
-            team_id: selectedTeamForFormation.id,
-            full_name: p.name,
-            number: p.number,
-            role: p.role === 'Portiere' ? 'goalkeeper' : 
-                  p.role === 'Difensore' ? 'defender' :
-                  p.role === 'Centrocampista' ? 'midfielder' :
-                  p.role === 'Attaccante' ? 'forward' : p.role,
-            photo: p.photo,
-          }))}
+          sport={tournament.sport || 'calcio'}
+          players={(teamPlayers[selectedTeamForFormation.id] || []).map((p: any) => {
+            // Map roles based on sport
+            const isBasketball = tournament.sport === 'basket';
+            let mappedRole = p.role;
+            
+            if (isBasketball) {
+              // Basketball role mapping
+              const basketballRoleMap: Record<string, string> = {
+                'Playmaker': 'playmaker',
+                'Guardia': 'guardia',
+                'Ala Piccola': 'ala_piccola',
+                'Ala piccola': 'ala_piccola',
+                'Ala Grande': 'ala_grande',
+                'Ala grande': 'ala_grande',
+                'Centro': 'centro',
+              };
+              mappedRole = basketballRoleMap[p.role] || p.role?.toLowerCase().replace(' ', '_') || 'playmaker';
+            } else {
+              // Soccer role mapping
+              const soccerRoleMap: Record<string, string> = {
+                'Portiere': 'goalkeeper',
+                'Difensore': 'defender',
+                'Centrocampista': 'midfielder',
+                'Attaccante': 'forward',
+              };
+              mappedRole = soccerRoleMap[p.role] || p.role;
+            }
+            
+            return {
+              id: p.id,
+              team_id: selectedTeamForFormation.id,
+              full_name: p.name,
+              number: p.number,
+              role: mappedRole,
+              photo: p.photo,
+            };
+          })}
           existingFormation={teamFormations[selectedTeamForFormation.id] || null}
           onSave={handleFormationSave}
         />
