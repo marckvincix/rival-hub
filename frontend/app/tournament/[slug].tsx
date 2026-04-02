@@ -470,14 +470,14 @@ export default function TournamentPublicPage() {
                               <>
                                 <Text style={styles.matchScore}>
                                   {/* Show live score from events, or static score if no events */}
-                                  {(match as any).has_events 
+                                  {((match as any).has_events || match.status === 'in_progress')
                                     ? `${(match as any).live_home_score} - ${(match as any).live_away_score}`
                                     : match.status === 'completed' 
                                       ? `${match.home_goals} - ${match.away_goals}` 
                                       : `0 - 0`}
                                 </Text>
-                                {/* Show LIVE badge only if match has events AND is not completed */}
-                                {(match as any).has_events && match.status !== 'completed' && (
+                                {/* Show LIVE badge when match is in_progress OR has events */}
+                                {((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed' && (
                                   <Text style={styles.liveIndicator}>LIVE</Text>
                                 )}
                               </>

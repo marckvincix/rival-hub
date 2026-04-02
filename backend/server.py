@@ -1307,14 +1307,21 @@ async def get_matches_live(tournament_id: str):
             current_game = match.get("currentGame", {})
             has_live_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or match.get("status") == "in_progress" or current_game.get("homePoints", 0) > 0 or current_game.get("awayPoints", 0) > 0
         else:
-            # Soccer scoring from events
+            # Soccer scoring - first try from events, then fallback to home_goals/away_goals
             for event in events:
                 if event.get("event_type") == "goal":
                     if event.get("team_id") == match.get("home_team_id"):
                         home_score += 1
                     else:
                         away_score += 1
-            has_live_data = len(events) > 0
+            
+            # If no events but status is in_progress, use home_goals/away_goals
+            if len(events) == 0 and match.get("status") == "in_progress":
+                home_score = match.get("home_goals", 0) or 0
+                away_score = match.get("away_goals", 0) or 0
+            
+            # Has live data if has events OR status is in_progress
+            has_live_data = len(events) > 0 or match.get("status") == "in_progress"
         
         # Add live_score to match data
         match_data = {**match}
