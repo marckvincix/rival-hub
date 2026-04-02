@@ -7,7 +7,6 @@ import {
   TouchableOpacity, 
   TextInput,
   Image,
-  FlatList,
   Modal,
   Platform
 } from 'react-native';
@@ -23,24 +22,78 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
 
-// Categories
-const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Open', 'Senior'];
+// Sport configurations with their specific categories/formats
+const SPORT_CATEGORIES: Record<string, { label: string; emoji: string; formats: { key: string; label: string }[] }> = {
+  'calcio': {
+    label: 'Calcio',
+    emoji: '⚽',
+    formats: [
+      { key: '11v11', label: 'Calcio a 11' },
+      { key: '8v8', label: 'Calcio a 8' },
+      { key: '7v7', label: 'Calcio a 7' },
+      { key: '6v6', label: 'Calcio a 6' },
+      { key: '5v5', label: 'Calcio a 5' },
+    ]
+  },
+  'basket': {
+    label: 'Basket',
+    emoji: '🏀',
+    formats: [
+      { key: '5v5', label: 'Basket 5v5' },
+      { key: '3v3', label: 'Basket 3v3' },
+    ]
+  },
+  'padel': {
+    label: 'Padel',
+    emoji: '🎾',
+    formats: [
+      { key: 'doubles', label: 'Doppio' },
+      { key: 'singles', label: 'Singolo' },
+    ]
+  },
+  'tennis': {
+    label: 'Tennis',
+    emoji: '🎾',
+    formats: [
+      { key: 'doubles', label: 'Doppio' },
+      { key: 'singles', label: 'Singolo' },
+    ]
+  },
+  'pallavolo': {
+    label: 'Pallavolo',
+    emoji: '🏐',
+    formats: [
+      { key: '6v6', label: 'Pallavolo 6v6' },
+      { key: '4v4', label: 'Beach Volley' },
+    ]
+  },
+  'rugby': {
+    label: 'Rugby',
+    emoji: '🏉',
+    formats: [
+      { key: '15v15', label: 'Rugby XV' },
+      { key: '7v7', label: 'Rugby 7' },
+    ]
+  },
+  'hockey': {
+    label: 'Hockey',
+    emoji: '🏒',
+    formats: [
+      { key: '6v6', label: 'Hockey 6v6' },
+      { key: '5v5', label: 'Hockey 5v5' },
+    ]
+  },
+  'pallamano': {
+    label: 'Pallamano',
+    emoji: '🤾',
+    formats: [
+      { key: '7v7', label: 'Pallamano 7v7' },
+    ]
+  },
+};
 
-// Sports with game formats
-const SPORTS = [
-  { key: 'calcio_11', label: 'Calcio 11', sport: 'calcio', format: '11v11' },
-  { key: 'calcio_8', label: 'Calcio 8', sport: 'calcio', format: '8v8' },
-  { key: 'calcio_7', label: 'Calcio 7', sport: 'calcio', format: '7v7' },
-  { key: 'calcio_5', label: 'Calcio 5', sport: 'calcio', format: '5v5' },
-  { key: 'basket_5', label: 'Basket 5v5', sport: 'basket', format: '5v5' },
-  { key: 'basket_3', label: 'Basket 3v3', sport: 'basket', format: '3v3' },
-  { key: 'padel_doppio', label: 'Padel Doppio', sport: 'padel', format: 'doubles' },
-  { key: 'padel_singolo', label: 'Padel Singolo', sport: 'padel', format: 'singles' },
-  { key: 'tennis_doppio', label: 'Tennis Doppio', sport: 'tennis', format: 'doubles' },
-  { key: 'tennis_singolo', label: 'Tennis Singolo', sport: 'tennis', format: 'singles' },
-  { key: 'pallavolo', label: 'Pallavolo', sport: 'pallavolo', format: '6v6' },
-  { key: 'rugby', label: 'Rugby', sport: 'rugby', format: '15v15' },
-];
+// Age categories (common for most sports)
+const AGE_CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Open', 'Senior', 'Master'];
 
 export default function LandingPage() {
   const router = useRouter();
@@ -52,15 +105,18 @@ export default function LandingPage() {
   
   // Filter states
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedSport, setSelectedSport] = useState<string | null>(null);
+  const [selectedFormat, setSelectedFormat] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Modal states
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [showSportPicker, setShowSportPicker] = useState(false);
+  const [showFormatPicker, setShowFormatPicker] = useState(false);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   
   // Tournaments
   const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -82,13 +138,63 @@ export default function LandingPage() {
         return dateB - dateA;
       });
       setAllTournaments(sorted);
-      setTournaments(sorted);
     } catch (error) {
       console.error('Error loading tournaments:', error);
     }
   };
 
-  // Filter and search tournaments
+  // Get available sports from tournaments (only sports with at least one tournament)
+  const availableSports = useMemo(() => {
+    const sports = new Set<string>();
+    allTournaments.forEach(t => {
+      const sport = t.sport || 'calcio';
+      if (SPORT_CATEGORIES[sport]) {
+        sports.add(sport);
+      }
+    });
+    return Array.from(sports);
+  }, [allTournaments]);
+
+  // Get available formats for selected sport (only formats with tournaments)
+  const availableFormats = useMemo(() => {
+    if (!selectedSport) return [];
+    
+    const sportConfig = SPORT_CATEGORIES[selectedSport];
+    if (!sportConfig) return [];
+    
+    // Get formats that have at least one tournament
+    const formatsWithTournaments = new Set<string>();
+    allTournaments.forEach(t => {
+      if ((t.sport || 'calcio') === selectedSport && t.game_format) {
+        formatsWithTournaments.add(t.game_format);
+      }
+    });
+    
+    // Return all formats for the sport (show all options)
+    return sportConfig.formats;
+  }, [selectedSport, allTournaments]);
+
+  // Get available categories from tournaments for selected sport
+  const availableCategories = useMemo(() => {
+    const categories = new Set<string>();
+    allTournaments.forEach(t => {
+      if (!selectedSport || (t.sport || 'calcio') === selectedSport) {
+        if (t.category) {
+          categories.add(t.category);
+        }
+      }
+    });
+    return Array.from(categories).sort((a, b) => {
+      const indexA = AGE_CATEGORIES.indexOf(a);
+      const indexB = AGE_CATEGORIES.indexOf(b);
+      if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    });
+  }, [selectedSport, allTournaments]);
+
+  // Filter tournaments
   const filteredTournaments = useMemo(() => {
     let result = [...allTournaments];
     
@@ -115,22 +221,19 @@ export default function LandingPage() {
       });
     }
     
+    // Filter by sport
+    if (selectedSport) {
+      result = result.filter(t => (t.sport || 'calcio') === selectedSport);
+    }
+    
+    // Filter by format
+    if (selectedFormat) {
+      result = result.filter(t => t.game_format === selectedFormat);
+    }
+    
     // Filter by category
     if (selectedCategory) {
       result = result.filter(t => t.category === selectedCategory);
-    }
-    
-    // Filter by sport
-    if (selectedSport) {
-      const sportConfig = SPORTS.find(s => s.key === selectedSport);
-      if (sportConfig) {
-        result = result.filter(t => {
-          const tournamentSport = t.sport || 'calcio';
-          const tournamentFormat = t.game_format || '11v11';
-          return tournamentSport === sportConfig.sport && 
-                 (sportConfig.format === tournamentFormat || !t.game_format);
-        });
-      }
     }
     
     // Always sort by created_at descending
@@ -139,21 +242,30 @@ export default function LandingPage() {
       const dateB = new Date(b.created_at || 0).getTime();
       return dateB - dateA;
     });
-  }, [allTournaments, searchQuery, locationQuery, selectedDate, selectedCategory, selectedSport]);
+  }, [allTournaments, searchQuery, locationQuery, selectedDate, selectedSport, selectedFormat, selectedCategory]);
 
   // Check if any filter is active
-  const hasActiveFilters = selectedDate || selectedCategory || selectedSport;
+  const hasActiveFilters = selectedDate || selectedSport || selectedFormat || selectedCategory;
   
   // Count active filters
-  const activeFilterCount = [selectedDate, selectedCategory, selectedSport].filter(Boolean).length;
+  const activeFilterCount = [selectedDate, selectedSport, selectedFormat, selectedCategory].filter(Boolean).length;
 
   // Reset all filters
   const resetFilters = () => {
     setSelectedDate(null);
-    setSelectedCategory(null);
     setSelectedSport(null);
+    setSelectedFormat(null);
+    setSelectedCategory(null);
     setSearchQuery('');
     setLocationQuery('');
+  };
+
+  // When sport changes, reset format and category
+  const handleSportChange = (sport: string) => {
+    setSelectedSport(sport);
+    setSelectedFormat(null);
+    setSelectedCategory(null);
+    setShowSportPicker(false);
   };
 
   const formatDate = (date: Date) => {
@@ -253,37 +365,61 @@ export default function LandingPage() {
                 )}
               </TouchableOpacity>
 
-              {/* Category Filter */}
-              <TouchableOpacity 
-                style={[styles.filterChip, selectedCategory && styles.filterChipActive]}
-                onPress={() => setShowCategoryPicker(true)}
-              >
-                <Ionicons name="flag-outline" size={16} color={selectedCategory ? '#FFF' : '#000'} />
-                <Text style={[styles.filterChipText, selectedCategory && styles.filterChipTextActive]}>
-                  {selectedCategory || 'Categoria'}
-                </Text>
-                {selectedCategory && (
-                  <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.filterClearBtn}>
-                    <Ionicons name="close-circle" size={16} color="#FFF" />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
+              {/* Sport Filter - Only show sports with tournaments */}
+              {availableSports.length > 0 && (
+                <TouchableOpacity 
+                  style={[styles.filterChip, selectedSport && styles.filterChipActive]}
+                  onPress={() => setShowSportPicker(true)}
+                >
+                  <Text style={{ fontSize: 16 }}>
+                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.emoji : '🏆'}
+                  </Text>
+                  <Text style={[styles.filterChipText, selectedSport && styles.filterChipTextActive]}>
+                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.label : 'Sport'}
+                  </Text>
+                  {selectedSport && (
+                    <TouchableOpacity onPress={() => { setSelectedSport(null); setSelectedFormat(null); setSelectedCategory(null); }} style={styles.filterClearBtn}>
+                      <Ionicons name="close-circle" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              )}
 
-              {/* Sport Filter */}
-              <TouchableOpacity 
-                style={[styles.filterChip, selectedSport && styles.filterChipActive]}
-                onPress={() => setShowSportPicker(true)}
-              >
-                <Ionicons name="football-outline" size={16} color={selectedSport ? '#FFF' : '#000'} />
-                <Text style={[styles.filterChipText, selectedSport && styles.filterChipTextActive]}>
-                  {selectedSport ? SPORTS.find(s => s.key === selectedSport)?.label : 'Sport'}
-                </Text>
-                {selectedSport && (
-                  <TouchableOpacity onPress={() => setSelectedSport(null)} style={styles.filterClearBtn}>
-                    <Ionicons name="close-circle" size={16} color="#FFF" />
-                  </TouchableOpacity>
-                )}
-              </TouchableOpacity>
+              {/* Format Filter - Only show after sport is selected */}
+              {selectedSport && availableFormats.length > 0 && (
+                <TouchableOpacity 
+                  style={[styles.filterChip, selectedFormat && styles.filterChipActive]}
+                  onPress={() => setShowFormatPicker(true)}
+                >
+                  <Ionicons name="grid-outline" size={16} color={selectedFormat ? '#FFF' : '#000'} />
+                  <Text style={[styles.filterChipText, selectedFormat && styles.filterChipTextActive]}>
+                    {selectedFormat ? availableFormats.find(f => f.key === selectedFormat)?.label : 'Formato'}
+                  </Text>
+                  {selectedFormat && (
+                    <TouchableOpacity onPress={() => setSelectedFormat(null)} style={styles.filterClearBtn}>
+                      <Ionicons name="close-circle" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              )}
+
+              {/* Category Filter - Only show after sport is selected */}
+              {selectedSport && availableCategories.length > 0 && (
+                <TouchableOpacity 
+                  style={[styles.filterChip, selectedCategory && styles.filterChipActive]}
+                  onPress={() => setShowCategoryPicker(true)}
+                >
+                  <Ionicons name="flag-outline" size={16} color={selectedCategory ? '#FFF' : '#000'} />
+                  <Text style={[styles.filterChipText, selectedCategory && styles.filterChipTextActive]}>
+                    {selectedCategory || 'Categoria'}
+                  </Text>
+                  {selectedCategory && (
+                    <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.filterClearBtn}>
+                      <Ionicons name="close-circle" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {/* Reset Button */}
               {hasActiveFilters && (
@@ -416,6 +552,69 @@ export default function LandingPage() {
         )
       )}
 
+      {/* Sport Picker Modal */}
+      <Modal visible={showSportPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleziona Sport</Text>
+              <TouchableOpacity onPress={() => setShowSportPicker(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {availableSports.map((sport) => {
+                const config = SPORT_CATEGORIES[sport];
+                if (!config) return null;
+                return (
+                  <TouchableOpacity
+                    key={sport}
+                    style={[styles.modalListItem, selectedSport === sport && styles.modalListItemActive]}
+                    onPress={() => handleSportChange(sport)}
+                  >
+                    <Text style={[styles.modalListItemText, selectedSport === sport && styles.modalListItemTextActive]}>
+                      {config.emoji} {config.label}
+                    </Text>
+                    {selectedSport === sport && <Ionicons name="checkmark" size={20} color="#FFF" />}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Format Picker Modal */}
+      <Modal visible={showFormatPicker} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Seleziona Formato</Text>
+              <TouchableOpacity onPress={() => setShowFormatPicker(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <ScrollView style={styles.modalList}>
+              {availableFormats.map((format) => (
+                <TouchableOpacity
+                  key={format.key}
+                  style={[styles.modalListItem, selectedFormat === format.key && styles.modalListItemActive]}
+                  onPress={() => {
+                    setSelectedFormat(format.key);
+                    setShowFormatPicker(false);
+                  }}
+                >
+                  <Text style={[styles.modalListItemText, selectedFormat === format.key && styles.modalListItemTextActive]}>
+                    {format.label}
+                  </Text>
+                  {selectedFormat === format.key && <Ionicons name="checkmark" size={20} color="#FFF" />}
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
       {/* Category Picker Modal */}
       <Modal visible={showCategoryPicker} transparent animationType="slide">
         <View style={styles.modalOverlay}>
@@ -427,7 +626,7 @@ export default function LandingPage() {
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalList}>
-              {CATEGORIES.map((cat) => (
+              {availableCategories.map((cat) => (
                 <TouchableOpacity
                   key={cat}
                   style={[styles.modalListItem, selectedCategory === cat && styles.modalListItemActive]}
@@ -440,37 +639,6 @@ export default function LandingPage() {
                     {cat}
                   </Text>
                   {selectedCategory === cat && <Ionicons name="checkmark" size={20} color="#FFF" />}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Sport Picker Modal */}
-      <Modal visible={showSportPicker} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Seleziona Sport</Text>
-              <TouchableOpacity onPress={() => setShowSportPicker(false)}>
-                <Ionicons name="close" size={24} color="#000" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalList}>
-              {SPORTS.map((sport) => (
-                <TouchableOpacity
-                  key={sport.key}
-                  style={[styles.modalListItem, selectedSport === sport.key && styles.modalListItemActive]}
-                  onPress={() => {
-                    setSelectedSport(sport.key);
-                    setShowSportPicker(false);
-                  }}
-                >
-                  <Text style={[styles.modalListItemText, selectedSport === sport.key && styles.modalListItemTextActive]}>
-                    {getSportEmoji(sport.sport)} {sport.label}
-                  </Text>
-                  {selectedSport === sport.key && <Ionicons name="checkmark" size={20} color="#FFF" />}
                 </TouchableOpacity>
               ))}
             </ScrollView>
