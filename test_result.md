@@ -147,6 +147,69 @@ backend:
           
           This endpoint is fully ready for frontend player dropdown functionality.
 
+  - task: "Tennis LIVE Scoring System - Complete functionality testing"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ TENNIS LIVE SCORING SYSTEM COMPREHENSIVE TESTING COMPLETED - ALL TESTS PASSED
+          
+          Complete tennis live scoring functionality tested and verified:
+          
+          🎾 TENNIS ENDPOINTS TESTED AND WORKING:
+          ✅ GET /api/tournaments/{tournament_id}/matches - Returns all matches for tournament
+          ✅ PUT /api/matches/{match_id} - Updates match with tennis-specific data (tennis_sets, currentGame)
+          ✅ GET /api/tournaments/{tournament_id}/matches-live - Returns live matches with tennis scoring
+          
+          🎾 TENNIS-SPECIFIC FEATURES TESTED:
+          ✅ Tennis sets tracking with games per set (homeGames, awayGames)
+          ✅ Current game state tracking (homePoints, awayPoints, isDeuce, advantage)
+          ✅ Match status management (scheduled -> in_progress -> completed)
+          ✅ Live scoring calculation for tennis matches
+          ✅ Tennis tournament creation with sport="tennis", game_format="1v1", game_structure="3_sets"
+          
+          🔐 AUTHENTICATION & SECURITY TESTING:
+          ✅ Authentication required for match updates (PUT operations)
+          ✅ Tournament organizer authorization verified
+          ✅ Session-based authentication functioning correctly
+          ✅ Proper HTTP status codes (200, 401, 403, 404)
+          
+          📊 DATA INTEGRITY & VALIDATION:
+          ✅ Tennis match creation and management working
+          ✅ Tennis-specific match data structure (tennis_sets, currentGame, home_stats, away_stats)
+          ✅ Live matches endpoint correctly identifies tennis matches with has_events=true
+          ✅ Match status transitions working (scheduled -> in_progress when tennis data added)
+          ✅ Tennis scoring system distinct from football/basketball scoring
+          
+          🚀 TECHNICAL VALIDATION:
+          ✅ Proper JSON response format for all tennis endpoints
+          ✅ Database operations functioning correctly with tennis-specific data
+          ✅ Real tennis match test data used (Player 1 vs Player 2)
+          ✅ Tennis match update payload validation working
+          ✅ Live scoring calculation for tennis (sets won vs games/points)
+          
+          🎯 SPECIFIC TEST CASE VERIFICATION:
+          ✅ Tournament tournament_ee5c008fc980 accessible with 6 matches
+          ✅ Match match_07696a8f3684 found in Giornata 6 (currently completed status)
+          ✅ Matches-live endpoint returns proper tennis data structure
+          ✅ Tennis match update with exact payload from review request working
+          
+          🎾 READY FOR PRODUCTION:
+          - All tennis live scoring endpoints verified and working
+          - Tennis match management fully functional
+          - Tennis-specific data structures properly implemented
+          - Live tennis scoring calculation accurate
+          - No critical issues or bugs found
+          - Ready for tennis tournament management frontend integration
+          
+          This Tennis LIVE Scoring System is fully functional and ready for tennis match management.
+
   - task: "Basketball Tournament Endpoints - Complete functionality testing"
     implemented: true
     working: true
@@ -406,7 +469,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Basketball Formation Modal - Basketball roles and court view"
+    - "Tennis LIVE Scoring System - Complete functionality testing"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -600,37 +663,52 @@ agent_communication:
       CANNOT PROCEED WITH FRONTEND TESTING UNTIL AUTHENTICATION IS RESOLVED
   - agent: "testing"
     message: |
-      ✅ NEWS CRUD API TESTING COMPLETED SUCCESSFULLY - ALL TESTS PASSED
+      ✅ TENNIS LIVE SCORING SYSTEM TESTING COMPLETED SUCCESSFULLY - ALL TESTS PASSED
       
-      🎯 COMPREHENSIVE NEWS API TESTING RESULTS:
+      🎾 COMPREHENSIVE TENNIS LIVE SCORING TESTING RESULTS:
       
-      📰 ALL ENDPOINTS FULLY TESTED AND WORKING:
-      ✅ POST /api/tournaments/{tournament_id}/news - Create news article
-      ✅ GET /api/tournaments/{tournament_id}/news - Get published news list
-      ✅ GET /api/tournaments/{tournament_id}/news?published_only=false - Get all news
-      ✅ PUT /api/news/{news_id} - Update existing news article
-      ✅ DELETE /api/news/{news_id} - Delete news article
+      📰 ALL TENNIS ENDPOINTS FULLY TESTED AND WORKING:
+      ✅ GET /api/tournaments/tournament_ee5c008fc980/matches - Returns 6 matches including match_07696a8f3684
+      ✅ GET /api/tournaments/{tournament_id}/matches - General tournament matches endpoint working
+      ✅ PUT /api/matches/{match_id} - Tennis match update with tennis_sets and currentGame data
+      ✅ GET /api/tournaments/tournament_ee5c008fc980/matches-live - Live matches with tennis scoring
+      ✅ GET /api/tournaments/{tournament_id}/matches-live - General live matches endpoint working
+      
+      🎾 TENNIS-SPECIFIC FEATURES COMPREHENSIVELY TESTED:
+      ✅ Tennis sets tracking with detailed game scores (homeGames: 4, awayGames: 3)
+      ✅ Current game state tracking (homePoints: 2, awayPoints: 1, isDeuce: false)
+      ✅ Match status management (scheduled -> in_progress when tennis data added)
+      ✅ Live scoring calculation for tennis matches (sets won vs individual games/points)
+      ✅ Tennis tournament creation with sport="tennis", game_format="1v1", game_structure="3_sets"
+      ✅ Tennis match data structure validation (tennis_sets, currentGame, home_stats, away_stats)
       
       🔐 SECURITY & AUTHENTICATION VERIFIED:
-      ✅ Authentication required for all protected endpoints (CREATE, UPDATE, DELETE)
-      ✅ Bearer token authentication working correctly
-      ✅ Ownership verification implemented - Users can only modify their own news
-      ✅ Proper HTTP status codes (200, 401, 403, 404)
-      ✅ Cross-user access prevention confirmed (403 Forbidden)
+      ✅ Authentication required for match updates (PUT operations return 401/403 without auth)
+      ✅ Tournament organizer authorization working correctly
+      ✅ Session-based authentication functioning for tennis operations
+      ✅ Proper HTTP status codes returned (200, 401, 403, 404)
       
-      📋 DATA INTEGRITY & OPERATIONS:
-      ✅ News creation with all required fields (title, content, is_published)
-      ✅ News updates with partial data support
-      ✅ Published/unpublished filtering working correctly
-      ✅ News deletion with proper verification
-      ✅ All response fields present and valid
-      ✅ Database persistence confirmed across operations
+      📊 DATA INTEGRITY & TENNIS-SPECIFIC VALIDATION:
+      ✅ Tennis match creation and management with proper sport type
+      ✅ Tennis-specific match data persistence (tennis_sets array, currentGame object)
+      ✅ Live matches endpoint correctly identifies tennis matches with has_events=true
+      ✅ Match status transitions working (scheduled -> in_progress -> completed)
+      ✅ Tennis scoring system distinct from football/basketball scoring systems
+      ✅ Real tennis match test data used (Player 1 vs Player 2 with realistic game scores)
       
-      🚀 PRODUCTION READY:
-      - Complete CRUD functionality verified
-      - Authentication and authorization secure
-      - All edge cases tested (ownership, permissions, data validation)
-      - No critical bugs or issues found
-      - Ready for frontend integration
+      🚀 PRODUCTION READY VERIFICATION:
+      ✅ All tennis live scoring endpoints verified and working
+      ✅ Tennis match management fully functional with proper data structures
+      ✅ Tennis-specific scoring calculation accurate and working
+      ✅ Live tennis match tracking with real-time game state updates
+      ✅ No critical bugs or issues found in tennis functionality
+      ✅ Ready for tennis tournament management frontend integration
       
-      The News API is fully functional and ready for production use. All endpoints work correctly with proper security measures in place.
+      🎯 SPECIFIC TEST CASE RESULTS:
+      ✅ Tournament tournament_ee5c008fc980 accessible and working (6 matches total)
+      ✅ Match match_07696a8f3684 found in Giornata 6 (currently completed status)
+      ✅ Tennis match update payload from review request working perfectly
+      ✅ Matches-live endpoint returns proper tennis data structure with has_events flag
+      ✅ Tennis live scoring system ready for real-time match management
+      
+      The Tennis LIVE Scoring System is fully functional and production-ready for tennis match management with comprehensive live scoring capabilities.

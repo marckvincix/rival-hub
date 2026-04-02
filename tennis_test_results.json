@@ -1,0 +1,291 @@
+{
+  "success": true,
+  "timestamp": "2026-04-02T15:51:53.323042+00:00",
+  "test_results": [
+    {
+      "test": "User Login",
+      "success": true,
+      "message": "Logged in user: tennis_tester@test.com",
+      "details": null,
+      "timestamp": "2026-04-02T15:51:52.769801+00:00"
+    },
+    {
+      "test": "Create Tennis Tournament",
+      "success": true,
+      "message": "Created tennis tournament: tournament_3354861d474f",
+      "details": {
+        "tournament": {
+          "id": "tournament_3354861d474f",
+          "slug": "tennis-test-tournament-1",
+          "name": "Tennis Test Tournament",
+          "description": "Test tournament for tennis live scoring",
+          "organizer_id": "user_12026b207a59",
+          "sport": "tennis",
+          "category": "Open",
+          "format": "league",
+          "game_format": "1v1",
+          "custom_players_per_side": null,
+          "game_structure": "3_sets",
+          "status": "draft",
+          "start_date": null,
+          "end_date": null,
+          "location": null,
+          "logo": null,
+          "is_public": true,
+          "created_at": "2026-04-02T15:51:52.817164Z"
+        }
+      },
+      "timestamp": "2026-04-02T15:51:52.836216+00:00"
+    },
+    {
+      "test": "Create Tennis Teams",
+      "success": true,
+      "message": "Created teams: Player 1 vs Player 2",
+      "details": null,
+      "timestamp": "2026-04-02T15:51:52.953902+00:00"
+    },
+    {
+      "test": "Create Tennis Match",
+      "success": true,
+      "message": "Created tennis match: match_0195dcf08048",
+      "details": {
+        "match": {
+          "id": "match_0195dcf08048",
+          "tournament_id": "tournament_3354861d474f",
+          "home_team_id": "team_d96b127d1bfa",
+          "away_team_id": "team_c447367b6224",
+          "home_goals": null,
+          "away_goals": null,
+          "match_date": "2024-01-15",
+          "match_time": "15:00",
+          "venue": null,
+          "round": "Giornata 6",
+          "status": "scheduled",
+          "periods_score": null,
+          "home_team_fouls": null,
+          "away_team_fouls": null,
+          "current_period": null,
+          "timer_seconds": null,
+          "timer_running": null,
+          "tennis_sets": null,
+          "currentGame": null,
+          "home_stats": null,
+          "away_stats": null,
+          "created_at": "2026-04-02T15:51:52.993484Z"
+        }
+      },
+      "timestamp": "2026-04-02T15:51:53.024321+00:00"
+    },
+    {
+      "test": "GET Tournament Matches",
+      "success": true,
+      "message": "Retrieved 1 matches for tournament tournament_3354861d474f",
+      "details": {
+        "matches_count": 1,
+        "sample_match": {
+          "id": "match_0195dcf08048",
+          "tournament_id": "tournament_3354861d474f",
+          "home_team_id": "team_d96b127d1bfa",
+          "away_team_id": "team_c447367b6224",
+          "home_goals": null,
+          "away_goals": null,
+          "match_date": "2024-01-15",
+          "match_time": "15:00",
+          "venue": null,
+          "round": "Giornata 6",
+          "status": "scheduled",
+          "periods_score": null,
+          "home_team_fouls": null,
+          "away_team_fouls": null,
+          "current_period": null,
+          "timer_seconds": null,
+          "timer_running": null,
+          "tennis_sets": null,
+          "currentGame": null,
+          "home_stats": null,
+          "away_stats": null,
+          "created_at": "2026-04-02T15:51:52.993000"
+        }
+      },
+      "timestamp": "2026-04-02T15:51:53.083370+00:00"
+    },
+    {
+      "test": "PUT Tennis Match Update",
+      "success": true,
+      "message": "Successfully updated match match_0195dcf08048 with tennis data",
+      "details": {
+        "status": "in_progress",
+        "tennis_sets": [
+          {
+            "setNumber": 1,
+            "homeGames": 4,
+            "awayGames": 3,
+            "completed": false,
+            "tiebreak": false,
+            "tiebreakHome": 0,
+            "tiebreakAway": 0
+          }
+        ],
+        "currentGame": {
+          "homePoints": 2,
+          "awayPoints": 1,
+          "isDeuce": false,
+          "advantage": null,
+          "currentSetIndex": 0,
+          "homeGamesInSet": 4,
+          "awayGamesInSet": 3
+        }
+      },
+      "timestamp": "2026-04-02T15:51:53.144716+00:00"
+    },
+    {
+      "test": "GET Matches Live",
+      "success": true,
+      "message": "Retrieved 1 live matches for tournament tournament_3354861d474f",
+      "details": {
+        "live_matches_count": 1
+      },
+      "timestamp": "2026-04-02T15:51:53.202016+00:00"
+    },
+    {
+      "test": "Live Matches Analysis",
+      "success": true,
+      "message": "Found 1 in-progress matches, 1 with events",
+      "details": {
+        "in_progress_count": 1,
+        "with_events_count": 1,
+        "sample_live_match": {
+          "id": "match_0195dcf08048",
+          "tournament_id": "tournament_3354861d474f",
+          "home_team_id": "team_d96b127d1bfa",
+          "away_team_id": "team_c447367b6224",
+          "home_goals": null,
+          "away_goals": null,
+          "match_date": "2024-01-15",
+          "match_time": "15:00",
+          "venue": null,
+          "round": "Giornata 6",
+          "status": "in_progress",
+          "created_at": "2026-04-02T15:51:52.993000",
+          "currentGame": {
+            "homePoints": 2,
+            "awayPoints": 1,
+            "isDeuce": false,
+            "advantage": null,
+            "currentSetIndex": 0,
+            "homeGamesInSet": 4,
+            "awayGamesInSet": 3
+          },
+          "tennis_sets": [
+            {
+              "setNumber": 1,
+              "homeGames": 4,
+              "awayGames": 3,
+              "completed": false,
+              "tiebreak": false,
+              "tiebreakHome": 0,
+              "tiebreakAway": 0
+            }
+          ],
+          "live_home_score": 0,
+          "live_away_score": 0,
+          "has_events": true
+        }
+      },
+      "timestamp": "2026-04-02T15:51:53.202044+00:00"
+    },
+    {
+      "test": "Tennis Live Data Verification",
+      "success": true,
+      "message": "Tennis match data validation: status=True, events=True, currentGame=True, tennis_sets=True",
+      "details": {
+        "match_id": "match_0195dcf08048",
+        "status": "in_progress",
+        "has_events": true,
+        "currentGame": {
+          "homePoints": 2,
+          "awayPoints": 1,
+          "isDeuce": false,
+          "advantage": null,
+          "currentSetIndex": 0,
+          "homeGamesInSet": 4,
+          "awayGamesInSet": 3
+        },
+        "tennis_sets": [
+          {
+            "setNumber": 1,
+            "homeGames": 4,
+            "awayGames": 3,
+            "completed": false,
+            "tiebreak": false,
+            "tiebreakHome": 0,
+            "tiebreakAway": 0
+          }
+        ],
+        "live_home_score": 0,
+        "live_away_score": 0
+      },
+      "timestamp": "2026-04-02T15:51:53.202055+00:00"
+    },
+    {
+      "test": "GET Tournament Matches",
+      "success": true,
+      "message": "Retrieved 6 matches for tournament tournament_ee5c008fc980",
+      "details": {
+        "matches_count": 6,
+        "sample_match": {
+          "id": "match_f590e653e9c7",
+          "tournament_id": "tournament_ee5c008fc980",
+          "home_team_id": "team_983722aac044",
+          "away_team_id": "team_0ba66a7c15ef",
+          "home_goals": 1,
+          "away_goals": 1,
+          "match_date": null,
+          "match_time": null,
+          "venue": null,
+          "round": "Giornata 1",
+          "status": "completed",
+          "periods_score": null,
+          "home_team_fouls": null,
+          "away_team_fouls": null,
+          "current_period": null,
+          "timer_seconds": null,
+          "timer_running": null,
+          "tennis_sets": null,
+          "currentGame": null,
+          "home_stats": null,
+          "away_stats": null,
+          "created_at": "2026-04-02T14:37:07.850000"
+        }
+      },
+      "timestamp": "2026-04-02T15:51:53.260967+00:00"
+    },
+    {
+      "test": "GET Matches Live",
+      "success": true,
+      "message": "Retrieved 6 live matches for tournament tournament_ee5c008fc980",
+      "details": {
+        "live_matches_count": 6
+      },
+      "timestamp": "2026-04-02T15:51:53.322899+00:00"
+    },
+    {
+      "test": "Live Matches Analysis",
+      "success": true,
+      "message": "Found 0 in-progress matches, 3 with events",
+      "details": {
+        "in_progress_count": 0,
+        "with_events_count": 3,
+        "sample_live_match": null
+      },
+      "timestamp": "2026-04-02T15:51:53.322927+00:00"
+    },
+    {
+      "test": "Tennis Live Data Verification",
+      "success": true,
+      "message": "No in-progress matches found - this is expected for new tournaments",
+      "details": null,
+      "timestamp": "2026-04-02T15:51:53.322932+00:00"
+    }
+  ]
+}

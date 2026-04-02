@@ -138,8 +138,8 @@ export function TennisMatchModal({
         away_stats: awayStats,
         home_goals: homeSetsWon,
         away_goals: awaySetsWon,
-        // Mark as in progress if not completed
-        status: match.status === 'completed' ? 'completed' : 'in_progress',
+        // Always set to in_progress when auto-saving (user is actively updating)
+        status: 'in_progress',
       };
       
       await api.put(`/api/matches/${match.id}`, matchData);

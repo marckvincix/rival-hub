@@ -195,6 +195,11 @@ class MatchUpdate(BaseModel):
     current_period: Optional[str] = None  # Q1, Q2, Q3, Q4, OT, T1, T2
     timer_seconds: Optional[int] = None
     timer_running: Optional[bool] = None
+    # Tennis specific fields
+    tennis_sets: Optional[List[Dict]] = None  # List of set scores
+    currentGame: Optional[Dict] = None  # Current game state {homePoints, awayPoints, isDeuce, advantage, homeGamesInSet, awayGamesInSet}
+    home_stats: Optional[Dict] = None  # Tennis player stats (aces, double_faults, etc.)
+    away_stats: Optional[Dict] = None
 
 class Match(BaseModel):
     id: str
@@ -207,7 +212,7 @@ class Match(BaseModel):
     match_time: Optional[str] = None
     venue: Optional[str] = None
     round: str = "Giornata 1"
-    status: str = "scheduled"  # scheduled, live, completed
+    status: str = "scheduled"  # scheduled, in_progress, completed
     # Basketball specific fields
     periods_score: Optional[Dict[str, Dict[str, int]]] = None
     home_team_fouls: Optional[Dict[str, int]] = None
@@ -215,6 +220,11 @@ class Match(BaseModel):
     current_period: Optional[str] = None
     timer_seconds: Optional[int] = None
     timer_running: Optional[bool] = None
+    # Tennis specific fields
+    tennis_sets: Optional[List[Dict]] = None
+    currentGame: Optional[Dict] = None
+    home_stats: Optional[Dict] = None
+    away_stats: Optional[Dict] = None
     created_at: datetime
 
 # Match Event Models
