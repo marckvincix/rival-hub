@@ -294,7 +294,7 @@ export default function TournamentPublicPage() {
   });
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -814,7 +814,7 @@ export default function TournamentPublicPage() {
         presentationStyle="pageSheet"
         onRequestClose={() => setShowFormationModal(false)}
       >
-        <SafeAreaView style={styles.formationModalContainer}>
+        <SafeAreaView style={styles.formationModalContainer} edges={['top', 'bottom']}>
           <View style={styles.formationModalHeader}>
             <TouchableOpacity onPress={() => setShowFormationModal(false)}>
               <Text style={styles.formationModalClose}>Chiudi</Text>
