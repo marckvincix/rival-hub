@@ -450,19 +450,19 @@ export default function TournamentPublicPage() {
                                       ? `${match.home_goals || 0} - ${match.away_goals || 0}` 
                                       : `0 - 0`}
                                 </Text>
-                                {/* Show current game details if match is in progress */}
-                                {((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed' && (match as any).currentGame && (
+                                {/* Show current game details if match has currentGame data */}
+                                {(match as any).currentGame && (
                                   <View style={styles.tennisCurrentGame}>
                                     <Text style={styles.tennisGameScore}>
-                                      Game: {(match as any).currentGame?.homeGamesInSet || 0} - {(match as any).currentGame?.awayGamesInSet || 0}
+                                      Game: {(match as any).currentGame?.homeGamesInSet ?? 0} - {(match as any).currentGame?.awayGamesInSet ?? 0}
                                     </Text>
                                     <Text style={styles.tennisPointScore}>
                                       {getTennisPointDisplay((match as any).currentGame?.homePoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'home')} - {getTennisPointDisplay((match as any).currentGame?.awayPoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'away')}
                                     </Text>
                                   </View>
                                 )}
-                                {/* LIVE badge */}
-                                {((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed' && (
+                                {/* LIVE badge - Show when match has currentGame data (actively being played) */}
+                                {(match as any).currentGame && (
                                   <Text style={styles.liveIndicator}>LIVE</Text>
                                 )}
                               </View>
