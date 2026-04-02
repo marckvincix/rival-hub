@@ -1249,6 +1249,8 @@ async def get_matches_live(tournament_id: str):
     tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0, "sport": 1})
     sport = tournament.get("sport", "calcio") if tournament else "calcio"
     is_basketball = sport == "basket"
+    is_tennis = sport == "tennis"
+    is_padel = sport == "padel"
     
     result = []
     for match in matches:
@@ -1263,9 +1265,10 @@ async def get_matches_live(tournament_id: str):
         # Calculate live score
         home_score = 0
         away_score = 0
+        has_live_data = False
         
         if is_basketball:
-            # Basketball scoring
+            # Basketball scoring from events
             for event in events:
                 event_type = event.get("event_type", "")
                 team_id = event.get("team_id")
@@ -1283,20 +1286,30 @@ async def get_matches_live(tournament_id: str):
                         home_score += pts
                     else:
                         away_score += pts
+            has_live_data = len(events) > 0
+        elif is_tennis or is_padel:
+            # Tennis/Padel: Use home_goals/away_goals (sets won) directly from match data
+            # These are updated in real-time by the organizer via TennisMatchModal
+            home_score = match.get("home_goals", 0) or 0
+            away_score = match.get("away_goals", 0) or 0
+            # Has live data if any set is recorded or match is in progress
+            tennis_sets = match.get("tennis_sets", [])
+            has_live_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or match.get("status") == "in_progress"
         else:
-            # Soccer scoring
+            # Soccer scoring from events
             for event in events:
                 if event.get("event_type") == "goal":
                     if event.get("team_id") == match.get("home_team_id"):
                         home_score += 1
                     else:
                         away_score += 1
+            has_live_data = len(events) > 0
         
         # Add live_score to match data
         match_data = {**match}
         match_data["live_home_score"] = home_score
         match_data["live_away_score"] = away_score
-        match_data["has_events"] = len(events) > 0
+        match_data["has_events"] = has_live_data
         result.append(match_data)
     
     return result
