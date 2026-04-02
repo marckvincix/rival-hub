@@ -18,12 +18,26 @@ import { Tournament, Match } from '../../src/types';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
+// Sport configuration with labels and icons
+const SPORT_CONFIG: Record<string, { label: string; icon: string }> = {
+  'all': { label: 'Tutti', icon: 'apps' },
+  'calcio': { label: 'Calcio', icon: 'football' },
+  'basket': { label: 'Basket', icon: 'basketball' },
+  'tennis': { label: 'Tennis', icon: 'tennisball' },
+  'padel': { label: 'Padel', icon: 'tennisball' },
+  'pallavolo': { label: 'Pallavolo', icon: 'football-outline' },
+  'rugby': { label: 'Rugby', icon: 'american-football' },
+};
+
 export default function DashboardScreen() {
   const router = useRouter();
   const { user } = useAuthStore();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedSport, setSelectedSport] = useState<string>('all');
+  const [allTeamsData, setAllTeamsData] = useState<Record<string, number>>({});
+  const [allMatchesData, setAllMatchesData] = useState<Record<string, number>>({});
   const [stats, setStats] = useState({
     totalTournaments: 0,
     activeTournaments: 0,
@@ -37,31 +51,76 @@ export default function DashboardScreen() {
       const tournamentsData = response.data as Tournament[];
       setTournaments(tournamentsData);
 
-      let totalTeams = 0;
-      let pendingMatches = 0;
+      // Store teams and matches per tournament for filtering
+      const teamsPerTournament: Record<string, number> = {};
+      const matchesPerTournament: Record<string, number> = {};
       
       for (const tournament of tournamentsData) {
         try {
           const teamsRes = await api.get(`/api/tournaments/${tournament.id}/teams`);
-          totalTeams += teamsRes.data.length;
+          teamsPerTournament[tournament.id] = teamsRes.data.length;
           
           const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches`);
-          pendingMatches += matchesRes.data.filter((m: Match) => m.status === 'scheduled').length;
-        } catch (e) {}
+          matchesPerTournament[tournament.id] = matchesRes.data.filter((m: Match) => m.status === 'scheduled').length;
+        } catch (e) {
+          teamsPerTournament[tournament.id] = 0;
+          matchesPerTournament[tournament.id] = 0;
+        }
       }
 
-      setStats({
-        totalTournaments: tournamentsData.length,
-        activeTournaments: tournamentsData.filter(t => t.status === 'active').length,
-        totalTeams,
-        pendingMatches
-      });
+      setAllTeamsData(teamsPerTournament);
+      setAllMatchesData(matchesPerTournament);
+
+      // Calculate initial stats (all sports)
+      updateStats(tournamentsData, teamsPerTournament, matchesPerTournament, 'all');
     } catch (error) {
       console.error('Error loading dashboard:', error);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
+  };
+
+  // Update stats based on selected sport
+  const updateStats = (
+    tournamentsData: Tournament[], 
+    teamsData: Record<string, number>, 
+    matchesData: Record<string, number>,
+    sport: string
+  ) => {
+    const filteredTournaments = sport === 'all' 
+      ? tournamentsData 
+      : tournamentsData.filter(t => (t.sport || 'calcio') === sport);
+    
+    let totalTeams = 0;
+    let pendingMatches = 0;
+    
+    filteredTournaments.forEach(t => {
+      totalTeams += teamsData[t.id] || 0;
+      pendingMatches += matchesData[t.id] || 0;
+    });
+
+    setStats({
+      totalTournaments: filteredTournaments.length,
+      activeTournaments: filteredTournaments.filter(t => t.status === 'active').length,
+      totalTeams,
+      pendingMatches
+    });
+  };
+
+  // Handle sport filter change
+  const handleSportChange = (sport: string) => {
+    setSelectedSport(sport);
+    updateStats(tournaments, allTeamsData, allMatchesData, sport);
+  };
+
+  // Get unique sports from tournaments
+  const getAvailableSports = (): string[] => {
+    const sports = new Set<string>();
+    tournaments.forEach(t => {
+      sports.add(t.sport || 'calcio');
+    });
+    return ['all', ...Array.from(sports)];
   };
 
   useFocusEffect(
@@ -106,6 +165,37 @@ export default function DashboardScreen() {
             <Text style={styles.subtitle}>Gestisci i tuoi tornei</Text>
           </View>
         </View>
+
+        {/* Sport Filter Pills */}
+        {tournaments.length > 0 && (
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            style={styles.sportFilterContainer}
+            contentContainerStyle={styles.sportFilterContent}
+          >
+            {getAvailableSports().map((sport) => {
+              const config = SPORT_CONFIG[sport] || { label: sport, icon: 'football' };
+              const isSelected = selectedSport === sport;
+              return (
+                <TouchableOpacity
+                  key={sport}
+                  style={[styles.sportPill, isSelected && styles.sportPillActive]}
+                  onPress={() => handleSportChange(sport)}
+                >
+                  <Ionicons 
+                    name={config.icon as any} 
+                    size={16} 
+                    color={isSelected ? '#FFF' : '#000'} 
+                  />
+                  <Text style={[styles.sportPillText, isSelected && styles.sportPillTextActive]}>
+                    {config.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        )}
 
         {/* Stats Grid */}
         <View style={styles.statsGrid}>
@@ -249,6 +339,38 @@ const styles = StyleSheet.create({
   // Stats Grid
   statsGrid: {
     marginBottom: 16,
+  },
+  // Sport Filter Pills
+  sportFilterContainer: {
+    marginBottom: 16,
+    maxHeight: 44,
+  },
+  sportFilterContent: {
+    paddingHorizontal: 0,
+    gap: 8,
+  },
+  sportPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+    gap: 6,
+  },
+  sportPillActive: {
+    backgroundColor: '#000',
+    borderColor: '#000',
+  },
+  sportPillText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#000',
+  },
+  sportPillTextActive: {
+    color: '#FFF',
   },
   statsRow: {
     flexDirection: 'row',
