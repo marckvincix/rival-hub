@@ -707,7 +707,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: '100%',
-    height: 320,
+    height: 420,
   },
   heroButton: {
     position: 'absolute',
