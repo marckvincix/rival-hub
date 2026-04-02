@@ -1115,7 +1115,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const PLAYER_ROLES = getPlayerRoles();
   
   // Check if sport has roles (tennis/padel don't)
-  const sportHasRoles = tournament?.sport !== 'tennis' && tournament?.sport !== 'padel';
+  const sportHasRoles = tournament ? (tournament.sport !== 'tennis' && tournament.sport !== 'padel') : true;
 
   const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(

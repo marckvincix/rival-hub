@@ -149,7 +149,7 @@ class Team(BaseModel):
 class PlayerCreate(BaseModel):
     full_name: str
     number: Optional[int] = None
-    role: str = "midfielder"  # goalkeeper, defender, midfielder, forward
+    role: Optional[str] = None  # Optional for sports like tennis/padel that don't have roles
     photo: Optional[str] = None  # base64
 
 class PlayerUpdate(BaseModel):
@@ -163,7 +163,7 @@ class Player(BaseModel):
     id: str
     full_name: str
     number: Optional[int] = None
-    role: str = "midfielder"
+    role: Optional[str] = None  # Optional for sports like tennis/padel that don't have roles
     team_id: str
     photo: Optional[str] = None
     is_active: bool = True
