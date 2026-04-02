@@ -289,9 +289,13 @@ export function TennisMatchModal({
       } else if (advantage === null) {
         // Set advantage
         setAdvantage(team);
+        // Trigger auto-save with new advantage
+        setTimeout(() => triggerAutoSave(undefined, homePoints, awayPoints, true, team), 50);
       } else {
         // Other team had advantage, back to deuce
         setAdvantage(null);
+        // Trigger auto-save with no advantage
+        setTimeout(() => triggerAutoSave(undefined, homePoints, awayPoints, true, null), 50);
       }
     } else {
       // Normal point progression
@@ -300,26 +304,38 @@ export function TennisMatchModal({
           // 40-40 -> Deuce
           setIsDeuce(true);
           setAdvantage('home');
+          setTimeout(() => triggerAutoSave(undefined, 3, 3, true, 'home'), 50);
         } else if (homePoints === 3 && awayPoints < 3) {
           // Win the game
           winGame('home');
         } else {
-          setHomePoints(prev => prev + 1);
+          const newHomePoints = homePoints + 1;
+          setHomePoints(newHomePoints);
           // Check for deuce
-          if (homePoints + 1 === 3 && awayPoints === 3) {
+          if (newHomePoints === 3 && awayPoints === 3) {
             setIsDeuce(true);
+            setTimeout(() => triggerAutoSave(undefined, newHomePoints, awayPoints, true, null), 50);
+          } else {
+            // Trigger auto-save with new points
+            setTimeout(() => triggerAutoSave(undefined, newHomePoints, awayPoints, isDeuce, advantage), 50);
           }
         }
       } else {
         if (awayPoints === 3 && homePoints === 3) {
           setIsDeuce(true);
           setAdvantage('away');
+          setTimeout(() => triggerAutoSave(undefined, 3, 3, true, 'away'), 50);
         } else if (awayPoints === 3 && homePoints < 3) {
           winGame('away');
         } else {
-          setAwayPoints(prev => prev + 1);
-          if (awayPoints + 1 === 3 && homePoints === 3) {
+          const newAwayPoints = awayPoints + 1;
+          setAwayPoints(newAwayPoints);
+          if (newAwayPoints === 3 && homePoints === 3) {
             setIsDeuce(true);
+            setTimeout(() => triggerAutoSave(undefined, homePoints, newAwayPoints, true, null), 50);
+          } else {
+            // Trigger auto-save with new points
+            setTimeout(() => triggerAutoSave(undefined, homePoints, newAwayPoints, isDeuce, advantage), 50);
           }
         }
       }
@@ -327,9 +343,6 @@ export function TennisMatchModal({
 
     // Log event
     setEventsHistory(prev => [...prev, { type: 'point', team, timestamp: new Date().toISOString() }]);
-    
-    // Trigger auto-save for real-time updates
-    triggerAutoSave();
   };
 
   // Win a game
