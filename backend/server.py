@@ -2436,6 +2436,198 @@ async def get_tournament_basketball_stats(tournament_id: str):
     
     return result
 
+# ===================== TENNIS ENDPOINTS =====================
+
+@api_router.get("/tournaments/{tournament_id}/tennis-standings")
+async def get_tennis_standings(tournament_id: str):
+    """Get tennis standings for a tournament (V, P, Set V, Set P, Pt)"""
+    # Verify tournament exists and is tennis
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id},
+        {"_id": 0}
+    )
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    # Get all teams
+    teams = await db.teams.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    team_map = {t["id"]: t for t in teams}
+    
+    # Get all completed matches
+    matches = await db.matches.find(
+        {"tournament_id": tournament_id, "status": "completed"},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Calculate standings
+    standings = {}
+    for team in teams:
+        standings[team["id"]] = {
+            "team_id": team["id"],
+            "team_name": team["name"],
+            "team_logo": team.get("logo"),
+            "played": 0,
+            "won": 0,
+            "lost": 0,
+            "sets_won": 0,
+            "sets_lost": 0,
+            "points": 0
+        }
+    
+    for match in matches:
+        home_id = match.get("home_team_id")
+        away_id = match.get("away_team_id")
+        
+        if home_id not in standings or away_id not in standings:
+            continue
+        
+        # Get set scores from match data
+        tennis_sets = match.get("tennis_sets", [])
+        home_sets_won = 0
+        away_sets_won = 0
+        
+        for set_score in tennis_sets:
+            if set_score.get("home", 0) > set_score.get("away", 0):
+                home_sets_won += 1
+            elif set_score.get("away", 0) > set_score.get("home", 0):
+                away_sets_won += 1
+        
+        # Fallback to home_goals/away_goals if tennis_sets not available
+        if home_sets_won == 0 and away_sets_won == 0:
+            home_sets_won = match.get("home_goals", 0)
+            away_sets_won = match.get("away_goals", 0)
+        
+        standings[home_id]["played"] += 1
+        standings[away_id]["played"] += 1
+        standings[home_id]["sets_won"] += home_sets_won
+        standings[home_id]["sets_lost"] += away_sets_won
+        standings[away_id]["sets_won"] += away_sets_won
+        standings[away_id]["sets_lost"] += home_sets_won
+        
+        # Winner gets 2 points, loser gets 0
+        if home_sets_won > away_sets_won:
+            standings[home_id]["won"] += 1
+            standings[home_id]["points"] += 2
+            standings[away_id]["lost"] += 1
+        elif away_sets_won > home_sets_won:
+            standings[away_id]["won"] += 1
+            standings[away_id]["points"] += 2
+            standings[home_id]["lost"] += 1
+    
+    # Sort by points, then set difference
+    result = list(standings.values())
+    result.sort(key=lambda x: (
+        x["points"],
+        x["sets_won"] - x["sets_lost"],
+        x["sets_won"]
+    ), reverse=True)
+    
+    return result
+
+@api_router.get("/tournaments/{tournament_id}/tennis-stats")
+async def get_tennis_stats(tournament_id: str):
+    """Get individual tennis stats for players in tournament"""
+    # Verify tournament exists
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id},
+        {"_id": 0}
+    )
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    # Get all matches with tennis stats
+    matches = await db.matches.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).to_list(500)
+    
+    # Get all teams
+    teams = await db.teams.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).to_list(100)
+    
+    team_map = {t["id"]: t for t in teams}
+    
+    # Aggregate stats per team (tennis is often 1v1 or 2v2)
+    team_stats = {}
+    
+    for match in matches:
+        home_id = match.get("home_team_id")
+        away_id = match.get("away_team_id")
+        
+        home_stats = match.get("home_stats", {})
+        away_stats = match.get("away_stats", {})
+        
+        # Initialize if not exists
+        if home_id and home_id not in team_stats:
+            team = team_map.get(home_id, {})
+            team_stats[home_id] = {
+                "team_id": home_id,
+                "team_name": team.get("name", ""),
+                "team_logo": team.get("logo"),
+                "aces": 0,
+                "double_faults": 0,
+                "winners": 0,
+                "unforced_errors": 0,
+                "break_points_converted": 0,
+                "break_points_saved": 0,
+                "matches_played": 0,
+                "mvp_score": 0
+            }
+        
+        if away_id and away_id not in team_stats:
+            team = team_map.get(away_id, {})
+            team_stats[away_id] = {
+                "team_id": away_id,
+                "team_name": team.get("name", ""),
+                "team_logo": team.get("logo"),
+                "aces": 0,
+                "double_faults": 0,
+                "winners": 0,
+                "unforced_errors": 0,
+                "break_points_converted": 0,
+                "break_points_saved": 0,
+                "matches_played": 0,
+                "mvp_score": 0
+            }
+        
+        # Aggregate home stats
+        if home_id and home_stats:
+            team_stats[home_id]["aces"] += home_stats.get("aces", 0)
+            team_stats[home_id]["double_faults"] += home_stats.get("doubleFaults", 0)
+            team_stats[home_id]["winners"] += home_stats.get("winners", 0)
+            team_stats[home_id]["unforced_errors"] += home_stats.get("unforcedErrors", 0)
+            team_stats[home_id]["break_points_converted"] += home_stats.get("breakPointsConverted", 0)
+            team_stats[home_id]["break_points_saved"] += home_stats.get("breakPointsSaved", 0)
+            team_stats[home_id]["matches_played"] += 1
+        
+        # Aggregate away stats
+        if away_id and away_stats:
+            team_stats[away_id]["aces"] += away_stats.get("aces", 0)
+            team_stats[away_id]["double_faults"] += away_stats.get("doubleFaults", 0)
+            team_stats[away_id]["winners"] += away_stats.get("winners", 0)
+            team_stats[away_id]["unforced_errors"] += away_stats.get("unforcedErrors", 0)
+            team_stats[away_id]["break_points_converted"] += away_stats.get("breakPointsConverted", 0)
+            team_stats[away_id]["break_points_saved"] += away_stats.get("breakPointsSaved", 0)
+            team_stats[away_id]["matches_played"] += 1
+    
+    # Calculate MVP score: most winners, tiebreaker: most aces
+    for team_id, stats in team_stats.items():
+        stats["mvp_score"] = stats["winners"] * 100 + stats["aces"]
+    
+    # Sort by MVP score
+    result = list(team_stats.values())
+    result.sort(key=lambda x: x["mvp_score"], reverse=True)
+    
+    return result
+
 # ===================== PAYMENT ENDPOINTS =====================
 
 @api_router.post("/payments/checkout")

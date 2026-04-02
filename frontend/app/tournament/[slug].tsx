@@ -61,22 +61,27 @@ export default function TournamentPublicPage() {
       const t = tournamentRes.data;
       setTournament(t);
       
-      // Determine if this is a basketball tournament
+      // Determine tournament sport type
       const isBasketball = t.sport === 'basket';
+      const isTennis = t.sport === 'tennis';
       
       const [teamsRes, matchesRes, standingsRes, scorersRes, statsRes, newsRes, formationsRes] = await Promise.all([
         api.get(`/api/tournaments/${t.id}/teams`),
         api.get(`/api/tournaments/${t.id}/matches-live`), // Use live matches endpoint for real-time scores
-        // Use basketball-specific endpoints for basketball tournaments
+        // Use sport-specific endpoints
         isBasketball 
           ? api.get(`/api/tournaments/${t.id}/basketball-standings`)
-          : api.get(`/api/tournaments/${t.id}/standings`),
+          : isTennis
+            ? api.get(`/api/tournaments/${t.id}/tennis-standings`)
+            : api.get(`/api/tournaments/${t.id}/standings`),
         isBasketball
           ? api.get(`/api/tournaments/${t.id}/basketball-scorers`)
           : api.get(`/api/tournaments/${t.id}/scorers`),
         isBasketball
           ? api.get(`/api/tournaments/${t.id}/basketball-stats`)
-          : api.get(`/api/tournaments/${t.id}/player-stats`),
+          : isTennis
+            ? api.get(`/api/tournaments/${t.id}/tennis-stats`)
+            : api.get(`/api/tournaments/${t.id}/player-stats`),
         api.get(`/api/tournaments/${t.id}/news?published_only=true`),
         api.get(`/api/tournaments/${t.id}/formations`)
       ]);
@@ -100,6 +105,7 @@ export default function TournamentPublicPage() {
   
   // Check if tournament is basketball
   const isBasketball = tournament?.sport === 'basket';
+  const isTennis = tournament?.sport === 'tennis';
   
   // Get sport-specific icon
   const getSportIcon = (): string => {

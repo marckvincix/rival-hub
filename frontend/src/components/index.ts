@@ -10,3 +10,5 @@ export { FormationModal } from './FormationModal';
 export { default as SportSelector } from './SportSelector';
 export { BasketballCourtView } from './BasketballCourtView';
 export { BasketballMatchModal } from './BasketballMatchModal';
+export { TennisCourtView } from './TennisCourtView';
+export { TennisMatchModal } from './TennisMatchModal';

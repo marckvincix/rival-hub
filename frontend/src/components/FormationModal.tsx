@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { FieldView } from './FieldView';
 import { BasketballCourtView } from './BasketballCourtView';
+import { TennisCourtView } from './TennisCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
 
