@@ -397,29 +397,33 @@ export function TennisMatchModal({
     );
   };
 
-  // Render stat row with CORRECT layout: [-] [value] [+] for BOTH sides
+  // Render stat row with CORRECT layout: [-] [value] [+] | Label | [-] [value] [+]
   const renderStatRow = (label: string, stat: keyof PlayerStats, homeValue: number, awayValue: number) => (
     <View style={styles.statRow} key={stat}>
-      {/* Home side: [-] [value] [+] */}
-      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, -1)}>
-        <Ionicons name="remove-circle" size={24} color="#000" />
-      </TouchableOpacity>
-      <Text style={styles.statValue}>{homeValue}</Text>
-      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, 1)}>
-        <Ionicons name="add-circle" size={24} color="#000" />
-      </TouchableOpacity>
+      {/* Home side: [-] [value] [+] - centered in flex container */}
+      <View style={styles.statSide}>
+        <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, -1)}>
+          <Ionicons name="remove-circle" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.statValue}>{homeValue}</Text>
+        <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, 1)}>
+          <Ionicons name="add-circle" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
       
       {/* Label in center */}
       <Text style={styles.statLabel}>{label}</Text>
       
-      {/* Away side: [-] [value] [+] */}
-      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, -1)}>
-        <Ionicons name="remove-circle" size={24} color="#000" />
-      </TouchableOpacity>
-      <Text style={styles.statValue}>{awayValue}</Text>
-      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, 1)}>
-        <Ionicons name="add-circle" size={24} color="#000" />
-      </TouchableOpacity>
+      {/* Away side: [-] [value] [+] - centered in flex container */}
+      <View style={styles.statSide}>
+        <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, -1)}>
+          <Ionicons name="remove-circle" size={24} color="#000" />
+        </TouchableOpacity>
+        <Text style={styles.statValue}>{awayValue}</Text>
+        <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, 1)}>
+          <Ionicons name="add-circle" size={24} color="#000" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -680,13 +684,21 @@ const styles = StyleSheet.create({
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     paddingVertical: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
+  statSide: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
   statButton: { padding: 4 },
-  statValue: { width: 30, fontSize: 16, fontWeight: '700', color: '#000', textAlign: 'center' },
-  statLabel: { width: 80, fontSize: 12, color: '#000', textAlign: 'center' },
+  statValue: { minWidth: 24, fontSize: 16, fontWeight: '700', color: '#000', textAlign: 'center' },
+  statLabel: { width: 90, fontSize: 12, color: '#000', textAlign: 'center', fontWeight: '600' },
   footer: {
     flexDirection: 'row',
     padding: 16,
