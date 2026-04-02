@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
@@ -106,6 +106,9 @@ export default function TournamentPublicPage() {
   // Check if tournament is basketball
   const isBasketball = tournament?.sport === 'basket';
   const isTennis = tournament?.sport === 'tennis';
+  const isPadel = tournament?.sport === 'padel';
+  const isRacketSport = isTennis || isPadel;
+  const isDoubles = tournament?.game_format === 'doppio' || tournament?.game_format === 'doubles';
   
   // Get sport-specific icon
   const getSportIcon = (): string => {

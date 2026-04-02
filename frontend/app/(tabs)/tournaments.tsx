@@ -1117,6 +1117,33 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Check if sport has roles (tennis/padel don't)
   const sportHasRoles = tournament ? (tournament.sport !== 'tennis' && tournament.sport !== 'padel') : true;
 
+  // Tennis/Padel specific labels
+  const isTennisSport = tournament?.sport === 'tennis' || tournament?.sport === 'padel';
+  const isDoubles = tournament?.game_format === 'doppio' || tournament?.game_format === 'doubles';
+  
+  // Get appropriate labels based on sport
+  const getTeamLabel = (plural = false) => {
+    if (!isTennisSport) return plural ? 'Squadre' : 'Squadra';
+    if (isDoubles) return plural ? 'Coppie' : 'Coppia';
+    return plural ? 'Giocatori' : 'Giocatore';
+  };
+  
+  // Get display name for a team (for Tennis, show player names instead of team name)
+  const getTeamDisplayName = (team: any) => {
+    if (!isTennisSport) return team.name;
+    
+    // For tennis/padel, try to show player names
+    const players = teamPlayers[team.id] || [];
+    if (players.length === 0) return team.name;
+    
+    if (isDoubles && players.length >= 2) {
+      // Show both players for doubles
+      return `${players[0]?.full_name || '?'} / ${players[1]?.full_name || '?'}`;
+    }
+    // Singles: show first player name
+    return players[0]?.full_name || team.name;
+  };
+
   const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(
       'Elimina Giocatore',
@@ -1309,8 +1336,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   const sportIcon = getSportIcon();
 
+  // Dynamic tab labels based on sport
   const tabs: { id: string; label: string; icon: string }[] = [
-    { id: 'teams', label: 'Squadre', icon: 'people' },
+    { id: 'teams', label: getTeamLabel(true), icon: isTennisSport ? 'person' : 'people' },
     { id: 'matches', label: 'Partite', icon: sportIcon },
     { id: 'results', label: 'Risultati', icon: 'create' },
     { id: 'news', label: 'News', icon: 'newspaper' },
@@ -1350,7 +1378,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <View>
                 <TouchableOpacity style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
                   <Ionicons name="add" size={22} color="#FFF" />
-                  <Text style={styles.addTeamBtnText}>Aggiungi Squadra</Text>
+                  <Text style={styles.addTeamBtnText}>Aggiungi {getTeamLabel()}</Text>
                 </TouchableOpacity>
                 <View style={{ height: 16 }} />
                 {teams.length === 0 ? <EmptyState icon="people-outline" title="Nessuna squadra" /> : (
@@ -1361,19 +1389,26 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Left: Avatar + Name + Chevron */}
                         <TouchableOpacity style={styles.teamLeftSection} onPress={() => toggleTeamExpand(team.id)}>
                           <View style={styles.teamAvatarNew}>
-                            <Text style={styles.teamAvatarText}>{team.name.charAt(0).toUpperCase()}</Text>
+                            <Text style={styles.teamAvatarText}>
+                              {isTennisSport ? '🎾' : team.name.charAt(0).toUpperCase()}
+                            </Text>
                           </View>
-                          <Text style={styles.teamNameNew}>{team.name}</Text>
+                          <Text style={styles.teamNameNew}>{getTeamDisplayName(team)}</Text>
                           <Ionicons name={expandedTeamId === team.id ? "chevron-down" : "chevron-forward"} size={20} color="#000" />
                         </TouchableOpacity>
                         {/* Right: Action Buttons */}
                         <View style={styles.teamActionBtns}>
-                          <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
-                            <Ionicons name="add" size={20} color="#FFF" />
-                          </TouchableOpacity>
-                          <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
-                            <Ionicons name="grid" size={18} color="#FFF" />
-                          </TouchableOpacity>
+                          {/* For Tennis singles, hide add player button after 1 player, for doubles after 2 */}
+                          {(!isTennisSport || (teamPlayers[team.id]?.length || 0) < (isDoubles ? 2 : 1)) && (
+                            <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
+                              <Ionicons name="add" size={20} color="#FFF" />
+                            </TouchableOpacity>
+                          )}
+                          {!isTennisSport && (
+                            <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
+                              <Ionicons name="grid" size={18} color="#FFF" />
+                            </TouchableOpacity>
+                          )}
                           <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
                             <Ionicons name="trash" size={18} color="#FFF" />
                           </TouchableOpacity>
@@ -1624,15 +1659,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowAddTeamModal(false)}><Text style={styles.modalCancel}>Annulla</Text></TouchableOpacity>
-            <Text style={styles.modalTitle}>Nuova Squadra</Text>
+            <Text style={styles.modalTitle}>
+              {isTennisSport 
+                ? (isDoubles ? 'Nuova Coppia' : 'Nuovo Giocatore')
+                : 'Nuova Squadra'
+              }
+            </Text>
             <View style={{ width: 60 }} />
           </View>
           <View style={styles.modalContentSimple}>
-            <Text style={styles.inputLabelSimple}>Nome Squadra</Text>
+            <Text style={styles.inputLabelSimple}>
+              {isTennisSport 
+                ? (isDoubles ? 'Nome Coppia' : 'Nome Giocatore')
+                : 'Nome Squadra'
+              }
+            </Text>
             <View style={styles.inputBoxSimple}>
               <TextInput
                 style={styles.inputTextSimple}
-                placeholder="es. SSC Napoli"
+                placeholder={isTennisSport 
+                  ? (isDoubles ? 'es. Sinner/Berrettini' : 'es. Jannik Sinner')
+                  : 'es. SSC Napoli'
+                }
                 placeholderTextColor="#999"
                 value={newTeamName}
                 onChangeText={setNewTeamName}
