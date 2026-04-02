@@ -124,6 +124,9 @@ export function FormationModal({
   sport = 'calcio',
 }: FormationModalProps) {
   const isBasketball = sport === 'basket';
+  const isTennis = sport === 'tennis';
+  const isPadel = sport === 'padel';
+  const isRacketSport = isTennis || isPadel;
   
   const [viewMode, setViewMode] = useState<'list' | 'field'>('list');
   const [selectedModule, setSelectedModule] = useState<string>('');
@@ -132,9 +135,26 @@ export function FormationModal({
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
+  // Tennis/Padel configuration - no modules, just players
+  const TENNIS_FORMATS: Record<string, { slots: number; labels: string[] }> = {
+    'singolo': { slots: 1, labels: ['Giocatore'] },
+    'singles': { slots: 1, labels: ['Giocatore'] },
+    'doppio': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
+    'doubles': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
+  };
+  
+  const PADEL_FORMATS: Record<string, { slots: number; labels: string[] }> = {
+    'doppio': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
+    'doubles': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
+    'singolo': { slots: 1, labels: ['Giocatore'] },
+    'singles': { slots: 1, labels: ['Giocatore'] },
+  };
+
   // Get available modules for the game format (depends on sport)
   const availableModules = isBasketball
     ? (BASKETBALL_MODULES[gameFormat] || BASKETBALL_MODULES['5v5'])
+    : isRacketSport
+    ? [] // Tennis/Padel don't have tactical modules
     : (GAME_FORMATS_MODULES[gameFormat] || GAME_FORMATS_MODULES['11v11']);
 
   // Initialize from existing formation
@@ -145,12 +165,32 @@ export function FormationModal({
       setBench(existingFormation.bench.map(b => typeof b === 'string' ? b : b.player_id));
     } else if (availableModules.length > 0 && !selectedModule) {
       setSelectedModule(availableModules[0]);
+    } else if (isRacketSport && !selectedModule) {
+      // For tennis/padel, set a default "module" based on game format
+      setSelectedModule(gameFormat === 'singles' ? 'singles' : 'doubles');
     }
   }, [existingFormation, visible]);
 
   // Initialize starters when module changes
   useEffect(() => {
-    if (selectedModule) {
+    if (isRacketSport) {
+      // Tennis/Padel: Simple player slots without positions
+      const newStarters: FormationPlayer[] = [];
+      const format = isTennis ? TENNIS_FORMATS[gameFormat] : PADEL_FORMATS[gameFormat];
+      const slotCount = format?.slots || (gameFormat === 'singles' ? 1 : 2);
+      
+      for (let i = 0; i < slotCount; i++) {
+        const existingPlayer = starters.find(s => s.slot_index === i);
+        newStarters.push(
+          existingPlayer || {
+            player_id: '',
+            position: 'player', // Tennis/Padel don't have specific positions
+            slot_index: i,
+          }
+        );
+      }
+      setStarters(newStarters);
+    } else if (selectedModule) {
       const newStarters: FormationPlayer[] = [];
       
       if (isBasketball && BASKETBALL_MODULE_POSITIONS[selectedModule]) {
@@ -193,7 +233,7 @@ export function FormationModal({
 
       setStarters(newStarters);
     }
-  }, [selectedModule, isBasketball]);
+  }, [selectedModule, isBasketball, isRacketSport, gameFormat]);
 
   // Get assigned player IDs
   const getAssignedPlayerIds = (): string[] => {
@@ -401,31 +441,52 @@ export function FormationModal({
             style={[styles.toggleButton, viewMode === 'field' && styles.toggleButtonActive]}
             onPress={() => setViewMode('field')}
           >
-            <Ionicons name={isBasketball ? 'basketball' : 'football'} size={18} color={viewMode === 'field' ? '#FFF' : '#000'} />
-            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>{isBasketball ? 'Campo' : 'Campo'}</Text>
+            <Ionicons 
+              name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : 'football')} 
+              size={18} 
+              color={viewMode === 'field' ? '#FFF' : '#000'} 
+            />
+            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>Campo</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Module selector */}
-          <Text style={styles.sectionLabel}>Modulo Tattico</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.moduleScroll}>
-            {availableModules.map(module => (
-              <TouchableOpacity
-                key={module}
-                style={[styles.moduleChip, selectedModule === module && styles.moduleChipSelected]}
-                onPress={() => setSelectedModule(module)}
-              >
-                <Text style={[styles.moduleChipText, selectedModule === module && styles.moduleChipTextSelected]}>
-                  {module}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {/* Module selector - Hide for Tennis/Padel */}
+          {!isRacketSport && (
+            <>
+              <Text style={styles.sectionLabel}>Modulo Tattico</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.moduleScroll}>
+                {availableModules.map(module => (
+                  <TouchableOpacity
+                    key={module}
+                    style={[styles.moduleChip, selectedModule === module && styles.moduleChipSelected]}
+                    onPress={() => setSelectedModule(module)}
+                  >
+                    <Text style={[styles.moduleChipText, selectedModule === module && styles.moduleChipTextSelected]}>
+                      {module}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </>
+          )}
 
           {viewMode === 'field' ? (
-            /* Field View - Show Basketball Court or Soccer Field based on sport */
-            isBasketball ? (
+            /* Field View - Show appropriate court based on sport */
+            isRacketSport ? (
+              <TennisCourtView
+                format={(gameFormat === 'singles' || gameFormat === 'singolo') ? 'singles' : 'doubles'}
+                homePlayers={starters.filter(s => s.player_id).map(s => ({
+                  player_id: s.player_id,
+                  full_name: players.find(p => p.id === s.player_id)?.full_name,
+                  number: players.find(p => p.id === s.player_id)?.number,
+                  photo: players.find(p => p.id === s.player_id)?.photo,
+                  position: s.position,
+                }))}
+                awayPlayers={[]}
+                homeTeamName={teamName}
+              />
+            ) : isBasketball ? (
               <BasketballCourtView
                 module={selectedModule}
                 starters={starters.filter(s => s.player_id).map(s => ({
@@ -446,7 +507,68 @@ export function FormationModal({
           ) : (
             /* List View */
             <View style={styles.listView}>
-              {isBasketball ? (
+              {isRacketSport ? (
+                /* Tennis/Padel: Simple player list without positions */
+                <View style={styles.tennisPlayerList}>
+                  <Text style={styles.positionTitle}>
+                    🎾 {gameFormat === 'singles' || gameFormat === 'singolo' ? 'Singolo' : (isTennis ? 'Doppio' : 'Coppia')}
+                  </Text>
+                  {starters.map((slot, idx) => {
+                    const dropdownKey = `player-${idx}`;
+                    const selectedPlayer = players.find(p => p.id === slot.player_id);
+                    const availablePlayers = getAvailablePlayers(slot);
+                    const format = isTennis ? TENNIS_FORMATS[gameFormat] : PADEL_FORMATS[gameFormat];
+                    const label = format?.labels?.[idx] || `Giocatore ${idx + 1}`;
+
+                    return (
+                      <View key={dropdownKey} style={styles.slotContainer}>
+                        <Text style={styles.tennisSlotLabel}>{label}</Text>
+                        <TouchableOpacity
+                          style={styles.dropdown}
+                          onPress={() => setShowDropdown(showDropdown === dropdownKey ? null : dropdownKey)}
+                        >
+                          <Text style={selectedPlayer ? styles.dropdownText : styles.dropdownPlaceholder}>
+                            {selectedPlayer
+                              ? `${selectedPlayer.number || ''} ${selectedPlayer.full_name}`
+                              : `Seleziona giocatore...`}
+                          </Text>
+                          <Ionicons
+                            name={showDropdown === dropdownKey ? 'chevron-up' : 'chevron-down'}
+                            size={20}
+                            color="#666"
+                          />
+                        </TouchableOpacity>
+
+                        {showDropdown === dropdownKey && (
+                          <ScrollView style={styles.dropdownList} nestedScrollEnabled={true}>
+                            <TouchableOpacity
+                              style={styles.dropdownItem}
+                              onPress={() => { handlePlayerSelect('player', idx, ''); setShowDropdown(null); }}
+                            >
+                              <Text style={styles.dropdownItemPlaceholder}>— Nessuno —</Text>
+                            </TouchableOpacity>
+                            {availablePlayers.map(player => (
+                              <TouchableOpacity
+                                key={player.id}
+                                style={[
+                                  styles.dropdownItem,
+                                  player.id === slot.player_id && styles.dropdownItemSelected,
+                                ]}
+                                onPress={() => { handlePlayerSelect('player', idx, player.id); setShowDropdown(null); }}
+                              >
+                                <Text style={styles.dropdownItemNumber}>
+                                  {player.number || '-'}
+                                </Text>
+                                <Text style={styles.dropdownItemName}>{player.full_name}</Text>
+                              </TouchableOpacity>
+                            ))}
+                          </ScrollView>
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : isBasketball ? (
                 <>
                   {renderPositionSection('playmaker')}
                   {renderPositionSection('guardia')}
@@ -698,6 +820,16 @@ const styles = StyleSheet.create({
   benchPlayerName: {
     fontSize: 13,
     color: '#000',
+  },
+  // Tennis/Padel specific styles
+  tennisPlayerList: {
+    marginTop: 8,
+  },
+  tennisSlotLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 6,
   },
 });
 

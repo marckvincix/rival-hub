@@ -339,12 +339,15 @@ export interface PlayerStats {
 // Formation Types
 export interface FormationPlayer {
   player_id: string;
-  position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
+  position: 'goalkeeper' | 'defender' | 'midfielder' | 'forward' | 'playmaker' | 'guardia' | 'ala_piccola' | 'ala_grande' | 'centro' | 'player';
   slot_index: number;
   player_name?: string;
   player_number?: number;
   player_photo?: string;
   player_role?: string;
+  full_name?: string; // For basketball court view
+  number?: number; // For basketball court view
+  photo?: string; // For basketball court view
 }
 
 export interface BenchPlayer {

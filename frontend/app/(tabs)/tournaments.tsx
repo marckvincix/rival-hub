@@ -1104,12 +1104,18 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         return ['Pilone', 'Tallonatore', 'Flanker', 'Mediano', 'Ala', 'Centro', 'Estremo'];
       case 'baseball':
         return ['Lanciatore', 'Ricevitore', 'Prima Base', 'Seconda Base', 'Terza Base', 'Interbase', 'Esterno'];
+      case 'tennis':
+      case 'padel':
+        return []; // Tennis e Padel non hanno ruoli specifici
       default:
         return ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
     }
   };
 
   const PLAYER_ROLES = getPlayerRoles();
+  
+  // Check if sport has roles (tennis/padel don't)
+  const sportHasRoles = tournament?.sport !== 'tennis' && tournament?.sport !== 'padel';
 
   const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(
@@ -1676,9 +1682,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               />
             </View>
 
-            {/* Numero + Ruolo side by side */}
+            {/* Numero + Ruolo side by side (Ruolo nascosto per Tennis/Padel) */}
             <View style={styles.playerFormRow}>
-              <View style={styles.playerFormColSmall}>
+              <View style={sportHasRoles ? styles.playerFormColSmall : { flex: 1 }}>
                 <Text style={styles.playerFormLabel}>Numero</Text>
                 <View style={styles.playerFormInputBox}>
                   <TextInput
@@ -1692,32 +1698,34 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   />
                 </View>
               </View>
-              <View style={styles.playerFormColLarge}>
-                <Text style={styles.playerFormLabel}>Ruolo</Text>
-                <TouchableOpacity 
-                  style={styles.playerFormDropdown}
-                  onPress={() => setShowRoleDropdown(!showRoleDropdown)}
-                >
-                  <Text style={newPlayerData.role ? styles.playerFormDropdownText : styles.playerFormDropdownPlaceholder}>
-                    {newPlayerData.role || 'Seleziona ruolo'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={20} color="#000" />
-                </TouchableOpacity>
-                {showRoleDropdown && (
-                  <View style={styles.roleDropdownList}>
-                    {PLAYER_ROLES.map((role) => (
-                      <TouchableOpacity 
-                        key={role} 
-                        style={styles.roleDropdownItem}
-                        onPress={() => { setNewPlayerData({ ...newPlayerData, role }); setShowRoleDropdown(false); }}
-                      >
-                        <Text style={styles.roleDropdownText}>{role}</Text>
-                        {newPlayerData.role === role && <Ionicons name="checkmark" size={18} color="#000" />}
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                )}
-              </View>
+              {sportHasRoles && (
+                <View style={styles.playerFormColLarge}>
+                  <Text style={styles.playerFormLabel}>Ruolo</Text>
+                  <TouchableOpacity 
+                    style={styles.playerFormDropdown}
+                    onPress={() => setShowRoleDropdown(!showRoleDropdown)}
+                  >
+                    <Text style={newPlayerData.role ? styles.playerFormDropdownText : styles.playerFormDropdownPlaceholder}>
+                      {newPlayerData.role || 'Seleziona ruolo'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={20} color="#000" />
+                  </TouchableOpacity>
+                  {showRoleDropdown && (
+                    <View style={styles.roleDropdownList}>
+                      {PLAYER_ROLES.map((role) => (
+                        <TouchableOpacity 
+                          key={role} 
+                          style={styles.roleDropdownItem}
+                          onPress={() => { setNewPlayerData({ ...newPlayerData, role }); setShowRoleDropdown(false); }}
+                        >
+                          <Text style={styles.roleDropdownText}>{role}</Text>
+                          {newPlayerData.role === role && <Ionicons name="checkmark" size={18} color="#000" />}
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
             </View>
 
             {/* Foto */}
