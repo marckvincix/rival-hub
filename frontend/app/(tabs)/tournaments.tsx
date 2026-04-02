@@ -1722,7 +1722,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
       {/* Add Player Modal - Full Screen */}
       <Modal visible={showAddPlayerModal} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowAddPlayerModal(false)}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowAddPlayerModal(false)}>
               <View style={styles.backBtnRound}><Ionicons name="arrow-back" size={24} color="#000" /></View>
@@ -2396,7 +2396,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
       {/* Match Result Modal - Full Screen */}
       <Modal visible={!!selectedMatch} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setSelectedMatch(null)}>
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSelectedMatch(null)}>
               <View style={styles.backBtnRound}><Ionicons name="arrow-back" size={24} color="#000" /></View>
@@ -2541,7 +2541,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
         {/* Extra Modal */}
         <Modal visible={showExtraModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowExtraModal(false)}>
-          <SafeAreaView style={styles.modalContainer}>
+          <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
             <ScrollView style={styles.extraModalContent} showsVerticalScrollIndicator={false}>
               {/* Extra Header */}
               <View style={styles.extraHeaderBox}>
@@ -2776,23 +2776,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     />
                   </View>
 
-                  {/* Auto-save indicator + Fine Partita Button */}
+                  {/* Auto-save indicator only - no button needed */}
                   <View style={styles.extraFooterButtons}>
-                    <View style={styles.autoSaveIndicator}>
-                      <Ionicons name="cloud-done" size={16} color="#10B981" />
-                      <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+                    <View style={[styles.autoSaveIndicator, { flex: 1, justifyContent: 'center', paddingVertical: 16 }]}>
+                      <Ionicons name="cloud-done" size={20} color="#10B981" />
+                      <Text style={[styles.autoSaveText, { fontSize: 14 }]}>Salvataggio automatico attivo</Text>
                     </View>
-                    <TouchableOpacity 
-                      style={[styles.finePartitaBtn, { flex: 1 }, savingEvents && { opacity: 0.6 }]} 
-                      onPress={async () => {
-                        await handleSaveExtraEvents();
-                        setShowExtraModal(false);
-                      }}
-                      disabled={savingEvents}
-                    >
-                      <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-                      <Text style={styles.finePartitaBtnText}>{savingEvents ? 'Salvataggio...' : 'Fine Partita'}</Text>
-                    </TouchableOpacity>
                   </View>
                 </>
               )}
