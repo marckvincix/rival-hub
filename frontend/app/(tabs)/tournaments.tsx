@@ -2776,15 +2776,24 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     />
                   </View>
 
-                  {/* Final Salva Button */}
-                  <TouchableOpacity 
-                    style={[styles.salvaBtn, { marginBottom: 40 }, savingEvents && { opacity: 0.6 }]} 
-                    onPress={handleSaveExtraEvents}
-                    disabled={savingEvents}
-                  >
-                    <Ionicons name="checkmark" size={20} color="#FFF" />
-                    <Text style={styles.salvaBtnText}>{savingEvents ? 'Salvataggio...' : 'Salva'}</Text>
-                  </TouchableOpacity>
+                  {/* Auto-save indicator + Fine Partita Button */}
+                  <View style={styles.extraFooterButtons}>
+                    <View style={styles.autoSaveIndicator}>
+                      <Ionicons name="cloud-done" size={16} color="#10B981" />
+                      <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={[styles.finePartitaBtn, { flex: 1 }, savingEvents && { opacity: 0.6 }]} 
+                      onPress={async () => {
+                        await handleSaveExtraEvents();
+                        setShowExtraModal(false);
+                      }}
+                      disabled={savingEvents}
+                    >
+                      <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+                      <Text style={styles.finePartitaBtnText}>{savingEvents ? 'Salvataggio...' : 'Fine Partita'}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
             </ScrollView>
@@ -3716,4 +3725,5 @@ const styles = StyleSheet.create({
   // Auto-save indicator styles
   autoSaveIndicator: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   autoSaveText: { fontSize: 12, color: '#10B981', fontWeight: '500' },
+  extraFooterButtons: { marginBottom: 40, gap: 12 },
 });
