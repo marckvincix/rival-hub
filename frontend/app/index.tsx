@@ -307,7 +307,7 @@ export default function LandingPage() {
               style={styles.heroButton}
               onPress={() => router.push('/(auth)/register')}
             >
-              <Text style={styles.heroButtonText}>Inizia Gratis</Text>
+              <Text style={styles.heroButtonText}>Inizia ora</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -685,18 +685,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   hero: {
-    padding: 24,
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 0,
     backgroundColor: '#FFF',
     alignItems: 'flex-start',
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 26,
     fontWeight: '700',
     color: '#000',
-    marginBottom: 12,
+    marginBottom: 16,
+    letterSpacing: -0.5,
   },
   heroSubtitle: {
-    fontSize: 16,
+    fontSize: 15,
     color: '#666',
     marginBottom: 0,
     lineHeight: 22,
@@ -704,26 +707,26 @@ const styles = StyleSheet.create({
   heroImageContainer: {
     width: '100%',
     position: 'relative',
-    marginTop: -10,
+    marginTop: 0,
   },
   heroImage: {
     width: '100%',
-    height: 450,
+    height: 400,
   },
   heroButton: {
     position: 'absolute',
-    bottom: 60,
+    bottom: 80,
     left: 0,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 25,
-    paddingHorizontal: 28,
-    paddingVertical: 14,
+    borderWidth: 1.5,
+    borderColor: '#CCC',
+    borderRadius: 30,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
     backgroundColor: '#FFF',
   },
   heroButtonText: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '500',
     color: '#000',
   },
   section: {
