@@ -698,16 +698,17 @@ const styles = StyleSheet.create({
   heroSubtitle: {
     fontSize: 16,
     color: '#666',
-    marginBottom: 16,
+    marginBottom: 0,
     lineHeight: 22,
   },
   heroImageContainer: {
     width: '100%',
     position: 'relative',
+    marginTop: -10,
   },
   heroImage: {
     width: '100%',
-    height: 420,
+    height: 450,
   },
   heroButton: {
     position: 'absolute',
