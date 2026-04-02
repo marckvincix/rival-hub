@@ -56,6 +56,23 @@ export default function TournamentPublicPage() {
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
+  // Polling for real-time updates (every 5 seconds)
+  useEffect(() => {
+    if (!tournament) return;
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        // Only poll matches for real-time updates
+        const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches-live`);
+        setMatches(matchesRes.data);
+      } catch (error) {
+        console.error('Polling error:', error);
+      }
+    }, 5000); // 5 seconds
+    
+    return () => clearInterval(pollInterval);
+  }, [tournament?.id]);
+
   const loadData = async () => {
     try {
       const tournamentRes = await api.get(`/api/tournaments/slug/${slug}`);
@@ -122,6 +139,16 @@ export default function TournamentPublicPage() {
       case 'baseball': return 'baseball';
       default: return 'football';
     }
+  };
+
+  // Tennis point display helper
+  const TENNIS_POINTS = ['0', '15', '30', '40'];
+  const getTennisPointDisplay = (points: number, isDeuce: boolean, advantage: string | null, team: 'home' | 'away') => {
+    if (isDeuce) {
+      if (advantage === team) return 'AD';
+      return '40';
+    }
+    return TENNIS_POINTS[points] || '0';
   };
 
   const handleOpenMatchStats = (match: Match) => {
@@ -412,17 +439,48 @@ export default function TournamentPublicPage() {
                             <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
                           </View>
                           <View style={styles.matchCenterContent}>
-                            <Text style={styles.matchScore}>
-                              {/* Show live score from events, or static score if no events */}
-                              {(match as any).has_events 
-                                ? `${(match as any).live_home_score} - ${(match as any).live_away_score}`
-                                : match.status === 'completed' 
-                                  ? `${match.home_goals} - ${match.away_goals}` 
-                                  : `0 - 0`}
-                            </Text>
-                            {/* Show LIVE badge only if match has events AND is not completed */}
-                            {(match as any).has_events && match.status !== 'completed' && (
-                              <Text style={styles.liveIndicator}>LIVE</Text>
+                            {/* Tennis/Padel: Show detailed score (Sets, Games, Points) */}
+                            {isRacketSport ? (
+                              <View style={styles.tennisLiveScore}>
+                                {/* Sets score */}
+                                <Text style={styles.matchScore}>
+                                  {(match as any).has_events || match.status === 'in_progress'
+                                    ? `${(match as any).live_home_score || 0} - ${(match as any).live_away_score || 0}`
+                                    : match.status === 'completed' 
+                                      ? `${match.home_goals || 0} - ${match.away_goals || 0}` 
+                                      : `0 - 0`}
+                                </Text>
+                                {/* Show current game details if match is in progress */}
+                                {((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed' && (match as any).currentGame && (
+                                  <View style={styles.tennisCurrentGame}>
+                                    <Text style={styles.tennisGameScore}>
+                                      Game: {(match as any).currentGame?.homeGamesInSet || 0} - {(match as any).currentGame?.awayGamesInSet || 0}
+                                    </Text>
+                                    <Text style={styles.tennisPointScore}>
+                                      {getTennisPointDisplay((match as any).currentGame?.homePoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'home')} - {getTennisPointDisplay((match as any).currentGame?.awayPoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'away')}
+                                    </Text>
+                                  </View>
+                                )}
+                                {/* LIVE badge */}
+                                {((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed' && (
+                                  <Text style={styles.liveIndicator}>LIVE</Text>
+                                )}
+                              </View>
+                            ) : (
+                              <>
+                                <Text style={styles.matchScore}>
+                                  {/* Show live score from events, or static score if no events */}
+                                  {(match as any).has_events 
+                                    ? `${(match as any).live_home_score} - ${(match as any).live_away_score}`
+                                    : match.status === 'completed' 
+                                      ? `${match.home_goals} - ${match.away_goals}` 
+                                      : `0 - 0`}
+                                </Text>
+                                {/* Show LIVE badge only if match has events AND is not completed */}
+                                {(match as any).has_events && match.status !== 'completed' && (
+                                  <Text style={styles.liveIndicator}>LIVE</Text>
+                                )}
+                              </>
                             )}
                           </View>
                           <View style={styles.matchTeamColumn}>
@@ -1041,6 +1099,11 @@ const styles = StyleSheet.create({
   matchTeamName: { fontSize: 11, fontWeight: '500', color: '#000', marginTop: 4, textAlign: 'center' },
   matchScore: { fontSize: 22, fontWeight: '700', color: '#000' },
   liveIndicator: { fontSize: 10, fontWeight: '700', color: '#E53935', marginTop: 4, backgroundColor: '#FFEBEE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
+  // Tennis LIVE score styles
+  tennisLiveScore: { alignItems: 'center', justifyContent: 'center' },
+  tennisCurrentGame: { marginTop: 4, alignItems: 'center' },
+  tennisGameScore: { fontSize: 12, fontWeight: '600', color: '#666' },
+  tennisPointScore: { fontSize: 14, fontWeight: '700', color: '#2D8A2E', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginTop: 2 },
   matchDateTime: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 8 },
   matchActionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 10 },
   calendarButton: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5' },

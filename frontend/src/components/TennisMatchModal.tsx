@@ -97,6 +97,75 @@ export function TennisMatchModal({
     breakPointsSaved: 0,
   });
   const [eventsHistory, setEventsHistory] = useState<any[]>([]);
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+
+  // Auto-save function - saves without user clicking "Salva"
+  const autoSave = async (newSetScores?: SetScore[], newHomePoints?: number, newAwayPoints?: number, newIsDeuce?: boolean, newAdvantage?: 'home' | 'away' | null) => {
+    try {
+      const currentSetScores = newSetScores || setScores;
+      const currentHomePoints = newHomePoints !== undefined ? newHomePoints : homePoints;
+      const currentAwayPoints = newAwayPoints !== undefined ? newAwayPoints : awayPoints;
+      const currentIsDeuce = newIsDeuce !== undefined ? newIsDeuce : isDeuce;
+      const currentAdvantage = newAdvantage !== undefined ? newAdvantage : advantage;
+      
+      // Calculate sets won
+      let homeSetsWon = 0;
+      let awaySetsWon = 0;
+      currentSetScores.forEach(set => {
+        if (set.completed) {
+          if (set.homeGames > set.awayGames) homeSetsWon++;
+          else if (set.awayGames > set.homeGames) awaySetsWon++;
+        }
+      });
+      
+      // Find current set
+      const currentSetIndex = currentSetScores.findIndex(s => !s.completed);
+      const currentSet = currentSetIndex >= 0 ? currentSetScores[currentSetIndex] : null;
+      
+      const matchData = {
+        tennis_sets: currentSetScores,
+        currentGame: { 
+          homePoints: currentHomePoints, 
+          awayPoints: currentAwayPoints, 
+          isDeuce: currentIsDeuce, 
+          advantage: currentAdvantage,
+          // Include current game scores for LIVE display
+          currentSetIndex: currentSetIndex >= 0 ? currentSetIndex : currentSetScores.length - 1,
+          homeGamesInSet: currentSet?.homeGames || 0,
+          awayGamesInSet: currentSet?.awayGames || 0,
+        },
+        home_stats: homeStats,
+        away_stats: awayStats,
+        home_goals: homeSetsWon,
+        away_goals: awaySetsWon,
+        // Mark as in progress if not completed
+        status: match.status === 'completed' ? 'completed' : 'in_progress',
+      };
+      
+      await api.put(`/api/matches/${match.id}`, matchData);
+      // Don't show alert for auto-save
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    }
+  };
+
+  // Debounced auto-save - saves after 500ms of no changes
+  const triggerAutoSave = (newSetScores?: SetScore[], newHomePoints?: number, newAwayPoints?: number, newIsDeuce?: boolean, newAdvantage?: 'home' | 'away' | null) => {
+    if (autoSaveTimeout) {
+      clearTimeout(autoSaveTimeout);
+    }
+    const timeout = setTimeout(() => {
+      autoSave(newSetScores, newHomePoints, newAwayPoints, newIsDeuce, newAdvantage);
+    }, 300); // 300ms debounce
+    setAutoSaveTimeout(timeout);
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    };
+  }, [autoSaveTimeout]);
 
   // Initialize set scores
   useEffect(() => {
@@ -258,6 +327,9 @@ export function TennisMatchModal({
 
     // Log event
     setEventsHistory(prev => [...prev, { type: 'point', team, timestamp: new Date().toISOString() }]);
+    
+    // Trigger auto-save for real-time updates
+    triggerAutoSave();
   };
 
   // Win a game
@@ -294,6 +366,10 @@ export function TennisMatchModal({
       }
       
       newScores[activeSetTab] = currentSet;
+      
+      // Trigger auto-save with new scores
+      setTimeout(() => triggerAutoSave(newScores, 0, 0, false, null), 50);
+      
       return newScores;
     });
   };
@@ -301,15 +377,19 @@ export function TennisMatchModal({
   // Update player stats
   const updateStat = (team: 'home' | 'away', stat: keyof PlayerStats, delta: number) => {
     if (team === 'home') {
-      setHomeStats(prev => ({
-        ...prev,
-        [stat]: Math.max(0, prev[stat] + delta),
-      }));
+      setHomeStats(prev => {
+        const newStats = { ...prev, [stat]: Math.max(0, prev[stat] + delta) };
+        // Auto-save stats
+        setTimeout(() => triggerAutoSave(), 100);
+        return newStats;
+      });
     } else {
-      setAwayStats(prev => ({
-        ...prev,
-        [stat]: Math.max(0, prev[stat] + delta),
-      }));
+      setAwayStats(prev => {
+        const newStats = { ...prev, [stat]: Math.max(0, prev[stat] + delta) };
+        // Auto-save stats
+        setTimeout(() => triggerAutoSave(), 100);
+        return newStats;
+      });
     }
     setEventsHistory(prev => [...prev, { type: 'stat', team, stat, delta, timestamp: new Date().toISOString() }]);
   };

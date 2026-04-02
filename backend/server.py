@@ -1294,7 +1294,8 @@ async def get_matches_live(tournament_id: str):
             away_score = match.get("away_goals", 0) or 0
             # Has live data if any set is recorded or match is in progress
             tennis_sets = match.get("tennis_sets", [])
-            has_live_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or match.get("status") == "in_progress"
+            current_game = match.get("currentGame", {})
+            has_live_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or match.get("status") == "in_progress" or current_game.get("homePoints", 0) > 0 or current_game.get("awayPoints", 0) > 0
         else:
             # Soccer scoring from events
             for event in events:
