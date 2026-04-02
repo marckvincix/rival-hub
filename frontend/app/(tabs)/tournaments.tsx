@@ -11,7 +11,8 @@ import {
   Alert,
   Platform,
   Image,
-  ActivityIndicator
+  ActivityIndicator,
+  FlatList
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -194,25 +195,30 @@ export default function TournamentsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Sport Filter Pills */}
+      {/* Sport Filter Pills - Fixed position, horizontal scroll only */}
       {tournaments.length > 0 && (
         <View style={styles.filterContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false} 
+          <FlatList
+            horizontal
+            data={['all', ...sportsWithTournaments]}
+            keyExtractor={(item) => item}
+            showsHorizontalScrollIndicator={false}
+            bounces={false}
             contentContainerStyle={styles.filterContent}
-          >
-            <TouchableOpacity
-              style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
-              onPress={() => setSportFilter('all')}
-            >
-              <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
-            </TouchableOpacity>
-            {sportsWithTournaments.map((sport) => {
+            renderItem={({ item: sport }) => {
+              if (sport === 'all') {
+                return (
+                  <TouchableOpacity
+                    style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
+                    onPress={() => setSportFilter('all')}
+                  >
+                    <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
+                  </TouchableOpacity>
+                );
+              }
               const sportConfig = getSportConfig(sport as Sport);
               return (
                 <TouchableOpacity
-                  key={sport}
                   style={[styles.filterPill, sportFilter === sport && styles.filterPillActive]}
                   onPress={() => setSportFilter(sport as Sport)}
                 >
@@ -221,8 +227,8 @@ export default function TournamentsScreen() {
                   </Text>
                 </TouchableOpacity>
               );
-            })}
-          </ScrollView>
+            }}
+          />
         </View>
       )}
 
@@ -3113,9 +3119,31 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', color: '#000' },
   addButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   // Sport Filter Pills
-  filterContainer: { height: 56, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 10, flexDirection: 'row', alignItems: 'center', height: 56 },
-  filterPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 2, borderColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
+  filterContainer: { 
+    height: 60, 
+    backgroundColor: '#FFF',
+    borderBottomWidth: 1, 
+    borderBottomColor: '#EEE',
+    justifyContent: 'center',
+  },
+  filterContent: { 
+    paddingHorizontal: 16, 
+    gap: 10, 
+    flexDirection: 'row', 
+    alignItems: 'center',
+    paddingVertical: 0,
+  },
+  filterPill: { 
+    paddingHorizontal: 18, 
+    paddingVertical: 12, 
+    borderRadius: 25, 
+    borderWidth: 2, 
+    borderColor: '#000', 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'center',
+    minHeight: 44,
+  },
   filterPillActive: { backgroundColor: '#000' },
   filterPillText: { fontSize: 14, fontWeight: '600', color: '#000', textAlign: 'center' },
   filterPillTextActive: { color: '#FFF' },
