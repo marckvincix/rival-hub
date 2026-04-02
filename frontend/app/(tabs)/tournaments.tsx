@@ -196,33 +196,34 @@ export default function TournamentsScreen() {
 
       {/* Sport Filter Pills */}
       {tournaments.length > 0 && (
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false} 
-          style={styles.filterContainer}
-          contentContainerStyle={styles.filterContent}
-        >
-          <TouchableOpacity
-            style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
-            onPress={() => setSportFilter('all')}
+        <View style={styles.filterContainer}>
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.filterContent}
           >
-            <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
-          </TouchableOpacity>
-          {sportsWithTournaments.map((sport) => {
-            const sportConfig = getSportConfig(sport as Sport);
-            return (
-              <TouchableOpacity
-                key={sport}
-                style={[styles.filterPill, sportFilter === sport && styles.filterPillActive]}
-                onPress={() => setSportFilter(sport as Sport)}
-              >
-                <Text style={[styles.filterPillText, sportFilter === sport && styles.filterPillTextActive]}>
-                  {sportConfig?.emoji} {sportConfig?.name}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
+            <TouchableOpacity
+              style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
+              onPress={() => setSportFilter('all')}
+            >
+              <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
+            </TouchableOpacity>
+            {sportsWithTournaments.map((sport) => {
+              const sportConfig = getSportConfig(sport as Sport);
+              return (
+                <TouchableOpacity
+                  key={sport}
+                  style={[styles.filterPill, sportFilter === sport && styles.filterPillActive]}
+                  onPress={() => setSportFilter(sport as Sport)}
+                >
+                  <Text style={[styles.filterPillText, sportFilter === sport && styles.filterPillTextActive]}>
+                    {sportConfig?.emoji} {sportConfig?.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
       )}
 
       <ScrollView 
@@ -3112,8 +3113,8 @@ const styles = StyleSheet.create({
   title: { fontSize: 24, fontWeight: '700', color: '#000' },
   addButton: { width: 48, height: 48, borderRadius: 12, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
   // Sport Filter Pills
-  filterContainer: { minHeight: 52, borderBottomWidth: 1, borderBottomColor: '#EEE' },
-  filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 10, flexDirection: 'row', alignItems: 'center' },
+  filterContainer: { height: 56, borderBottomWidth: 1, borderBottomColor: '#EEE' },
+  filterContent: { paddingHorizontal: 16, paddingVertical: 10, gap: 10, flexDirection: 'row', alignItems: 'center', height: 56 },
   filterPill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, borderWidth: 2, borderColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   filterPillActive: { backgroundColor: '#000' },
   filterPillText: { fontSize: 14, fontWeight: '600', color: '#000', textAlign: 'center' },
