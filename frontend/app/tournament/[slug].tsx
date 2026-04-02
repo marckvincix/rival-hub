@@ -231,11 +231,20 @@ export default function TournamentPublicPage() {
     );
   }
 
+  // Dynamic tabs based on sport
+  const getTeamTabLabel = () => {
+    if (isRacketSport) {
+      return isDoubles ? 'Coppie' : 'Giocatori';
+    }
+    return 'Squadre';
+  };
+
   const tabs: { id: TabId; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'standings', label: 'Classifica', icon: 'podium-outline' },
-    { id: 'teams', label: 'Squadre', icon: 'people-outline' },
-    { id: 'matches', label: 'Partite', icon: 'football-outline' },
-    { id: 'scorers', label: 'Marcatori', icon: 'trophy-outline' },
+    { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
+    { id: 'matches', label: 'Partite', icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
+    // Hide "Marcatori" for Tennis/Padel
+    ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: 'Marcatori', icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
     { id: 'news', label: 'News', icon: 'newspaper-outline' },
     { id: 'info', label: 'Info', icon: 'information-circle-outline' },
@@ -299,10 +308,10 @@ export default function TournamentPublicPage() {
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>#</Text>
-                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>Squadra</Text>
+                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? 'Coppia' : 'Giocatore') : 'Squadra'}</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>G</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>V</Text>
-                  {!isBasketball && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
+                  {!isBasketball && !isRacketSport && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>{isBasketball ? 'P' : 'S'}</Text>
                   {isBasketball && <Text style={[styles.standingsHeaderText, { width: 40 }]}>+/-</Text>}
                   <Text style={[styles.standingsHeaderText, { width: 40, fontWeight: '700' }]}>Pt</Text>
@@ -571,7 +580,17 @@ export default function TournamentPublicPage() {
                     <Text style={styles.statsTeamName}>{player.team_name}</Text>
                   </View>
                   <View style={styles.statsGrid}>
-                    {isBasketball ? (
+                    {isRacketSport ? (
+                      /* Tennis/Padel Stats */
+                      <>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.aces || 0}</Text><Text style={styles.statBoxLabel}>Ace</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EF4444' }]}>{player.double_faults || 0}</Text><Text style={styles.statBoxLabel}>Doppi F.</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#10B981' }]}>{player.winners || 0}</Text><Text style={styles.statBoxLabel}>Winners</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#F59E0B' }]}>{player.unforced_errors || 0}</Text><Text style={styles.statBoxLabel}>Errori NF</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.average_points ? player.average_points.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>Media Pt</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.matches_played || 0}</Text><Text style={styles.statBoxLabel}>Partite</Text></View>
+                      </>
+                    ) : isBasketball ? (
                       <>
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.total_points || 0}</Text><Text style={styles.statBoxLabel}>Punti</Text></View>
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.rebounds || 0}</Text><Text style={styles.statBoxLabel}>Rimb.</Text></View>
@@ -697,69 +716,99 @@ export default function TournamentPublicPage() {
                   style={[styles.publicToggleButton, publicFormationViewMode === 'field' && styles.publicToggleButtonActive]}
                   onPress={() => setPublicFormationViewMode('field')}
                 >
-                  <Ionicons name="football" size={18} color={publicFormationViewMode === 'field' ? '#FFF' : '#000'} />
+                  <Ionicons name={isRacketSport ? 'tennisball' : 'football'} size={18} color={publicFormationViewMode === 'field' ? '#FFF' : '#000'} />
                   <Text style={[styles.publicToggleText, publicFormationViewMode === 'field' && styles.publicToggleTextActive]}>Campo</Text>
                 </TouchableOpacity>
               </View>
 
               {publicFormationViewMode === 'field' ? (
                 <>
-                  <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
-                  <FieldView
-                    module={selectedFormation.module}
-                    starters={selectedFormation.starters}
-                    gameFormat={tournament?.game_format || '11v11'}
-                  />
+                  {!isRacketSport && (
+                    <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
+                  )}
+                  {isRacketSport ? (
+                    <TennisCourtView
+                      format={isDoubles ? 'doubles' : 'singles'}
+                      homePlayers={selectedFormation.starters.map((s: any) => ({
+                        player_id: s.player_id,
+                        full_name: s.player_name,
+                        number: s.player_number,
+                      }))}
+                      awayPlayers={[]}
+                      homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                    />
+                  ) : (
+                    <FieldView
+                      module={selectedFormation.module}
+                      starters={selectedFormation.starters}
+                      gameFormat={tournament?.game_format || '11v11'}
+                    />
+                  )}
                 </>
               ) : (
                 <View style={styles.publicListView}>
-                  {/* Portiere */}
-                  {selectedFormation.starters.filter(s => s.position === 'goalkeeper').length > 0 && (
+                  {isRacketSport ? (
+                    /* Tennis/Padel: Simple player list */
                     <View style={styles.publicPositionSection}>
-                      <Text style={styles.publicPositionTitle}>🧤 Portiere</Text>
-                      {selectedFormation.starters.filter(s => s.position === 'goalkeeper').map((player, idx) => (
+                      <Text style={styles.publicPositionTitle}>🎾 {isDoubles ? 'Coppia' : 'Giocatore'}</Text>
+                      {selectedFormation.starters.map((player: any, idx: number) => (
                         <View key={idx} style={styles.publicPlayerRow}>
                           <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
                           <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
                         </View>
                       ))}
                     </View>
-                  )}
-                  {/* Difensori */}
-                  {selectedFormation.starters.filter(s => s.position === 'defender').length > 0 && (
-                    <View style={styles.publicPositionSection}>
-                      <Text style={styles.publicPositionTitle}>🛡️ Difensori</Text>
-                      {selectedFormation.starters.filter(s => s.position === 'defender').map((player, idx) => (
-                        <View key={idx} style={styles.publicPlayerRow}>
-                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
-                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                  ) : (
+                    <>
+                      {/* Portiere */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'goalkeeper').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🧤 Portiere</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'goalkeeper').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
-                  )}
-                  {/* Centrocampisti */}
-                  {selectedFormation.starters.filter(s => s.position === 'midfielder').length > 0 && (
-                    <View style={styles.publicPositionSection}>
-                      <Text style={styles.publicPositionTitle}>⚙️ Centrocampisti</Text>
-                      {selectedFormation.starters.filter(s => s.position === 'midfielder').map((player, idx) => (
-                        <View key={idx} style={styles.publicPlayerRow}>
-                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
-                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                      )}
+                      {/* Difensori */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'defender').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🛡️ Difensori</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'defender').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
-                  )}
-                  {/* Attaccanti */}
-                  {selectedFormation.starters.filter(s => s.position === 'forward').length > 0 && (
-                    <View style={styles.publicPositionSection}>
-                      <Text style={styles.publicPositionTitle}>⚡ Attaccanti</Text>
-                      {selectedFormation.starters.filter(s => s.position === 'forward').map((player, idx) => (
-                        <View key={idx} style={styles.publicPlayerRow}>
-                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
-                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                      )}
+                      {/* Centrocampisti */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'midfielder').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>⚙️ Centrocampisti</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'midfielder').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
+                      )}
+                      {/* Attaccanti */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'forward').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>⚡ Attaccanti</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'forward').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </>
                   )}
                 </View>
               )}
