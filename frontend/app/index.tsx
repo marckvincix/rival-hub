@@ -20,7 +20,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
-const HeroSportsImage = require('../assets/images/hero-sports.png');
+const HeroIllustration = require('../assets/images/hero-illustration.jpg');
 
 // Sport configurations with their specific categories/formats
 const SPORT_CATEGORIES: Record<string, { label: string; emoji: string; formats: { key: string; label: string }[] }> = {
@@ -301,7 +301,7 @@ export default function LandingPage() {
           <Text style={styles.heroSubtitle}>
             La piattaforma per creare, seguire{'\n'}ed organizzare tornei sportivi
           </Text>
-          <Image source={HeroSportsImage} style={styles.heroImage} resizeMode="contain" />
+          <Image source={HeroIllustration} style={styles.heroImage} resizeMode="contain" />
           <TouchableOpacity
             style={styles.heroButton}
             onPress={() => router.push('/(auth)/register')}
