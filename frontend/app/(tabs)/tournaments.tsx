@@ -759,6 +759,32 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (e) { Alert.alert('Errore'); }
   };
 
+  // Auto-save function for live score updates (all sports)
+  const autoSaveMatchScore = async (matchId: string, homeGoals: number, awayGoals: number) => {
+    try {
+      await api.put(`/api/matches/${matchId}`, { 
+        home_goals: homeGoals, 
+        away_goals: awayGoals, 
+        status: 'in_progress' // Keep as in_progress for LIVE updates
+      });
+      // Update local state
+      setMatches(matches.map(m => m.id === matchId ? { ...m, home_goals: homeGoals, away_goals: awayGoals, status: 'in_progress' } : m));
+    } catch (e) { 
+      console.error('Auto-save error:', e);
+    }
+  };
+
+  // Debounced auto-save timeout ref
+  const [autoSaveTimeout, setAutoSaveTimeout] = useState<NodeJS.Timeout | null>(null);
+  
+  const triggerAutoSaveScore = (matchId: string, homeGoals: number, awayGoals: number) => {
+    if (autoSaveTimeout) clearTimeout(autoSaveTimeout);
+    const timeout = setTimeout(() => {
+      autoSaveMatchScore(matchId, homeGoals, awayGoals);
+    }, 500); // 500ms debounce
+    setAutoSaveTimeout(timeout);
+  };
+
   // Player management functions
   const handleOpenAddPlayer = (team: any) => {
     setSelectedTeamForPlayer(team);
@@ -2397,7 +2423,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       value={String(selectedMatch.home_goals ?? 0)}
                       onChangeText={(text) => {
                         const val = parseInt(text) || 0;
-                        setSelectedMatch({ ...selectedMatch, home_goals: val });
+                        const newMatch = { ...selectedMatch, home_goals: val };
+                        setSelectedMatch(newMatch);
+                        // Auto-save for LIVE updates
+                        triggerAutoSaveScore(selectedMatch.id, val, selectedMatch.away_goals ?? 0);
                       }}
                       maxLength={2}
                     />
@@ -2408,7 +2437,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       value={String(selectedMatch.away_goals ?? 0)}
                       onChangeText={(text) => {
                         const val = parseInt(text) || 0;
-                        setSelectedMatch({ ...selectedMatch, away_goals: val });
+                        const newMatch = { ...selectedMatch, away_goals: val };
+                        setSelectedMatch(newMatch);
+                        // Auto-save for LIVE updates
+                        triggerAutoSaveScore(selectedMatch.id, selectedMatch.home_goals ?? 0, val);
                       }}
                       maxLength={2}
                     />
@@ -2471,6 +2503,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 </View>
 
                 {/* Bottom Buttons */}
+                <View style={styles.resultButtonsRow}>
+                  {/* Auto-save indicator */}
+                  <View style={styles.autoSaveIndicator}>
+                    <Ionicons name="cloud-done" size={16} color="#10B981" />
+                    <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+                  </View>
+                </View>
                 <View style={styles.resultButtonsRow}>
                   <TouchableOpacity 
                     style={styles.finePartitaBtn}
@@ -3674,4 +3713,7 @@ const styles = StyleSheet.create({
   newsInputLabel: { fontSize: 14, fontWeight: '600', color: '#000', marginBottom: 8 },
   newsInput: { borderWidth: 2, borderColor: '#000', borderRadius: 12, padding: 14, fontSize: 16, marginBottom: 16 },
   newsTextArea: { height: 150, textAlignVertical: 'top' },
+  // Auto-save indicator styles
+  autoSaveIndicator: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
+  autoSaveText: { fontSize: 12, color: '#10B981', fontWeight: '500' },
 });

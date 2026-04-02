@@ -660,22 +660,16 @@ export function TennisMatchModal({
           </View>
         </ScrollView>
 
-        {/* Footer Actions */}
+        {/* Footer Actions - Only "Chiudi Match" button, auto-save handles real-time updates */}
         <View style={styles.footer}>
-          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
-            {saving ? (
-              <ActivityIndicator color="#FFF" />
-            ) : (
-              <>
-                <Ionicons name="save" size={20} color="#FFF" />
-                <Text style={styles.saveButtonText}>Salva</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <View style={styles.autoSaveIndicator}>
+            <Ionicons name="cloud-done" size={16} color="#10B981" />
+            <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+          </View>
           
           <TouchableOpacity style={styles.closeMatchButton} onPress={handleCloseMatch} disabled={saving}>
-            <Ionicons name="checkmark-circle" size={20} color="#000" />
-            <Text style={styles.closeMatchButtonText}>Chiudi Match</Text>
+            <Ionicons name="checkmark-circle" size={20} color="#FFF" />
+            <Text style={styles.closeMatchButtonText}>Fine Partita</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -810,18 +804,27 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
+  autoSaveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#ECFDF5',
+    borderRadius: 8,
+  },
+  autoSaveText: { fontSize: 12, color: '#10B981', fontWeight: '500' },
   closeMatchButton: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    borderWidth: 2,
-    borderColor: '#000',
+    backgroundColor: '#000',
     paddingVertical: 14,
     borderRadius: 12,
   },
-  closeMatchButtonText: { color: '#000', fontSize: 16, fontWeight: '700' },
+  closeMatchButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
 });
 
 export default TennisMatchModal;
