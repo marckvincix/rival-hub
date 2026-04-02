@@ -6,9 +6,7 @@ import {
   Modal,
   TouchableOpacity,
   ScrollView,
-  TextInput,
   Alert,
-  Switch,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,11 +34,12 @@ interface TennisMatchModalProps {
 }
 
 interface SetScore {
-  home: number;
-  away: number;
+  homeGames: number;
+  awayGames: number;
   tiebreak: boolean;
   tiebreakHome?: number;
   tiebreakAway?: number;
+  completed: boolean;
 }
 
 interface PlayerStats {
@@ -51,6 +50,9 @@ interface PlayerStats {
   breakPointsConverted: number;
   breakPointsSaved: number;
 }
+
+// Tennis point progression: 0 -> 15 -> 30 -> 40 -> Game (or Deuce)
+const POINTS = ['0', '15', '30', '40'];
 
 export function TennisMatchModal({
   visible,
@@ -69,8 +71,15 @@ export function TennisMatchModal({
   
   const [activeSetTab, setActiveSetTab] = useState(0);
   const [setScores, setSetScores] = useState<SetScore[]>([]);
-  const [superTiebreak, setSuperTiebreak] = useState(false);
   const [saving, setSaving] = useState(false);
+  
+  // Current game points (within the active game)
+  const [homePoints, setHomePoints] = useState(0); // 0=0, 1=15, 2=30, 3=40
+  const [awayPoints, setAwayPoints] = useState(0);
+  const [isDeuce, setIsDeuce] = useState(false);
+  const [advantage, setAdvantage] = useState<'home' | 'away' | null>(null);
+  
+  // Player statistics
   const [homeStats, setHomeStats] = useState<PlayerStats>({
     aces: 0,
     doubleFaults: 0,
@@ -92,24 +101,45 @@ export function TennisMatchModal({
   // Initialize set scores
   useEffect(() => {
     if (visible && match) {
-      // Try to load existing scores from match data
       const existingScores = match.tennis_sets || [];
       const initialScores: SetScore[] = [];
       
       for (let i = 0; i < maxSets; i++) {
         if (existingScores[i]) {
-          initialScores.push(existingScores[i]);
+          initialScores.push({
+            homeGames: existingScores[i].homeGames || existingScores[i].home || 0,
+            awayGames: existingScores[i].awayGames || existingScores[i].away || 0,
+            tiebreak: existingScores[i].tiebreak || false,
+            tiebreakHome: existingScores[i].tiebreakHome,
+            tiebreakAway: existingScores[i].tiebreakAway,
+            completed: existingScores[i].completed || false,
+          });
         } else {
-          initialScores.push({ home: 0, away: 0, tiebreak: false });
+          initialScores.push({ homeGames: 0, awayGames: 0, tiebreak: false, completed: false });
         }
       }
       
       setSetScores(initialScores);
       
-      // Load existing stats
+      // Load current game points
+      if (match.currentGame) {
+        setHomePoints(match.currentGame.homePoints || 0);
+        setAwayPoints(match.currentGame.awayPoints || 0);
+        setIsDeuce(match.currentGame.isDeuce || false);
+        setAdvantage(match.currentGame.advantage || null);
+      } else {
+        setHomePoints(0);
+        setAwayPoints(0);
+        setIsDeuce(false);
+        setAdvantage(null);
+      }
+      
       if (match.home_stats) setHomeStats(match.home_stats);
       if (match.away_stats) setAwayStats(match.away_stats);
-      if (match.super_tiebreak) setSuperTiebreak(match.super_tiebreak);
+      
+      // Find the first incomplete set
+      const firstIncomplete = initialScores.findIndex(s => !s.completed);
+      if (firstIncomplete >= 0) setActiveSetTab(firstIncomplete);
     }
   }, [visible, match, maxSets]);
 
@@ -119,8 +149,10 @@ export function TennisMatchModal({
     let awaySets = 0;
     
     setScores.forEach((set) => {
-      if (set.home > set.away) homeSets++;
-      else if (set.away > set.home) awaySets++;
+      if (set.completed) {
+        if (set.homeGames > set.awayGames) homeSets++;
+        else if (set.awayGames > set.homeGames) awaySets++;
+      }
     });
     
     return { homeSets, awaySets };
@@ -128,45 +160,140 @@ export function TennisMatchModal({
 
   const { homeSets, awaySets } = calculateSetsWon();
 
-  // Update set score
-  const updateSetScore = (setIndex: number, team: 'home' | 'away', delta: number) => {
-    setSetScores((prev) => {
-      const newScores = [...prev];
-      const currentValue = newScores[setIndex][team];
-      const newValue = Math.max(0, currentValue + delta);
-      newScores[setIndex] = { ...newScores[setIndex], [team]: newValue };
-      
-      // Auto-detect tiebreak (6-6)
-      if (newScores[setIndex].home === 6 && newScores[setIndex].away === 6) {
-        newScores[setIndex].tiebreak = true;
-      }
-      
-      return newScores;
-    });
+  // Get display text for current point
+  const getPointDisplay = (points: number, isOther40: boolean) => {
+    if (isDeuce) {
+      if (advantage === 'home' && points === 3) return 'AD';
+      if (advantage === 'away' && points === 3) return 'AD';
+      return '40';
+    }
+    return POINTS[points] || '0';
   };
 
-  // Toggle tiebreak for a set
-  const toggleTiebreak = (setIndex: number) => {
-    setSetScores((prev) => {
-      const newScores = [...prev];
-      newScores[setIndex] = { 
-        ...newScores[setIndex], 
-        tiebreak: !newScores[setIndex].tiebreak 
-      };
-      return newScores;
-    });
-  };
+  // Handle point scored
+  const addPoint = (team: 'home' | 'away') => {
+    const currentSet = setScores[activeSetTab];
+    if (!currentSet || currentSet.completed) return;
 
-  // Update tiebreak score
-  const updateTiebreakScore = (setIndex: number, team: 'home' | 'away', value: string) => {
-    const numValue = parseInt(value) || 0;
-    setSetScores((prev) => {
-      const newScores = [...prev];
-      if (team === 'home') {
-        newScores[setIndex] = { ...newScores[setIndex], tiebreakHome: numValue };
+    // Check if in tiebreak mode
+    if (currentSet.tiebreak) {
+      // Tiebreak scoring
+      setSetScores(prev => {
+        const newScores = [...prev];
+        if (team === 'home') {
+          newScores[activeSetTab] = {
+            ...newScores[activeSetTab],
+            tiebreakHome: (newScores[activeSetTab].tiebreakHome || 0) + 1
+          };
+        } else {
+          newScores[activeSetTab] = {
+            ...newScores[activeSetTab],
+            tiebreakAway: (newScores[activeSetTab].tiebreakAway || 0) + 1
+          };
+        }
+        
+        // Check if tiebreak is won (7+ points with 2 point lead)
+        const tbHome = newScores[activeSetTab].tiebreakHome || 0;
+        const tbAway = newScores[activeSetTab].tiebreakAway || 0;
+        if ((tbHome >= 7 || tbAway >= 7) && Math.abs(tbHome - tbAway) >= 2) {
+          // Set completed
+          if (tbHome > tbAway) {
+            newScores[activeSetTab].homeGames = 7;
+            newScores[activeSetTab].awayGames = 6;
+          } else {
+            newScores[activeSetTab].homeGames = 6;
+            newScores[activeSetTab].awayGames = 7;
+          }
+          newScores[activeSetTab].completed = true;
+        }
+        
+        return newScores;
+      });
+      return;
+    }
+
+    // Regular game scoring
+    if (isDeuce) {
+      if (advantage === team) {
+        // Team with advantage wins the game
+        winGame(team);
+      } else if (advantage === null) {
+        // Set advantage
+        setAdvantage(team);
       } else {
-        newScores[setIndex] = { ...newScores[setIndex], tiebreakAway: numValue };
+        // Other team had advantage, back to deuce
+        setAdvantage(null);
       }
+    } else {
+      // Normal point progression
+      if (team === 'home') {
+        if (homePoints === 3 && awayPoints === 3) {
+          // 40-40 -> Deuce
+          setIsDeuce(true);
+          setAdvantage('home');
+        } else if (homePoints === 3 && awayPoints < 3) {
+          // Win the game
+          winGame('home');
+        } else {
+          setHomePoints(prev => prev + 1);
+          // Check for deuce
+          if (homePoints + 1 === 3 && awayPoints === 3) {
+            setIsDeuce(true);
+          }
+        }
+      } else {
+        if (awayPoints === 3 && homePoints === 3) {
+          setIsDeuce(true);
+          setAdvantage('away');
+        } else if (awayPoints === 3 && homePoints < 3) {
+          winGame('away');
+        } else {
+          setAwayPoints(prev => prev + 1);
+          if (awayPoints + 1 === 3 && homePoints === 3) {
+            setIsDeuce(true);
+          }
+        }
+      }
+    }
+
+    // Log event
+    setEventsHistory(prev => [...prev, { type: 'point', team, timestamp: new Date().toISOString() }]);
+  };
+
+  // Win a game
+  const winGame = (team: 'home' | 'away') => {
+    // Reset points
+    setHomePoints(0);
+    setAwayPoints(0);
+    setIsDeuce(false);
+    setAdvantage(null);
+
+    setSetScores(prev => {
+      const newScores = [...prev];
+      const currentSet = { ...newScores[activeSetTab] };
+      
+      if (team === 'home') {
+        currentSet.homeGames += 1;
+      } else {
+        currentSet.awayGames += 1;
+      }
+      
+      // Check if set is won
+      const homeG = currentSet.homeGames;
+      const awayG = currentSet.awayGames;
+      
+      // Regular set win: 6 games with 2 game lead, or 7-5
+      if ((homeG >= 6 || awayG >= 6) && Math.abs(homeG - awayG) >= 2) {
+        currentSet.completed = true;
+      }
+      // Tiebreak at 6-6
+      else if (homeG === 6 && awayG === 6) {
+        currentSet.tiebreak = true;
+        currentSet.tiebreakHome = 0;
+        currentSet.tiebreakAway = 0;
+      }
+      
+      newScores[activeSetTab] = currentSet;
       return newScores;
     });
   };
@@ -174,22 +301,17 @@ export function TennisMatchModal({
   // Update player stats
   const updateStat = (team: 'home' | 'away', stat: keyof PlayerStats, delta: number) => {
     if (team === 'home') {
-      setHomeStats((prev) => ({
+      setHomeStats(prev => ({
         ...prev,
         [stat]: Math.max(0, prev[stat] + delta),
       }));
     } else {
-      setAwayStats((prev) => ({
+      setAwayStats(prev => ({
         ...prev,
         [stat]: Math.max(0, prev[stat] + delta),
       }));
     }
-    
-    // Add to events history
-    setEventsHistory((prev) => [
-      ...prev,
-      { team, stat, delta, timestamp: new Date().toISOString() },
-    ]);
+    setEventsHistory(prev => [...prev, { type: 'stat', team, stat, delta, timestamp: new Date().toISOString() }]);
   };
 
   // Undo last action
@@ -198,20 +320,21 @@ export function TennisMatchModal({
     
     const lastEvent = eventsHistory[eventsHistory.length - 1];
     
-    // Reverse the stat change
-    if (lastEvent.team === 'home') {
-      setHomeStats((prev) => ({
-        ...prev,
-        [lastEvent.stat]: Math.max(0, prev[lastEvent.stat as keyof PlayerStats] - lastEvent.delta),
-      }));
-    } else {
-      setAwayStats((prev) => ({
-        ...prev,
-        [lastEvent.stat as keyof PlayerStats]: Math.max(0, prev[lastEvent.stat as keyof PlayerStats] - lastEvent.delta),
-      }));
+    if (lastEvent.type === 'stat') {
+      if (lastEvent.team === 'home') {
+        setHomeStats(prev => ({
+          ...prev,
+          [lastEvent.stat]: Math.max(0, prev[lastEvent.stat as keyof PlayerStats] - lastEvent.delta),
+        }));
+      } else {
+        setAwayStats(prev => ({
+          ...prev,
+          [lastEvent.stat as keyof PlayerStats]: Math.max(0, prev[lastEvent.stat as keyof PlayerStats] - lastEvent.delta),
+        }));
+      }
     }
     
-    setEventsHistory((prev) => prev.slice(0, -1));
+    setEventsHistory(prev => prev.slice(0, -1));
   };
 
   // Save match
@@ -221,15 +344,14 @@ export function TennisMatchModal({
       
       const matchData = {
         tennis_sets: setScores,
+        currentGame: { homePoints, awayPoints, isDeuce, advantage },
         home_stats: homeStats,
         away_stats: awayStats,
-        super_tiebreak: superTiebreak,
         home_goals: homeSets,
         away_goals: awaySets,
       };
       
       await api.put(`/api/matches/${match.id}`, matchData);
-      
       onSave({ ...match, ...matchData });
       Alert.alert('Salvato', 'Punteggio aggiornato con successo');
     } catch (error) {
@@ -244,7 +366,7 @@ export function TennisMatchModal({
   const handleCloseMatch = () => {
     Alert.alert(
       'Chiudi Partita',
-      'Sei sicuro di voler chiudere questa partita? Il risultato sarà definitivo.',
+      'Sei sicuro di voler chiudere questa partita?',
       [
         { text: 'Annulla', style: 'cancel' },
         {
@@ -253,23 +375,18 @@ export function TennisMatchModal({
           onPress: async () => {
             try {
               setSaving(true);
-              
               const matchData = {
                 tennis_sets: setScores,
                 home_stats: homeStats,
                 away_stats: awayStats,
-                super_tiebreak: superTiebreak,
                 home_goals: homeSets,
                 away_goals: awaySets,
                 status: 'completed',
               };
-              
               await api.put(`/api/matches/${match.id}`, matchData);
-              
               onSave({ ...match, ...matchData });
               onClose();
             } catch (error) {
-              console.error('Error closing match:', error);
               Alert.alert('Errore', 'Impossibile chiudere la partita');
             } finally {
               setSaving(false);
@@ -280,42 +397,43 @@ export function TennisMatchModal({
     );
   };
 
-  const renderStatRow = (
-    label: string,
-    stat: keyof PlayerStats,
-    homeValue: number,
-    awayValue: number
-  ) => (
+  // Render stat row with CORRECT layout: [-] [value] [+] for BOTH sides
+  const renderStatRow = (label: string, stat: keyof PlayerStats, homeValue: number, awayValue: number) => (
     <View style={styles.statRow} key={stat}>
-      <TouchableOpacity
-        style={styles.statButton}
-        onPress={() => updateStat('home', stat, 1)}
-      >
-        <Ionicons name="add-circle" size={24} color="#000" />
-      </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.statButtonMinus}
-        onPress={() => updateStat('home', stat, -1)}
-      >
-        <Ionicons name="remove-circle" size={20} color="#999" />
+      {/* Home side: [-] [value] [+] */}
+      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, -1)}>
+        <Ionicons name="remove-circle" size={24} color="#000" />
       </TouchableOpacity>
       <Text style={styles.statValue}>{homeValue}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-      <Text style={styles.statValue}>{awayValue}</Text>
-      <TouchableOpacity
-        style={styles.statButtonMinus}
-        onPress={() => updateStat('away', stat, -1)}
-      >
-        <Ionicons name="remove-circle" size={20} color="#999" />
+      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('home', stat, 1)}>
+        <Ionicons name="add-circle" size={24} color="#000" />
       </TouchableOpacity>
-      <TouchableOpacity
-        style={styles.statButton}
-        onPress={() => updateStat('away', stat, 1)}
-      >
+      
+      {/* Label in center */}
+      <Text style={styles.statLabel}>{label}</Text>
+      
+      {/* Away side: [-] [value] [+] */}
+      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, -1)}>
+        <Ionicons name="remove-circle" size={24} color="#000" />
+      </TouchableOpacity>
+      <Text style={styles.statValue}>{awayValue}</Text>
+      <TouchableOpacity style={styles.statButton} onPress={() => updateStat('away', stat, 1)}>
         <Ionicons name="add-circle" size={24} color="#000" />
       </TouchableOpacity>
     </View>
   );
+
+  // Get current point display
+  const getCurrentPointDisplay = () => {
+    if (isDeuce) {
+      if (advantage === 'home') return 'AD - 40';
+      if (advantage === 'away') return '40 - AD';
+      return 'Deuce';
+    }
+    return `${POINTS[homePoints]} - ${POINTS[awayPoints]}`;
+  };
+
+  const currentSet = setScores[activeSetTab];
 
   if (!match) return null;
 
@@ -331,16 +449,8 @@ export function TennisMatchModal({
             <Text style={styles.headerTitle}>Tennis Match</Text>
             <Text style={styles.headerSubtitle}>{tournamentName}</Text>
           </View>
-          <TouchableOpacity
-            onPress={undoLast}
-            style={styles.undoButton}
-            disabled={eventsHistory.length === 0}
-          >
-            <Ionicons
-              name="arrow-undo"
-              size={24}
-              color={eventsHistory.length === 0 ? '#CCC' : '#000'}
-            />
+          <TouchableOpacity onPress={undoLast} style={styles.undoButton} disabled={eventsHistory.length === 0}>
+            <Ionicons name="arrow-undo" size={24} color={eventsHistory.length === 0 ? '#CCC' : '#000'} />
           </TouchableOpacity>
         </View>
 
@@ -348,20 +458,14 @@ export function TennisMatchModal({
           {/* Score Header */}
           <View style={styles.scoreHeader}>
             <View style={styles.teamSection}>
-              <Text style={styles.teamName} numberOfLines={1}>
-                {homeTeam?.name || 'Casa'}
-              </Text>
+              <Text style={styles.teamName} numberOfLines={1}>{homeTeam?.name || 'Giocatore 1'}</Text>
             </View>
             <View style={styles.totalScore}>
-              <Text style={styles.totalScoreText}>
-                {homeSets} - {awaySets}
-              </Text>
+              <Text style={styles.totalScoreText}>{homeSets} - {awaySets}</Text>
               <Text style={styles.setsLabel}>SET</Text>
             </View>
             <View style={styles.teamSection}>
-              <Text style={styles.teamName} numberOfLines={1}>
-                {awayTeam?.name || 'Ospite'}
-              </Text>
+              <Text style={styles.teamName} numberOfLines={1}>{awayTeam?.name || 'Giocatore 2'}</Text>
             </View>
           </View>
 
@@ -373,145 +477,81 @@ export function TennisMatchModal({
                 style={[styles.setTab, activeSetTab === i && styles.setTabActive]}
                 onPress={() => setActiveSetTab(i)}
               >
-                <Text
-                  style={[
-                    styles.setTabText,
-                    activeSetTab === i && styles.setTabTextActive,
-                  ]}
-                >
+                <Text style={[styles.setTabText, activeSetTab === i && styles.setTabTextActive]}>
                   Set {i + 1}
                 </Text>
-                {setScores[i] && (setScores[i].home > 0 || setScores[i].away > 0) && (
+                {setScores[i] && (
                   <Text style={styles.setTabScore}>
-                    {setScores[i].home}-{setScores[i].away}
+                    {setScores[i].homeGames}-{setScores[i].awayGames}
                   </Text>
                 )}
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Active Set Score */}
-          {setScores[activeSetTab] && (
-            <View style={styles.setScoreSection}>
-              <Text style={styles.sectionTitle}>Set {activeSetTab + 1} - Games</Text>
-              
-              <View style={styles.gameScoreRow}>
-                {/* Home Score */}
-                <View style={styles.gameScoreColumn}>
-                  <TouchableOpacity
-                    style={styles.gameButton}
-                    onPress={() => updateSetScore(activeSetTab, 'home', -1)}
-                  >
-                    <Ionicons name="remove" size={24} color="#000" />
-                  </TouchableOpacity>
-                  <TextInput
-                    style={styles.gameScoreInput}
-                    value={String(setScores[activeSetTab].home)}
-                    onChangeText={(text) => {
-                      const num = parseInt(text) || 0;
-                      setSetScores((prev) => {
-                        const newScores = [...prev];
-                        newScores[activeSetTab] = { ...newScores[activeSetTab], home: num };
-                        return newScores;
-                      });
-                    }}
-                    keyboardType="number-pad"
-                  />
-                  <TouchableOpacity
-                    style={styles.gameButton}
-                    onPress={() => updateSetScore(activeSetTab, 'home', 1)}
-                  >
-                    <Ionicons name="add" size={24} color="#000" />
-                  </TouchableOpacity>
-                </View>
-
-                <Text style={styles.gameScoreDivider}>-</Text>
-
-                {/* Away Score */}
-                <View style={styles.gameScoreColumn}>
-                  <TouchableOpacity
-                    style={styles.gameButton}
-                    onPress={() => updateSetScore(activeSetTab, 'away', -1)}
-                  >
-                    <Ionicons name="remove" size={24} color="#000" />
-                  </TouchableOpacity>
-                  <TextInput
-                    style={styles.gameScoreInput}
-                    value={String(setScores[activeSetTab].away)}
-                    onChangeText={(text) => {
-                      const num = parseInt(text) || 0;
-                      setSetScores((prev) => {
-                        const newScores = [...prev];
-                        newScores[activeSetTab] = { ...newScores[activeSetTab], away: num };
-                        return newScores;
-                      });
-                    }}
-                    keyboardType="number-pad"
-                  />
-                  <TouchableOpacity
-                    style={styles.gameButton}
-                    onPress={() => updateSetScore(activeSetTab, 'away', 1)}
-                  >
-                    <Ionicons name="add" size={24} color="#000" />
-                  </TouchableOpacity>
-                </View>
+          {/* Current Game Score */}
+          {currentSet && !currentSet.completed && !currentSet.tiebreak && (
+            <View style={styles.currentGameSection}>
+              <Text style={styles.sectionTitle}>Punteggio Game Corrente</Text>
+              <View style={styles.currentGameDisplay}>
+                <Text style={styles.currentGameText}>{getCurrentPointDisplay()}</Text>
               </View>
-
-              {/* Tiebreak Toggle */}
-              <View style={styles.tiebreakRow}>
-                <Text style={styles.tiebreakLabel}>Tie-break</Text>
-                <Switch
-                  value={setScores[activeSetTab].tiebreak}
-                  onValueChange={() => toggleTiebreak(activeSetTab)}
-                  trackColor={{ false: '#DDD', true: '#000' }}
-                  thumbColor="#FFF"
-                />
+              <View style={styles.pointButtonsRow}>
+                <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('home')}>
+                  <Text style={styles.pointButtonText}>+ Punto {homeTeam?.name || 'G1'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('away')}>
+                  <Text style={styles.pointButtonText}>+ Punto {awayTeam?.name || 'G2'}</Text>
+                </TouchableOpacity>
               </View>
-
-              {/* Tiebreak Score */}
-              {setScores[activeSetTab].tiebreak && (
-                <View style={styles.tiebreakScoreRow}>
-                  <TextInput
-                    style={styles.tiebreakInput}
-                    value={String(setScores[activeSetTab].tiebreakHome || 0)}
-                    onChangeText={(text) => updateTiebreakScore(activeSetTab, 'home', text)}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                  />
-                  <Text style={styles.tiebreakDivider}>TB</Text>
-                  <TextInput
-                    style={styles.tiebreakInput}
-                    value={String(setScores[activeSetTab].tiebreakAway || 0)}
-                    onChangeText={(text) => updateTiebreakScore(activeSetTab, 'away', text)}
-                    keyboardType="number-pad"
-                    placeholder="0"
-                  />
-                </View>
-              )}
             </View>
           )}
 
-          {/* Super Tiebreak Toggle (for deciding set) */}
-          {activeSetTab === maxSets - 1 && (
-            <View style={styles.superTiebreakRow}>
-              <Text style={styles.superTiebreakLabel}>Super Tie-break (Set Decisivo)</Text>
-              <Switch
-                value={superTiebreak}
-                onValueChange={setSuperTiebreak}
-                trackColor={{ false: '#DDD', true: '#000' }}
-                thumbColor="#FFF"
-              />
+          {/* Tiebreak Section */}
+          {currentSet && currentSet.tiebreak && !currentSet.completed && (
+            <View style={styles.tiebreakSection}>
+              <Text style={styles.sectionTitle}>Tie-Break</Text>
+              <View style={styles.tiebreakScore}>
+                <Text style={styles.tiebreakScoreText}>
+                  {currentSet.tiebreakHome || 0} - {currentSet.tiebreakAway || 0}
+                </Text>
+              </View>
+              <View style={styles.pointButtonsRow}>
+                <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('home')}>
+                  <Text style={styles.pointButtonText}>+ {homeTeam?.name || 'G1'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('away')}>
+                  <Text style={styles.pointButtonText}>+ {awayTeam?.name || 'G2'}</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
+
+          {/* Games in Active Set */}
+          <View style={styles.setScoreSection}>
+            <Text style={styles.sectionTitle}>Set {activeSetTab + 1} - Games</Text>
+            <View style={styles.gameScoreRow}>
+              <View style={styles.gameScoreBox}>
+                <Text style={styles.gameScoreValue}>{currentSet?.homeGames || 0}</Text>
+              </View>
+              <Text style={styles.gameScoreDivider}>-</Text>
+              <View style={styles.gameScoreBox}>
+                <Text style={styles.gameScoreValue}>{currentSet?.awayGames || 0}</Text>
+              </View>
+            </View>
+            {currentSet?.completed && (
+              <Text style={styles.setCompletedText}>Set Completato</Text>
+            )}
+          </View>
 
           {/* Statistics Section */}
           <View style={styles.statsSection}>
             <Text style={styles.sectionTitle}>Statistiche Giocatori</Text>
             
             <View style={styles.statsHeader}>
-              <Text style={styles.statsTeamLabel}>{homeTeam?.name || 'Casa'}</Text>
+              <Text style={styles.statsTeamLabel}>{homeTeam?.name || 'G1'}</Text>
               <Text style={styles.statsMiddleLabel}>Statistica</Text>
-              <Text style={styles.statsTeamLabel}>{awayTeam?.name || 'Ospite'}</Text>
+              <Text style={styles.statsTeamLabel}>{awayTeam?.name || 'G2'}</Text>
             </View>
 
             {renderStatRow('Ace', 'aces', homeStats.aces, awayStats.aces)}
@@ -525,11 +565,7 @@ export function TennisMatchModal({
 
         {/* Footer Actions */}
         <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={saving}
-          >
+          <TouchableOpacity style={styles.saveButton} onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator color="#FFF" />
             ) : (
@@ -540,11 +576,7 @@ export function TennisMatchModal({
             )}
           </TouchableOpacity>
           
-          <TouchableOpacity
-            style={styles.closeMatchButton}
-            onPress={handleCloseMatch}
-            disabled={saving}
-          >
+          <TouchableOpacity style={styles.closeMatchButton} onPress={handleCloseMatch} disabled={saving}>
             <Ionicons name="checkmark-circle" size={20} color="#000" />
             <Text style={styles.closeMatchButtonText}>Chiudi Match</Text>
           </TouchableOpacity>
@@ -555,10 +587,7 @@ export function TennisMatchModal({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FFF',
-  },
+  container: { flex: 1, backgroundColor: '#FFF' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -568,27 +597,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#EEE',
   },
-  closeButton: {
-    padding: 4,
-  },
-  headerCenter: {
-    alignItems: 'center',
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000',
-  },
-  headerSubtitle: {
-    fontSize: 12,
-    color: '#666',
-  },
-  undoButton: {
-    padding: 4,
-  },
-  content: {
-    flex: 1,
-  },
+  closeButton: { padding: 4 },
+  headerCenter: { alignItems: 'center' },
+  headerTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
+  headerSubtitle: { fontSize: 12, color: '#666' },
+  undoButton: { padding: 4 },
+  content: { flex: 1 },
   scoreHeader: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -596,35 +610,12 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#F8F8F8',
   },
-  teamSection: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  teamName: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-    textAlign: 'center',
-  },
-  totalScore: {
-    alignItems: 'center',
-    paddingHorizontal: 20,
-  },
-  totalScoreText: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#000',
-  },
-  setsLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  setTabs: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
-  },
+  teamSection: { flex: 1, alignItems: 'center' },
+  teamName: { fontSize: 14, fontWeight: '600', color: '#000', textAlign: 'center' },
+  totalScore: { alignItems: 'center', paddingHorizontal: 20 },
+  totalScoreText: { fontSize: 36, fontWeight: '700', color: '#000' },
+  setsLabel: { fontSize: 12, color: '#666', marginTop: 4 },
+  setTabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: '#EEE' },
   setTab: {
     flex: 1,
     paddingVertical: 12,
@@ -632,144 +623,60 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
   },
-  setTabActive: {
-    borderBottomColor: '#000',
-  },
-  setTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#999',
-  },
-  setTabTextActive: {
-    color: '#000',
-  },
-  setTabScore: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 2,
-  },
-  setScoreSection: {
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 16,
-  },
-  gameScoreRow: {
-    flexDirection: 'row',
+  setTabActive: { borderBottomColor: '#000' },
+  setTabText: { fontSize: 13, fontWeight: '600', color: '#999' },
+  setTabTextActive: { color: '#000' },
+  setTabScore: { fontSize: 11, color: '#666', marginTop: 2 },
+  currentGameSection: { padding: 16, backgroundColor: '#F0F0F0' },
+  sectionTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
+  currentGameDisplay: {
     alignItems: 'center',
-    justifyContent: 'center',
-    gap: 20,
-  },
-  gameScoreColumn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  gameButton: {
-    width: 44,
-    height: 44,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  gameScoreInput: {
-    width: 60,
-    height: 60,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 12,
-    fontSize: 28,
-    fontWeight: '700',
-    textAlign: 'center',
-  },
-  gameScoreDivider: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#000',
-  },
-  tiebreakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingVertical: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#EEE',
-    marginTop: 16,
-  },
-  tiebreakLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  tiebreakScoreRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-    paddingVertical: 12,
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-  },
-  tiebreakInput: {
-    width: 50,
-    height: 50,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 8,
-    fontSize: 20,
-    fontWeight: '700',
-    textAlign: 'center',
     backgroundColor: '#FFF',
-  },
-  tiebreakDivider: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#666',
-  },
-  superTiebreakRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#F0F0F0',
-    marginHorizontal: 16,
+    paddingVertical: 20,
     borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#000',
   },
-  superTiebreakLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#000',
-  },
-  statsSection: {
-    padding: 16,
-    borderTopWidth: 8,
-    borderTopColor: '#F0F0F0',
-  },
-  statsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  statsTeamLabel: {
+  currentGameText: { fontSize: 32, fontWeight: '700', color: '#000' },
+  pointButtonsRow: { flexDirection: 'row', gap: 12 },
+  pointButton: {
     flex: 1,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    textAlign: 'center',
+    backgroundColor: '#000',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
   },
-  statsMiddleLabel: {
-    flex: 1.5,
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    textAlign: 'center',
+  pointButtonText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  tiebreakSection: { padding: 16, backgroundColor: '#FFF5E6' },
+  tiebreakScore: {
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingVertical: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+    borderWidth: 2,
+    borderColor: '#FF9500',
   },
+  tiebreakScoreText: { fontSize: 32, fontWeight: '700', color: '#FF9500' },
+  setScoreSection: { padding: 16 },
+  gameScoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 },
+  gameScoreBox: {
+    width: 70,
+    height: 70,
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  gameScoreValue: { fontSize: 32, fontWeight: '700', color: '#000' },
+  gameScoreDivider: { fontSize: 28, fontWeight: '700', color: '#000' },
+  setCompletedText: { fontSize: 14, color: '#10B981', fontWeight: '600', textAlign: 'center', marginTop: 12 },
+  statsSection: { padding: 16, borderTopWidth: 8, borderTopColor: '#F0F0F0' },
+  statsHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  statsTeamLabel: { flex: 1, fontSize: 12, fontWeight: '600', color: '#666', textAlign: 'center' },
+  statsMiddleLabel: { width: 80, fontSize: 12, fontWeight: '600', color: '#666', textAlign: 'center' },
   statRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -777,25 +684,9 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
   },
-  statButton: {
-    padding: 4,
-  },
-  statButtonMinus: {
-    padding: 4,
-  },
-  statValue: {
-    width: 30,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#000',
-    textAlign: 'center',
-  },
-  statLabel: {
-    flex: 1,
-    fontSize: 13,
-    color: '#000',
-    textAlign: 'center',
-  },
+  statButton: { padding: 4 },
+  statValue: { width: 30, fontSize: 16, fontWeight: '700', color: '#000', textAlign: 'center' },
+  statLabel: { width: 80, fontSize: 12, color: '#000', textAlign: 'center' },
   footer: {
     flexDirection: 'row',
     padding: 16,
@@ -813,11 +704,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
-  saveButtonText: {
-    color: '#FFF',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  saveButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
   closeMatchButton: {
     flex: 1,
     flexDirection: 'row',
@@ -829,11 +716,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
   },
-  closeMatchButtonText: {
-    color: '#000',
-    fontSize: 16,
-    fontWeight: '700',
-  },
+  closeMatchButtonText: { color: '#000', fontSize: 16, fontWeight: '700' },
 });
 
 export default TennisMatchModal;
