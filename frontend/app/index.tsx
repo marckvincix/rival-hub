@@ -301,13 +301,15 @@ export default function LandingPage() {
           <Text style={styles.heroSubtitle}>
             La piattaforma per creare, seguire{'\n'}ed organizzare tornei sportivi
           </Text>
-          <Image source={HeroIllustration} style={styles.heroImage} resizeMode="contain" />
-          <TouchableOpacity
-            style={styles.heroButton}
-            onPress={() => router.push('/(auth)/register')}
-          >
-            <Text style={styles.heroButtonText}>Inizia Gratis</Text>
-          </TouchableOpacity>
+          <View style={styles.heroImageContainer}>
+            <Image source={HeroIllustration} style={styles.heroImage} resizeMode="contain" />
+            <TouchableOpacity
+              style={styles.heroButton}
+              onPress={() => router.push('/(auth)/register')}
+            >
+              <Text style={styles.heroButtonText}>Inizia Gratis</Text>
+            </TouchableOpacity>
+          </View>
         </View>
 
         {/* Search Section */}
@@ -699,16 +701,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     lineHeight: 22,
   },
+  heroImageContainer: {
+    width: '100%',
+    position: 'relative',
+  },
   heroImage: {
     width: '100%',
-    height: 280,
-    marginBottom: 16,
+    height: 320,
   },
   heroButton: {
+    position: 'absolute',
+    bottom: 60,
+    left: 0,
     borderWidth: 2,
     borderColor: '#000',
-    borderRadius: 12,
-    paddingHorizontal: 24,
+    borderRadius: 25,
+    paddingHorizontal: 28,
     paddingVertical: 14,
     backgroundColor: '#FFF',
   },
