@@ -43,6 +43,7 @@ export default function TournamentPublicPage() {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [selectedMatchForStats, setSelectedMatchForStats] = useState<Match | null>(null);
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
+  const [selectedAwayFormation, setSelectedAwayFormation] = useState<Formation | null>(null);
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [publicFormationViewMode, setPublicFormationViewMode] = useState<'list' | 'field'>('field');
   // Teams tab state
@@ -451,22 +452,39 @@ export default function TournamentPublicPage() {
                         {/* Formations for this match */}
                         {(homeFormation || awayFormation) && (
                           <View style={styles.matchFormationsSection}>
-                            <Text style={styles.matchFormationsTitle}>Formazioni</Text>
-                            {/* Home Team Formation */}
-                            {homeFormation && (
+                            <Text style={styles.matchFormationsTitle}>{isRacketSport ? 'Giocatori' : 'Formazioni'}</Text>
+                            
+                            {isRacketSport ? (
+                              /* Tennis/Padel: Single "Vedi Campo" button showing both players */
                               <View style={styles.matchFormationCard}>
                                 <TouchableOpacity 
                                   style={styles.matchFormationHeader}
                                   onPress={() => {
-                                    setSelectedFormation(homeFormation);
+                                    setSelectedFormation(homeFormation || null);
+                                    setSelectedAwayFormation(awayFormation || null);
                                     setShowFormationModal(true);
                                   }}
                                 >
                                   <View style={styles.formationTeamInfo}>
-                                    <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
+                                    <View style={styles.tennisMatchPlayersRow}>
+                                      {/* Home Player */}
+                                      <View style={styles.tennisPlayerBadge}>
+                                        <Text style={styles.tennisPlayerBadgeText}>
+                                          {getTeamName(match.home_team_id).charAt(0)}
+                                        </Text>
+                                      </View>
+                                      <Text style={styles.tennisVsText}>vs</Text>
+                                      {/* Away Player */}
+                                      <View style={[styles.tennisPlayerBadge, styles.tennisPlayerBadgeAway]}>
+                                        <Text style={styles.tennisPlayerBadgeText}>
+                                          {getTeamName(match.away_team_id).charAt(0)}
+                                        </Text>
+                                      </View>
+                                    </View>
                                     <View style={styles.formationTeamDetails}>
-                                      <Text style={styles.formationTeamName}>{getTeamName(match.home_team_id)}</Text>
-                                      <Text style={styles.formationModuleBadge}>Modulo: {homeFormation.module}</Text>
+                                      <Text style={styles.formationTeamName}>
+                                        {getTeamName(match.home_team_id)} vs {getTeamName(match.away_team_id)}
+                                      </Text>
                                     </View>
                                   </View>
                                   <View style={styles.viewFormationBtn}>
@@ -474,59 +492,106 @@ export default function TournamentPublicPage() {
                                     <Ionicons name="chevron-forward" size={18} color="#FFF" />
                                   </View>
                                 </TouchableOpacity>
+                                {/* Show players preview */}
                                 <View style={styles.formationPreview}>
-                                  <Text style={styles.formationPreviewLabel}>Titolari ({homeFormation.starters.length}):</Text>
-                                  <View style={styles.formationPlayersList}>
-                                    {homeFormation.starters.slice(0, 6).map((s: any, idx: number) => (
-                                      <View key={idx} style={styles.formationPlayerChip}>
-                                        <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
-                                        <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
-                                      </View>
-                                    ))}
-                                    {homeFormation.starters.length > 6 && (
-                                      <Text style={styles.formationMorePlayers}>+{homeFormation.starters.length - 6}</Text>
-                                    )}
-                                  </View>
-                                </View>
-                              </View>
-                            )}
-                            {/* Away Team Formation */}
-                            {awayFormation && (
-                              <View style={styles.matchFormationCard}>
-                                <TouchableOpacity 
-                                  style={styles.matchFormationHeader}
-                                  onPress={() => {
-                                    setSelectedFormation(awayFormation);
-                                    setShowFormationModal(true);
-                                  }}
-                                >
-                                  <View style={styles.formationTeamInfo}>
-                                    <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
-                                    <View style={styles.formationTeamDetails}>
-                                      <Text style={styles.formationTeamName}>{getTeamName(match.away_team_id)}</Text>
-                                      <Text style={styles.formationModuleBadge}>Modulo: {awayFormation.module}</Text>
+                                  <View style={styles.tennisPlayersPreview}>
+                                    <View style={styles.tennisPlayerPreviewSide}>
+                                      <Text style={styles.tennisPlayerPreviewLabel}>🎾 {getTeamName(match.home_team_id)}</Text>
+                                      {homeFormation?.starters.map((s: any, idx: number) => (
+                                        <Text key={idx} style={styles.tennisPlayerPreviewName}>{s.player_name || '?'}</Text>
+                                      ))}
+                                    </View>
+                                    <View style={styles.tennisPlayerPreviewSide}>
+                                      <Text style={styles.tennisPlayerPreviewLabel}>🎾 {getTeamName(match.away_team_id)}</Text>
+                                      {awayFormation?.starters.map((s: any, idx: number) => (
+                                        <Text key={idx} style={styles.tennisPlayerPreviewName}>{s.player_name || '?'}</Text>
+                                      ))}
                                     </View>
                                   </View>
-                                  <View style={styles.viewFormationBtn}>
-                                    <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
-                                    <Ionicons name="chevron-forward" size={18} color="#FFF" />
-                                  </View>
-                                </TouchableOpacity>
-                                <View style={styles.formationPreview}>
-                                  <Text style={styles.formationPreviewLabel}>Titolari ({awayFormation.starters.length}):</Text>
-                                  <View style={styles.formationPlayersList}>
-                                    {awayFormation.starters.slice(0, 6).map((s: any, idx: number) => (
-                                      <View key={idx} style={styles.formationPlayerChip}>
-                                        <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
-                                        <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
-                                      </View>
-                                    ))}
-                                    {awayFormation.starters.length > 6 && (
-                                      <Text style={styles.formationMorePlayers}>+{awayFormation.starters.length - 6}</Text>
-                                    )}
-                                  </View>
                                 </View>
                               </View>
+                            ) : (
+                              /* Soccer/Basketball: Separate cards for each team */
+                              <>
+                                {/* Home Team Formation */}
+                                {homeFormation && (
+                                  <View style={styles.matchFormationCard}>
+                                    <TouchableOpacity 
+                                      style={styles.matchFormationHeader}
+                                      onPress={() => {
+                                        setSelectedFormation(homeFormation);
+                                        setSelectedAwayFormation(null);
+                                        setShowFormationModal(true);
+                                      }}
+                                    >
+                                      <View style={styles.formationTeamInfo}>
+                                        <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
+                                        <View style={styles.formationTeamDetails}>
+                                          <Text style={styles.formationTeamName}>{getTeamName(match.home_team_id)}</Text>
+                                          <Text style={styles.formationModuleBadge}>Modulo: {homeFormation.module}</Text>
+                                        </View>
+                                      </View>
+                                      <View style={styles.viewFormationBtn}>
+                                        <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                        <Ionicons name="chevron-forward" size={18} color="#FFF" />
+                                      </View>
+                                    </TouchableOpacity>
+                                    <View style={styles.formationPreview}>
+                                      <Text style={styles.formationPreviewLabel}>Titolari ({homeFormation.starters.length}):</Text>
+                                      <View style={styles.formationPlayersList}>
+                                        {homeFormation.starters.slice(0, 6).map((s: any, idx: number) => (
+                                          <View key={idx} style={styles.formationPlayerChip}>
+                                            <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
+                                            <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
+                                          </View>
+                                        ))}
+                                        {homeFormation.starters.length > 6 && (
+                                          <Text style={styles.formationMorePlayers}>+{homeFormation.starters.length - 6}</Text>
+                                        )}
+                                      </View>
+                                    </View>
+                                  </View>
+                                )}
+                                {/* Away Team Formation */}
+                                {awayFormation && (
+                                  <View style={styles.matchFormationCard}>
+                                    <TouchableOpacity 
+                                      style={styles.matchFormationHeader}
+                                      onPress={() => {
+                                        setSelectedFormation(awayFormation);
+                                        setSelectedAwayFormation(null);
+                                        setShowFormationModal(true);
+                                      }}
+                                    >
+                                      <View style={styles.formationTeamInfo}>
+                                        <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
+                                        <View style={styles.formationTeamDetails}>
+                                          <Text style={styles.formationTeamName}>{getTeamName(match.away_team_id)}</Text>
+                                          <Text style={styles.formationModuleBadge}>Modulo: {awayFormation.module}</Text>
+                                        </View>
+                                      </View>
+                                      <View style={styles.viewFormationBtn}>
+                                        <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                        <Ionicons name="chevron-forward" size={18} color="#FFF" />
+                                      </View>
+                                    </TouchableOpacity>
+                                    <View style={styles.formationPreview}>
+                                      <Text style={styles.formationPreviewLabel}>Titolari ({awayFormation.starters.length}):</Text>
+                                      <View style={styles.formationPlayersList}>
+                                        {awayFormation.starters.slice(0, 6).map((s: any, idx: number) => (
+                                          <View key={idx} style={styles.formationPlayerChip}>
+                                            <Text style={styles.formationPlayerNumber}>{s.player_number || '-'}</Text>
+                                            <Text style={styles.formationPlayerName}>{s.player_name?.split(' ')[0] || '?'}</Text>
+                                          </View>
+                                        ))}
+                                        {awayFormation.starters.length > 6 && (
+                                          <Text style={styles.formationMorePlayers}>+{awayFormation.starters.length - 6}</Text>
+                                        )}
+                                      </View>
+                                    </View>
+                                  </View>
+                                )}
+                              </>
                             )}
                           </View>
                         )}
@@ -729,13 +794,18 @@ export default function TournamentPublicPage() {
                   {isRacketSport ? (
                     <TennisCourtView
                       format={isDoubles ? 'doubles' : 'singles'}
-                      homePlayers={selectedFormation.starters.map((s: any) => ({
+                      homePlayers={selectedFormation?.starters?.map((s: any) => ({
                         player_id: s.player_id,
                         full_name: s.player_name,
                         number: s.player_number,
-                      }))}
-                      awayPlayers={[]}
+                      })) || []}
+                      awayPlayers={selectedAwayFormation?.starters?.map((s: any) => ({
+                        player_id: s.player_id,
+                        full_name: s.player_name,
+                        number: s.player_number,
+                      })) || []}
                       homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                      awayTeamName={teams.find(t => t.id === selectedAwayFormation?.team_id)?.name}
                     />
                   ) : (
                     <FieldView
@@ -748,16 +818,29 @@ export default function TournamentPublicPage() {
               ) : (
                 <View style={styles.publicListView}>
                   {isRacketSport ? (
-                    /* Tennis/Padel: Simple player list */
-                    <View style={styles.publicPositionSection}>
-                      <Text style={styles.publicPositionTitle}>🎾 {isDoubles ? 'Coppia' : 'Giocatore'}</Text>
-                      {selectedFormation.starters.map((player: any, idx: number) => (
-                        <View key={idx} style={styles.publicPlayerRow}>
-                          <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
-                          <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                    /* Tennis/Padel: Show both players */
+                    <>
+                      <View style={styles.publicPositionSection}>
+                        <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedFormation?.team_id)?.name || 'Giocatore 1'}</Text>
+                        {selectedFormation?.starters?.map((player: any, idx: number) => (
+                          <View key={idx} style={styles.publicPlayerRow}>
+                            <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                            <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                          </View>
+                        ))}
+                      </View>
+                      {selectedAwayFormation && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedAwayFormation?.team_id)?.name || 'Giocatore 2'}</Text>
+                          {selectedAwayFormation?.starters?.map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
                         </View>
-                      ))}
-                    </View>
+                      )}
+                    </>
                   ) : (
                     <>
                       {/* Portiere */}
@@ -1075,6 +1158,16 @@ const styles = StyleSheet.create({
   matchFormationsTitle: { fontSize: 14, fontWeight: '700', color: '#000', marginBottom: 10 },
   matchFormationCard: { borderWidth: 1, borderColor: '#E0E0E0', borderRadius: 12, marginBottom: 8, overflow: 'hidden' },
   matchFormationHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 10 },
+  // Tennis match formations styles
+  tennisMatchPlayersRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  tennisPlayerBadge: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  tennisPlayerBadgeAway: { backgroundColor: '#555' },
+  tennisPlayerBadgeText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+  tennisVsText: { fontSize: 12, fontWeight: '600', color: '#666' },
+  tennisPlayersPreview: { flexDirection: 'row', justifyContent: 'space-around', paddingTop: 8 },
+  tennisPlayerPreviewSide: { alignItems: 'center', flex: 1 },
+  tennisPlayerPreviewLabel: { fontSize: 12, fontWeight: '600', color: '#666', marginBottom: 4 },
+  tennisPlayerPreviewName: { fontSize: 13, color: '#000' },
   // Public News styles
   publicNewsCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
   publicNewsImage: { width: '100%', height: 180, backgroundColor: '#F0F0F0' },
