@@ -14,13 +14,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../src/store/authStore';
-import { Button } from '../src/components';
 import api from '../src/utils/api';
 import { Tournament, getSportEmoji } from '../src/types';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
+const HeroSportsImage = require('../assets/images/hero-sports.png');
 
 // Sport configurations with their specific categories/formats
 const SPORT_CATEGORIES: Record<string, { label: string; emoji: string; formats: { key: string; label: string }[] }> = {
@@ -295,19 +295,19 @@ export default function LandingPage() {
           </TouchableOpacity>
         </View>
 
-        {/* Hero Section */}
+        {/* Hero Section - New Design */}
         <View style={styles.hero}>
           <Text style={styles.heroTitle}>Crea e gestisci i tuoi tornei</Text>
           <Text style={styles.heroSubtitle}>
-            La piattaforma per creare, seguire ed organizzare tornei sportivi
+            La piattaforma per creare, seguire{'\n'}ed organizzare tornei sportivi
           </Text>
-          <Button
-            title="Inizia Ora"
+          <Image source={HeroSportsImage} style={styles.heroImage} resizeMode="contain" />
+          <TouchableOpacity
+            style={styles.heroButton}
             onPress={() => router.push('/(auth)/register')}
-            variant="outline"
-            size="large"
-            icon="rocket-outline"
-          />
+          >
+            <Text style={styles.heroButtonText}>Inizia Gratis</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Search Section */}
@@ -684,21 +684,38 @@ const styles = StyleSheet.create({
   },
   hero: {
     padding: 24,
-    backgroundColor: '#000',
-    alignItems: 'center',
+    backgroundColor: '#FFF',
+    alignItems: 'flex-start',
   },
   heroTitle: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#FFF',
-    textAlign: 'center',
+    color: '#000',
     marginBottom: 12,
   },
   heroSubtitle: {
     fontSize: 16,
-    color: '#999',
-    textAlign: 'center',
-    marginBottom: 24,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 22,
+  },
+  heroImage: {
+    width: '100%',
+    height: 280,
+    marginBottom: 16,
+  },
+  heroButton: {
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 14,
+    backgroundColor: '#FFF',
+  },
+  heroButtonText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#000',
   },
   section: {
     padding: 16,
