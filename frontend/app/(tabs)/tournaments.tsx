@@ -2614,7 +2614,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </SafeAreaView>
 
         {/* Extra Modal */}
-        <Modal visible={showExtraModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowExtraModal(false)}>
+        <Modal visible={showExtraModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => {
+          if (selectedMatch) loadMatchEvents(selectedMatch.id, selectedMatch);
+          setShowExtraModal(false);
+        }}>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
             <ScrollView style={styles.extraModalContent} showsVerticalScrollIndicator={false}>
               {/* Extra Header with Close Button */}
@@ -2622,7 +2625,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 <View style={{ width: 40 }} />
                 <Text style={styles.extraHeaderText}>Extra</Text>
                 <TouchableOpacity 
-                  onPress={() => setShowExtraModal(false)} 
+                  onPress={() => {
+                    if (selectedMatch) loadMatchEvents(selectedMatch.id, selectedMatch);
+                    setShowExtraModal(false);
+                  }} 
                   style={{ width: 40, alignItems: 'flex-end' }}
                 >
                   <Ionicons name="close" size={28} color="#000" />
