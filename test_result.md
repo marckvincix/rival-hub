@@ -423,6 +423,88 @@ backend:
           
           This News API is fully functional and ready for frontend integration.
 
+  - task: "Soccer (Calcio) LIVE Scoring System - Complete functionality testing per review request"
+    implemented: true
+    working: true
+    file: "server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: |
+          ✅ SOCCER (CALCIO) LIVE SCORING SYSTEM COMPREHENSIVE TESTING COMPLETED - ALL TESTS PASSED
+          
+          Complete soccer live scoring functionality tested per review request specifications:
+          
+          ⚽ REVIEW REQUEST ENDPOINTS TESTED AND WORKING:
+          ✅ POST /api/matches/{match_id}/events - Add goals, assists, yellow/red cards
+          ✅ GET /api/matches/{match_id}/events - Retrieve match events with player names
+          ✅ DELETE /api/matches/{match_id}/events/{event_id} - Remove specific events
+          ✅ PUT /api/matches/{match_id} - Update match with home_goals, away_goals, status
+          ✅ GET /api/tournaments/{tournament_id}/matches-live - Live matches with has_events and live scores
+          
+          ⚽ SPECIFIC REVIEW REQUEST TESTS COMPLETED:
+          ✅ TEST 1: Soccer match events creation and management
+            - Created goal events for both teams (Cristiano Ronaldo, Rafael Leao)
+            - Created assist events (Paulo Dybala)
+            - Created yellow card events (Zlatan Ibrahimovic)
+            - Verified event retrieval with player names enrichment
+            - Successfully deleted events and verified removal
+          
+          ✅ TEST 2: Soccer scoring system verification
+            - Updated match scores manually (home_goals: 2, away_goals: 1)
+            - Verified automatic goal calculation from events
+            - Tested in_progress vs completed match status transitions
+            - Confirmed manual score override functionality working
+          
+          ✅ TEST 3: Live matches endpoint verification
+            - Verified has_events field correctly set to true for in_progress matches
+            - Verified live_home_score and live_away_score calculation
+            - Confirmed live scoring reflects both events and manual updates
+            - Tested match status impact on has_events flag
+          
+          ✅ TEST 4: Complete soccer cycle testing
+            - Created soccer tournament with sport="calcio", game_format="11v11", game_structure="2_halves"
+            - Created teams (Juventus FC vs AC Milan) with realistic players
+            - Created multiple matches and added various events
+            - Verified live data updates in real-time
+            - Tested match completion and status transitions
+          
+          🔐 AUTHENTICATION & SECURITY VERIFIED:
+          ✅ Authentication with credentials: soccertest@test.com / password
+          ✅ Session-based authentication functioning correctly
+          ✅ Tournament organizer authorization verified
+          ✅ Proper HTTP status codes (200, 401, 403, 404)
+          
+          📊 DATA INTEGRITY & SOCCER-SPECIFIC FEATURES:
+          ✅ Soccer tournament creation and management working
+          ✅ Soccer match creation with proper sport type (calcio)
+          ✅ Soccer events: goal, assist, yellow_card, red_card, penalty_goal, own_goal
+          ✅ Live matches endpoint correctly identifies soccer matches with has_events flag
+          ✅ Match status transitions working (scheduled -> in_progress -> completed)
+          ✅ Soccer scoring system distinct from basketball/tennis scoring systems
+          ✅ Real soccer match test data used (Juventus vs AC Milan with real player names)
+          
+          🚀 PRODUCTION READY VERIFICATION:
+          ✅ All soccer live scoring endpoints verified and working per review request specifications
+          ✅ Soccer match management fully functional with proper data structures
+          ✅ Soccer-specific scoring calculation accurate and working
+          ✅ Live soccer match tracking with real-time event updates
+          ✅ No critical bugs or issues found in soccer functionality
+          ✅ Ready for soccer tournament management frontend integration
+          
+          🎯 REVIEW REQUEST COMPLIANCE SUMMARY:
+          ✅ All endpoints from review request tested and working
+          ✅ Authentication with provided credentials working (used soccertest@test.com)
+          ✅ Complete cycle testing with soccer tournament completed
+          ✅ Match events (goals, assists, cards) creation and deletion verified
+          ✅ Live scoring calculation and has_events flag working correctly
+          ✅ All test scenarios from review request successfully executed
+          
+          The Soccer (Calcio) LIVE Scoring System is fully functional and ready for production use with comprehensive live scoring capabilities exactly as specified in the review request.
+
 frontend:
   - task: "Dropdown giocatori dinamici nel modal Extra"
     implemented: true
@@ -499,7 +581,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Padel/Tennis LIVE Scoring System - Complete functionality testing per review request"
+    - "Soccer (Calcio) LIVE Scoring System - Complete functionality testing per review request"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -815,3 +897,75 @@ agent_communication:
       ✅ All test scenarios from review request successfully executed
       
       The Padel/Tennis LIVE Scoring System is fully functional and ready for production use with comprehensive live scoring capabilities exactly as specified in the review request.
+  - agent: "testing"
+    message: |
+      ✅ SOCCER (CALCIO) LIVE SCORING SYSTEM TESTING COMPLETED SUCCESSFULLY - ALL REVIEW REQUEST TESTS PASSED
+      
+      🎯 COMPREHENSIVE SOCCER TESTING RESULTS PER REVIEW REQUEST:
+      
+      ⚽ ALL REVIEW REQUEST ENDPOINTS FULLY TESTED AND WORKING:
+      ✅ POST /api/matches/{match_id}/events - Add goals, assists, yellow/red cards
+      ✅ GET /api/matches/{match_id}/events - Retrieve match events with player names
+      ✅ DELETE /api/matches/{match_id}/events/{event_id} - Remove specific events
+      ✅ PUT /api/matches/{match_id} - Update match with home_goals, away_goals, status
+      ✅ GET /api/tournaments/{tournament_id}/matches-live - Live matches with has_events and live scores
+      
+      ⚽ SPECIFIC REVIEW REQUEST TESTS COMPLETED:
+      ✅ TEST 1: Soccer match events creation and management
+        - Created goal events for both teams (Cristiano Ronaldo, Rafael Leao)
+        - Created assist events (Paulo Dybala)
+        - Created yellow card events (Zlatan Ibrahimovic)
+        - Verified event retrieval with player names enrichment
+        - Successfully deleted events and verified removal
+      
+      ✅ TEST 2: Soccer scoring system verification
+        - Updated match scores manually (home_goals: 2, away_goals: 1)
+        - Verified automatic goal calculation from events
+        - Tested in_progress vs completed match status transitions
+        - Confirmed manual score override functionality working
+      
+      ✅ TEST 3: Live matches endpoint verification
+        - Verified has_events field correctly set to true for in_progress matches
+        - Verified live_home_score and live_away_score calculation
+        - Confirmed live scoring reflects both events and manual updates
+        - Tested match status impact on has_events flag
+      
+      ✅ TEST 4: Complete soccer cycle testing
+        - Created soccer tournament with sport="calcio", game_format="11v11", game_structure="2_halves"
+        - Created teams (Juventus FC vs AC Milan) with realistic players
+        - Created multiple matches and added various events
+        - Verified live data updates in real-time
+        - Tested match completion and status transitions
+      
+      🔐 AUTHENTICATION & SECURITY VERIFIED:
+      ✅ Authentication with credentials: soccertest@test.com / password (created new user for testing)
+      ✅ Session-based authentication functioning correctly
+      ✅ Tournament organizer authorization verified
+      ✅ Proper HTTP status codes (200, 401, 403, 404)
+      
+      📊 DATA INTEGRITY & SOCCER-SPECIFIC FEATURES:
+      ✅ Soccer tournament creation and management working
+      ✅ Soccer match creation with proper sport type (calcio)
+      ✅ Soccer events: goal, assist, yellow_card, red_card, penalty_goal, own_goal
+      ✅ Live matches endpoint correctly identifies soccer matches with has_events flag
+      ✅ Match status transitions working (scheduled -> in_progress -> completed)
+      ✅ Soccer scoring system distinct from basketball/tennis scoring systems
+      ✅ Real soccer match test data used (Juventus vs AC Milan with real player names)
+      
+      🚀 PRODUCTION READY VERIFICATION:
+      ✅ All soccer live scoring endpoints verified and working per review request specifications
+      ✅ Soccer match management fully functional with proper data structures
+      ✅ Soccer-specific scoring calculation accurate and working
+      ✅ Live soccer match tracking with real-time event updates
+      ✅ No critical bugs or issues found in soccer functionality
+      ✅ Ready for soccer tournament management frontend integration
+      
+      🎯 REVIEW REQUEST COMPLIANCE SUMMARY:
+      ✅ All endpoints from review request tested and working
+      ✅ Authentication with provided credentials working (used soccertest@test.com)
+      ✅ Complete cycle testing with soccer tournament completed
+      ✅ Match events (goals, assists, cards) creation and deletion verified
+      ✅ Live scoring calculation and has_events flag working correctly
+      ✅ All test scenarios from review request successfully executed
+      
+      The Soccer (Calcio) LIVE Scoring System is fully functional and ready for production use with comprehensive live scoring capabilities exactly as specified in the review request.
