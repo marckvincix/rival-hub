@@ -2996,6 +2996,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <BasketballMatchModal
         visible={showBasketballMatchModal}
         onClose={() => {
+          // Reload matches to get the latest data after auto-save
+          loadData();
           setShowBasketballMatchModal(false);
           setSelectedBasketballMatch(null);
         }}
@@ -3008,6 +3010,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         gameStructure={tournament?.game_structure || '4_quarters'}
         onSave={(updatedMatch) => {
           setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          loadData(); // Also reload on explicit save
           setShowBasketballMatchModal(false);
           setSelectedBasketballMatch(null);
         }}

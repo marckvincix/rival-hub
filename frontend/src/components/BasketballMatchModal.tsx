@@ -112,15 +112,72 @@ export function BasketballMatchModal({
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   
   const [saving, setSaving] = useState(false);
+  const [autoSaveInitialized, setAutoSaveInitialized] = useState(false);
 
   // Calculate total scores
   const homeTotal = Object.values(periodsScore).reduce((sum, p) => sum + (p?.home || 0), 0);
   const awayTotal = Object.values(periodsScore).reduce((sum, p) => sum + (p?.away || 0), 0);
 
+  // Auto-save effect (debounced 500ms)
+  useEffect(() => {
+    if (!visible || !match?.id || !autoSaveInitialized) return;
+    
+    const timeoutId = setTimeout(() => {
+      triggerAutoSave();
+    }, 500);
+    
+    return () => clearTimeout(timeoutId);
+  }, [events, periodsScore, homeTeamFouls, awayTeamFouls, autoSaveInitialized]);
+
+  // Trigger auto-save
+  const triggerAutoSave = async () => {
+    if (!match?.id || saving) return;
+    
+    try {
+      setSaving(true);
+      const eventsToSave = events.map(e => ({
+        player_id: e.player_id,
+        team_id: e.team_id,
+        event_type: e.event_type,
+        period: e.period,
+        points_value: e.points_value,
+      }));
+      
+      await api.post(`/api/matches/${match.id}/events/batch`, {
+        events: eventsToSave,
+        ratings: {},
+        home_goals: homeTotal,
+        away_goals: awayTotal,
+        periods_score: periodsScore,
+        home_team_fouls: homeTeamFouls,
+        away_team_fouls: awayTeamFouls,
+      });
+      
+      // Update match status to in_progress
+      await api.put(`/api/matches/${match.id}`, {
+        status: 'in_progress',
+        current_period: currentPeriod,
+        timer_seconds: timerSeconds,
+        home_goals: homeTotal,
+        away_goals: awayTotal,
+        periods_score: periodsScore,
+      });
+      
+      console.log('Basketball auto-save completed');
+    } catch (error) {
+      console.error('Auto-save error:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Load existing events
   useEffect(() => {
     if (visible && match?.id) {
       loadMatchEvents();
+    } else {
+      // Reset when modal closes
+      setAutoSaveInitialized(false);
     }
   }, [visible, match?.id]);
 
@@ -161,8 +218,12 @@ export function BasketballMatchModal({
         }
       });
       setPlayerStats(stats);
+      
+      // Initialize auto-save after loading
+      setTimeout(() => setAutoSaveInitialized(true), 100);
     } catch (error) {
       console.error('Error loading events:', error);
+      setTimeout(() => setAutoSaveInitialized(true), 100);
     }
   };
 
@@ -438,10 +499,10 @@ export function BasketballMatchModal({
             <Text style={styles.tournamentName}>{tournamentName}</Text>
             <Text style={styles.matchRound}>{match?.round}</Text>
           </View>
-          <TouchableOpacity onPress={handleSave} disabled={saving} style={styles.saveButton}>
-            <Ionicons name="save" size={20} color="#FFF" />
-            <Text style={styles.saveButtonText}>Salva</Text>
-          </TouchableOpacity>
+          <View style={styles.autoSaveIndicator}>
+            <Ionicons name="checkmark-circle" size={16} color="#10B981" />
+            <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+          </View>
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -667,6 +728,16 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  autoSaveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  autoSaveText: {
+    color: '#10B981',
+    fontSize: 11,
+    fontWeight: '500',
   },
   content: {
     flex: 1,
