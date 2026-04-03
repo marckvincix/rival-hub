@@ -106,6 +106,21 @@ export default function TournamentPublicPage() {
       setTeams(teamsRes.data); setMatches(matchesRes.data); setStandings(standingsRes.data);
       setScorers(scorersRes.data); setPlayerStats(statsRes.data); setNews(newsRes.data);
       setFormations(formationsRes.data || []);
+      
+      // For Tennis/Padel: Load players for all teams automatically
+      const isPadel = t.sport === 'padel';
+      if (isTennis || isPadel) {
+        const playersData: Record<string, any[]> = {};
+        await Promise.all(teamsRes.data.map(async (team: any) => {
+          try {
+            const playersRes = await api.get(`/api/teams/${team.id}/players`);
+            playersData[team.id] = playersRes.data || [];
+          } catch (e) {
+            playersData[team.id] = [];
+          }
+        }));
+        setTeamPlayers(playersData);
+      }
     } catch (error) { console.error('Error:', error); } finally { setLoading(false); setRefreshing(false); }
   };
 
@@ -429,8 +444,39 @@ export default function TournamentPublicPage() {
                 <View key={round} style={styles.matchesGroup}>
                   <Text style={styles.matchesGroupTitle}>{round}</Text>
                   {roundMatches.map((match) => {
-                    const homeFormation = formations.find(f => f.team_id === match.home_team_id);
-                    const awayFormation = formations.find(f => f.team_id === match.away_team_id);
+                    let homeFormation = formations.find(f => f.team_id === match.home_team_id);
+                    let awayFormation = formations.find(f => f.team_id === match.away_team_id);
+                    
+                    // For Tennis/Padel: Create virtual formations from team players if no formation exists
+                    if (isRacketSport) {
+                      const homePlayers = teamPlayers[match.home_team_id] || [];
+                      const awayPlayers = teamPlayers[match.away_team_id] || [];
+                      
+                      if (!homeFormation && homePlayers.length > 0) {
+                        homeFormation = {
+                          team_id: match.home_team_id,
+                          module: isDoubles ? 'Doppio' : 'Singolo',
+                          starters: homePlayers.map((p: any) => ({
+                            player_id: p.id,
+                            player_name: p.full_name,
+                            player_number: p.number,
+                          }))
+                        };
+                      }
+                      
+                      if (!awayFormation && awayPlayers.length > 0) {
+                        awayFormation = {
+                          team_id: match.away_team_id,
+                          module: isDoubles ? 'Doppio' : 'Singolo',
+                          starters: awayPlayers.map((p: any) => ({
+                            player_id: p.id,
+                            player_name: p.full_name,
+                            player_number: p.number,
+                          }))
+                        };
+                      }
+                    }
+                    
                     return (
                       <View key={match.id} style={styles.matchCard}>
                         <View style={styles.matchRow}>

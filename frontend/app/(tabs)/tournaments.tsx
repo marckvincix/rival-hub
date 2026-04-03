@@ -551,6 +551,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       ]);
       setTeams(teamsRes.data);
       setMatches(matchesRes.data);
+      
+      // For Tennis/Padel, load players for all teams immediately
+      if (tournament.sport === 'tennis' || tournament.sport === 'padel') {
+        const playersData: Record<string, any[]> = {};
+        await Promise.all(teamsRes.data.map(async (team: any) => {
+          try {
+            const playersRes = await api.get(`/api/teams/${team.id}/players`);
+            playersData[team.id] = playersRes.data.map((p: any) => ({
+              id: p.id,
+              name: p.full_name,
+              number: p.number,
+              role: p.role,
+              photo: p.photo,
+              birthDate: p.birth_date,
+            }));
+          } catch (e) {
+            playersData[team.id] = [];
+          }
+        }));
+        setTeamPlayers(playersData);
+      }
     } catch (error) {} finally { setLoading(false); }
   };
 
