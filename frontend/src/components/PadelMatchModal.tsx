@@ -367,6 +367,7 @@ export function PadelMatchModal({
               
               const matchData = {
                 tennis_sets: setScores,
+                currentGame: null,  // Clear current game on completion
                 home_stats: homeStats,
                 away_stats: awayStats,
                 home_goals: homeSetsWon,

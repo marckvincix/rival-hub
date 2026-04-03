@@ -1364,6 +1364,12 @@ async def update_match(
     
     update_data = {k: v for k, v in match_data.dict().items() if v is not None}
     
+    # Handle explicit null values for clearing fields (e.g., currentGame: null)
+    # Check the raw dict for explicitly set None values
+    raw_data = match_data.dict()
+    if 'currentGame' in raw_data and raw_data['currentGame'] is None:
+        update_data['currentGame'] = None
+    
     # Track if match is being completed
     is_completing = False
     

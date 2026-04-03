@@ -509,8 +509,8 @@ export default function TournamentPublicPage() {
                                     </Text>
                                   </View>
                                 )}
-                                {/* LIVE badge - Show when match has currentGame data (actively being played) */}
-                                {(match as any).currentGame && (
+                                {/* LIVE badge - Show when match has currentGame data AND is not completed */}
+                                {(match as any).currentGame && match.status !== 'completed' && (
                                   <Text style={styles.liveIndicator}>LIVE</Text>
                                 )}
                               </View>

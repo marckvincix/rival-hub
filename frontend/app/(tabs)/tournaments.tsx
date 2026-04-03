@@ -658,7 +658,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       } catch (error) {
         console.error('Error loading players:', error);
       }
-      setSelectedTennisMatch(match);
+      // Fetch fresh match data before opening modal
+      try {
+        const freshMatchRes = await api.get(`/api/matches/${match.id}`);
+        setSelectedTennisMatch(freshMatchRes.data);
+      } catch (error) {
+        console.error('Error fetching fresh match:', error);
+        setSelectedTennisMatch(match); // Fallback to passed match
+      }
       setShowTennisMatchModal(true);
     } else if (tournament?.sport === 'padel') {
       // Padel - use padel modal
@@ -672,7 +679,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       } catch (error) {
         console.error('Error loading players:', error);
       }
-      setSelectedPadelMatch(match);
+      // Fetch fresh match data before opening modal
+      try {
+        const freshMatchRes = await api.get(`/api/matches/${match.id}`);
+        setSelectedPadelMatch(freshMatchRes.data);
+      } catch (error) {
+        console.error('Error fetching fresh match:', error);
+        setSelectedPadelMatch(match); // Fallback to passed match
+      }
       setShowPadelMatchModal(true);
     } else {
       // Football - use existing modal
