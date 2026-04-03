@@ -2982,6 +2982,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <TennisMatchModal
         visible={showTennisMatchModal}
         onClose={() => {
+          // Reload matches to get the latest data after auto-save
+          loadData();
           setShowTennisMatchModal(false);
           setSelectedTennisMatch(null);
         }}
@@ -3003,6 +3005,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <PadelMatchModal
         visible={showPadelMatchModal}
         onClose={() => {
+          // Reload matches to get the latest data after auto-save
+          loadData();
           setShowPadelMatchModal(false);
           setSelectedPadelMatch(null);
         }}
