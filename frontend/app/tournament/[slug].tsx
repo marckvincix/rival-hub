@@ -167,7 +167,9 @@ export default function TournamentPublicPage() {
   };
 
   const handleOpenMatchStats = (match: Match) => {
-    setSelectedMatchForStats(match);
+    // Find the latest match data from the matches state (updated by polling)
+    const latestMatch = matches.find(m => m.id === match.id) || match;
+    setSelectedMatchForStats(latestMatch);
     setShowStatsModal(true);
   };
 
