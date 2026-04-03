@@ -23,7 +23,7 @@ import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BasketballMatchModal, TennisMatchModal, PadelMatchModal } from '../../src/components';
+import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
@@ -518,6 +518,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Padel Match Modal state
   const [showPadelMatchModal, setShowPadelMatchModal] = useState(false);
   const [selectedPadelMatch, setSelectedPadelMatch] = useState<any>(null);
+  // Volleyball Match Modal state
+  const [showVolleyballMatchModal, setShowVolleyballMatchModal] = useState(false);
+  const [selectedVolleyballMatch, setSelectedVolleyballMatch] = useState<any>(null);
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
@@ -702,6 +705,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         setSelectedPadelMatch(match); // Fallback to passed match
       }
       setShowPadelMatchModal(true);
+    } else if (tournament?.sport === 'pallavolo') {
+      // Volleyball - use volleyball modal
+      try {
+        const [homePlayersRes, awayPlayersRes] = await Promise.all([
+          api.get(`/api/teams/${match.home_team_id}/players`),
+          api.get(`/api/teams/${match.away_team_id}/players`)
+        ]);
+        setHomeTeamPlayers(homePlayersRes.data || []);
+        setAwayTeamPlayers(awayPlayersRes.data || []);
+      } catch (error) {
+        console.error('Error loading players:', error);
+      }
+      // Fetch fresh match data before opening modal
+      try {
+        const freshMatchRes = await api.get(`/api/matches/${match.id}`);
+        setSelectedVolleyballMatch(freshMatchRes.data);
+      } catch (error) {
+        console.error('Error fetching fresh match:', error);
+        setSelectedVolleyballMatch(match);
+      }
+      setShowVolleyballMatchModal(true);
     } else {
       // Football - use existing modal
       setSelectedMatch(match);
@@ -3059,6 +3083,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
           setShowPadelMatchModal(false);
           setSelectedPadelMatch(null);
+        }}
+      />
+
+      {/* Volleyball Match Modal */}
+      <VolleyballMatchModal
+        visible={showVolleyballMatchModal}
+        onClose={() => {
+          loadData();
+          setShowVolleyballMatchModal(false);
+          setSelectedVolleyballMatch(null);
+        }}
+        match={selectedVolleyballMatch}
+        homeTeam={teams.find(t => t.id === selectedVolleyballMatch?.home_team_id)}
+        awayTeam={teams.find(t => t.id === selectedVolleyballMatch?.away_team_id)}
+        homePlayers={homeTeamPlayers}
+        awayPlayers={awayTeamPlayers}
+        tournamentName={tournament?.name || ''}
+        onSave={(updatedMatch) => {
+          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          loadData();
+          setShowVolleyballMatchModal(false);
+          setSelectedVolleyballMatch(null);
         }}
       />
     </SafeAreaView>

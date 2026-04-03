@@ -200,6 +200,8 @@ class MatchUpdate(BaseModel):
     currentGame: Optional[Dict] = None  # Current game state {homePoints, awayPoints, isDeuce, advantage, homeGamesInSet, awayGamesInSet}
     home_stats: Optional[Dict] = None  # Tennis player stats (aces, double_faults, etc.)
     away_stats: Optional[Dict] = None
+    # Volleyball specific fields
+    volleyball_sets: Optional[List[Dict]] = None
 
 class Match(BaseModel):
     id: str
@@ -225,6 +227,8 @@ class Match(BaseModel):
     currentGame: Optional[Dict] = None
     home_stats: Optional[Dict] = None
     away_stats: Optional[Dict] = None
+    # Volleyball specific fields
+    volleyball_sets: Optional[List[Dict]] = None
     created_at: datetime
 
 # Match Event Models
@@ -1261,6 +1265,7 @@ async def get_matches_live(tournament_id: str):
     is_basketball = sport == "basket"
     is_tennis = sport == "tennis"
     is_padel = sport == "padel"
+    is_volleyball = sport == "pallavolo"
     
     result = []
     for match in matches:
@@ -1308,6 +1313,14 @@ async def get_matches_live(tournament_id: str):
             is_in_progress = match.get("status") == "in_progress"
             has_game_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or current_game.get("homePoints", 0) > 0 or current_game.get("awayPoints", 0) > 0
             # Only mark as live if match is in progress (not completed)
+            has_live_data = is_in_progress and has_game_data
+        elif is_volleyball:
+            # Volleyball: Use home_goals/away_goals (sets won) directly from match data
+            home_score = match.get("home_goals", 0) or 0
+            away_score = match.get("away_goals", 0) or 0
+            volleyball_sets = match.get("volleyball_sets", [])
+            is_in_progress = match.get("status") == "in_progress"
+            has_game_data = len(volleyball_sets) > 0 or home_score > 0 or away_score > 0
             has_live_data = is_in_progress and has_game_data
         else:
             # Soccer scoring - first try from events, then fallback to home_goals/away_goals
