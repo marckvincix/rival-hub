@@ -2609,6 +2609,7 @@ async def get_tennis_stats(tournament_id: str):
                 "unforced_errors": 0,
                 "break_points_converted": 0,
                 "break_points_saved": 0,
+                "smash_winners": 0,
                 "matches_played": 0,
                 "mvp_score": 0
             }
@@ -2625,6 +2626,7 @@ async def get_tennis_stats(tournament_id: str):
                 "unforced_errors": 0,
                 "break_points_converted": 0,
                 "break_points_saved": 0,
+                "smash_winners": 0,
                 "matches_played": 0,
                 "mvp_score": 0
             }
@@ -2637,6 +2639,7 @@ async def get_tennis_stats(tournament_id: str):
             team_stats[home_id]["unforced_errors"] += home_stats.get("unforcedErrors", 0)
             team_stats[home_id]["break_points_converted"] += home_stats.get("breakPointsConverted", 0)
             team_stats[home_id]["break_points_saved"] += home_stats.get("breakPointsSaved", 0)
+            team_stats[home_id]["smash_winners"] += home_stats.get("smashWinners", 0)
             team_stats[home_id]["matches_played"] += 1
         
         # Aggregate away stats
@@ -2647,6 +2650,7 @@ async def get_tennis_stats(tournament_id: str):
             team_stats[away_id]["unforced_errors"] += away_stats.get("unforcedErrors", 0)
             team_stats[away_id]["break_points_converted"] += away_stats.get("breakPointsConverted", 0)
             team_stats[away_id]["break_points_saved"] += away_stats.get("breakPointsSaved", 0)
+            team_stats[away_id]["smash_winners"] += away_stats.get("smashWinners", 0)
             team_stats[away_id]["matches_played"] += 1
     
     # Calculate MVP score: most winners, tiebreaker: most aces

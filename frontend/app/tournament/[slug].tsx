@@ -710,7 +710,7 @@ export default function TournamentPublicPage() {
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EF4444' }]}>{player.double_faults || 0}</Text><Text style={styles.statBoxLabel}>Doppi F.</Text></View>
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#10B981' }]}>{player.winners || 0}</Text><Text style={styles.statBoxLabel}>Winners</Text></View>
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#F59E0B' }]}>{player.unforced_errors || 0}</Text><Text style={styles.statBoxLabel}>Errori NF</Text></View>
-                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.average_points ? player.average_points.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>Media Pt</Text></View>
+                        {isPadel && <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#8B5CF6' }]}>{player.smash_winners || 0}</Text><Text style={styles.statBoxLabel}>Smash</Text></View>}
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.matches_played || 0}</Text><Text style={styles.statBoxLabel}>Partite</Text></View>
                       </>
                     ) : isBasketball ? (
