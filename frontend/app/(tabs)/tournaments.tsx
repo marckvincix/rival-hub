@@ -2160,14 +2160,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <View style={{ width: 60 }} />
           </View>
           <ScrollView style={styles.newMatchContent} showsVerticalScrollIndicator={false}>
-            {/* Squadra Casa */}
-            <Text style={styles.newMatchLabel}>Squadra Casa</Text>
+            {/* Squadra/Giocatore Casa */}
+            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? 'Coppia Casa' : 'Giocatore Casa') : 'Squadra Casa'}</Text>
             <TouchableOpacity 
               style={styles.newMatchDropdown} 
               onPress={() => { setShowHomeDropdown(!showHomeDropdown); setShowAwayDropdown(false); }}
             >
               <Text style={newMatchData.home_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
-                {newMatchData.home_team_id ? teams.find(t => t.id === newMatchData.home_team_id)?.name : 'Seleziona la squadra'}
+                {newMatchData.home_team_id ? teams.find(t => t.id === newMatchData.home_team_id)?.name : (isTennisSport ? (isDoubles ? 'Seleziona la coppia' : 'Seleziona il giocatore') : 'Seleziona la squadra')}
               </Text>
               <Ionicons name="chevron-down" size={22} color="#000" />
             </TouchableOpacity>
@@ -2186,14 +2186,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
             )}
 
-            {/* Squadra Trasferta */}
-            <Text style={styles.newMatchLabel}>Squadra Trasferta</Text>
+            {/* Squadra/Giocatore Trasferta */}
+            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? 'Coppia Ospite' : 'Giocatore Ospite') : 'Squadra Trasferta'}</Text>
             <TouchableOpacity 
               style={styles.newMatchDropdown}
               onPress={() => { setShowAwayDropdown(!showAwayDropdown); setShowHomeDropdown(false); }}
             >
               <Text style={newMatchData.away_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
-                {newMatchData.away_team_id ? teams.find(t => t.id === newMatchData.away_team_id)?.name : 'Seleziona la squadra'}
+                {newMatchData.away_team_id ? teams.find(t => t.id === newMatchData.away_team_id)?.name : (isTennisSport ? (isDoubles ? 'Seleziona la coppia' : 'Seleziona il giocatore') : 'Seleziona la squadra')}
               </Text>
               <Ionicons name="chevron-down" size={22} color="#000" />
             </TouchableOpacity>
