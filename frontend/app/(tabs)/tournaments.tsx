@@ -23,7 +23,7 @@ import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BasketballMatchModal, TennisMatchModal } from '../../src/components';
+import { BasketballMatchModal, TennisMatchModal, PadelMatchModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
@@ -515,6 +515,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Tennis Match Modal state
   const [showTennisMatchModal, setShowTennisMatchModal] = useState(false);
   const [selectedTennisMatch, setSelectedTennisMatch] = useState<any>(null);
+  // Padel Match Modal state
+  const [showPadelMatchModal, setShowPadelMatchModal] = useState(false);
+  const [selectedPadelMatch, setSelectedPadelMatch] = useState<any>(null);
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
@@ -636,6 +639,20 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       }
       setSelectedTennisMatch(match);
       setShowTennisMatchModal(true);
+    } else if (tournament?.sport === 'padel') {
+      // Padel - use padel modal
+      try {
+        const [homePlayersRes, awayPlayersRes] = await Promise.all([
+          api.get(`/api/teams/${match.home_team_id}/players`),
+          api.get(`/api/teams/${match.away_team_id}/players`)
+        ]);
+        setHomeTeamPlayers(homePlayersRes.data || []);
+        setAwayTeamPlayers(awayPlayersRes.data || []);
+      } catch (error) {
+        console.error('Error loading players:', error);
+      }
+      setSelectedPadelMatch(match);
+      setShowPadelMatchModal(true);
     } else {
       // Football - use existing modal
       setSelectedMatch(match);
@@ -2944,6 +2961,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
           setShowTennisMatchModal(false);
           setSelectedTennisMatch(null);
+        }}
+      />
+
+      {/* Padel Match Modal */}
+      <PadelMatchModal
+        visible={showPadelMatchModal}
+        onClose={() => {
+          setShowPadelMatchModal(false);
+          setSelectedPadelMatch(null);
+        }}
+        match={selectedPadelMatch}
+        homeTeam={teams.find(t => t.id === selectedPadelMatch?.home_team_id)}
+        awayTeam={teams.find(t => t.id === selectedPadelMatch?.away_team_id)}
+        homePlayers={homeTeamPlayers}
+        awayPlayers={awayTeamPlayers}
+        tournamentName={tournament?.name || ''}
+        gameFormat={tournament?.game_format === 'singolo' ? 'singolo' : 'doppio'}
+        onSave={(updatedMatch) => {
+          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          setShowPadelMatchModal(false);
+          setSelectedPadelMatch(null);
         }}
       />
     </SafeAreaView>

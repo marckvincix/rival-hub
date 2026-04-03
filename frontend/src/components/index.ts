@@ -12,3 +12,5 @@ export { BasketballCourtView } from './BasketballCourtView';
 export { BasketballMatchModal } from './BasketballMatchModal';
 export { TennisCourtView } from './TennisCourtView';
 export { TennisMatchModal } from './TennisMatchModal';
+export { PadelCourtView } from './PadelCourtView';
+export { PadelMatchModal } from './PadelMatchModal';

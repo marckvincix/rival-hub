@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
@@ -850,21 +850,39 @@ export default function TournamentPublicPage() {
                     <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
                   )}
                   {isRacketSport ? (
-                    <TennisCourtView
-                      format={isDoubles ? 'doubles' : 'singles'}
-                      homePlayers={selectedFormation?.starters?.map((s: any) => ({
-                        player_id: s.player_id,
-                        full_name: s.player_name,
-                        number: s.player_number,
-                      })) || []}
-                      awayPlayers={selectedAwayFormation?.starters?.map((s: any) => ({
-                        player_id: s.player_id,
-                        full_name: s.player_name,
-                        number: s.player_number,
-                      })) || []}
-                      homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
-                      awayTeamName={teams.find(t => t.id === selectedAwayFormation?.team_id)?.name}
-                    />
+                    isPadel ? (
+                      <PadelCourtView
+                        format={isDoubles ? 'doubles' : 'singles'}
+                        homePlayers={selectedFormation?.starters?.map((s: any) => ({
+                          player_id: s.player_id,
+                          full_name: s.player_name,
+                          number: s.player_number,
+                        })) || []}
+                        awayPlayers={selectedAwayFormation?.starters?.map((s: any) => ({
+                          player_id: s.player_id,
+                          full_name: s.player_name,
+                          number: s.player_number,
+                        })) || []}
+                        homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                        awayTeamName={teams.find(t => t.id === selectedAwayFormation?.team_id)?.name}
+                      />
+                    ) : (
+                      <TennisCourtView
+                        format={isDoubles ? 'doubles' : 'singles'}
+                        homePlayers={selectedFormation?.starters?.map((s: any) => ({
+                          player_id: s.player_id,
+                          full_name: s.player_name,
+                          number: s.player_number,
+                        })) || []}
+                        awayPlayers={selectedAwayFormation?.starters?.map((s: any) => ({
+                          player_id: s.player_id,
+                          full_name: s.player_name,
+                          number: s.player_number,
+                        })) || []}
+                        homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                        awayTeamName={teams.find(t => t.id === selectedAwayFormation?.team_id)?.name}
+                      />
+                    )
                   ) : (
                     <FieldView
                       module={selectedFormation.module}
