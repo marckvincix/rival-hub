@@ -2595,9 +2595,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         <Modal visible={showExtraModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowExtraModal(false)}>
           <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
             <ScrollView style={styles.extraModalContent} showsVerticalScrollIndicator={false}>
-              {/* Extra Header */}
+              {/* Extra Header with Close Button */}
               <View style={styles.extraHeaderBox}>
+                <View style={{ width: 40 }} />
                 <Text style={styles.extraHeaderText}>Extra</Text>
+                <TouchableOpacity 
+                  onPress={() => setShowExtraModal(false)} 
+                  style={{ width: 40, alignItems: 'flex-end' }}
+                >
+                  <Ionicons name="close" size={28} color="#000" />
+                </TouchableOpacity>
               </View>
 
               {selectedMatch && (
@@ -3584,8 +3591,8 @@ const styles = StyleSheet.create({
   extraBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   // Extra Modal Styles
   extraModalContent: { flex: 1, padding: 16 },
-  extraHeaderBox: { borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingVertical: 12, alignItems: 'center', marginBottom: 16 },
-  extraHeaderText: { fontSize: 16, fontWeight: '600', color: '#000' },
+  extraHeaderBox: { borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingVertical: 12, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  extraHeaderText: { fontSize: 16, fontWeight: '600', color: '#000', flex: 1, textAlign: 'center' },
   extraColumnsContainer: { flexDirection: 'row', gap: 12, marginBottom: 16 },
   extraColumn: { flex: 1 },
   extraColumnHeader: { backgroundColor: '#000', paddingVertical: 10, alignItems: 'center', borderRadius: 12, marginBottom: 8 },
