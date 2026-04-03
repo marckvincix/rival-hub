@@ -159,12 +159,13 @@ export function MatchStatsModal({
       transparent
       onRequestClose={onClose}
     >
-      <TouchableOpacity
-        style={styles.overlay}
-        activeOpacity={1}
-        onPress={onClose}
-      >
-        <TouchableOpacity activeOpacity={1} style={styles.content}>
+      <View style={styles.overlay}>
+        <TouchableOpacity 
+          style={StyleSheet.absoluteFill} 
+          activeOpacity={1} 
+          onPress={onClose}
+        />
+        <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
             <Text style={styles.title}>📊 Statistiche Partita</Text>
@@ -507,8 +508,8 @@ export function MatchStatsModal({
               )}
             </ScrollView>
           )}
-        </TouchableOpacity>
-      </TouchableOpacity>
+        </View>
+      </View>
     </Modal>
   );
 }
@@ -528,6 +529,7 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 380,
     maxHeight: '85%',
+    flexShrink: 1,
   },
   header: {
     flexDirection: 'row',
@@ -573,7 +575,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   eventsScroll: {
-    maxHeight: 350,
+    flex: 1,
+    maxHeight: 450,
   },
   noStatsContainer: {
     alignItems: 'center',
