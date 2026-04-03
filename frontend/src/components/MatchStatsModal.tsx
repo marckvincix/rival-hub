@@ -207,7 +207,7 @@ export function MatchStatsModal({
               {isRacketSport ? (
                 <>
                   {/* Sets Breakdown */}
-                  {matchData.tennis_sets && matchData.tennis_sets.length > 0 ? (
+                  {matchData.tennis_sets && matchData.tennis_sets.length > 0 && (
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>🎾 Punteggio Set</Text>
                       {matchData.tennis_sets.map((set: any, idx: number) => (
@@ -228,68 +228,56 @@ export function MatchStatsModal({
                         </View>
                       ))}
                     </View>
-                  ) : null}
-                  
-                  {/* Team Stats Comparison */}
-                  {(matchData.home_stats || matchData.away_stats) ? (
-                    <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
-                      
-                      {/* Stats Header */}
-                      <View style={styles.statsCompareHeader}>
-                        <Text style={styles.statsCompareTeam}>{getTeamName(matchData.home_team_id)}</Text>
-                        <Text style={styles.statsCompareLabel}>Stat</Text>
-                        <Text style={styles.statsCompareTeam}>{getTeamName(matchData.away_team_id)}</Text>
-                      </View>
-                      
-                      {/* Aces */}
-                      <View style={styles.statsCompareRow}>
-                        <Text style={styles.statsCompareValue}>{matchData.home_stats?.aces || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
-                        <Text style={styles.statsCompareValue}>{matchData.away_stats?.aces || 0}</Text>
-                      </View>
-                      
-                      {/* Double Faults */}
-                      <View style={styles.statsCompareRow}>
-                        <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.home_stats?.doubleFaults || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>❌ Doppi Falli</Text>
-                        <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.away_stats?.doubleFaults || 0}</Text>
-                      </View>
-                      
-                      {/* Winners */}
-                      <View style={styles.statsCompareRow}>
-                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.home_stats?.winners || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>🏆 Winners</Text>
-                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.away_stats?.winners || 0}</Text>
-                      </View>
-                      
-                      {/* Unforced Errors */}
-                      <View style={styles.statsCompareRow}>
-                        <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.home_stats?.unforcedErrors || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>⚠️ Errori NF</Text>
-                        <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.away_stats?.unforcedErrors || 0}</Text>
-                      </View>
-                      
-                      {/* Smash Winners (Padel only) */}
-                      {isPadel && (
-                        <View style={styles.statsCompareRow}>
-                          <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.home_stats?.smashWinners || 0}</Text>
-                          <Text style={styles.statsCompareStatName}>💥 Smash</Text>
-                          <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.away_stats?.smashWinners || 0}</Text>
-                        </View>
-                      )}
-                    </View>
-                  ) : (
-                    <View style={styles.noStatsContainer}>
-                      <Ionicons name="tennisball-outline" size={48} color="#CCC" />
-                      <Text style={styles.noStatsText}>
-                        Statistiche non ancora disponibili
-                      </Text>
-                      <Text style={styles.noStatsSubtext}>
-                        Le statistiche appariranno durante la partita
-                      </Text>
-                    </View>
                   )}
+                  
+                  {/* Team Stats Comparison - Always show for racket sports */}
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
+                    
+                    {/* Stats Header */}
+                    <View style={styles.statsCompareHeader}>
+                      <Text style={styles.statsCompareTeam}>{getTeamName(matchData.home_team_id)}</Text>
+                      <Text style={styles.statsCompareLabel}>Stat</Text>
+                      <Text style={styles.statsCompareTeam}>{getTeamName(matchData.away_team_id)}</Text>
+                    </View>
+                    
+                    {/* Aces */}
+                    <View style={styles.statsCompareRow}>
+                      <Text style={styles.statsCompareValue}>{matchData.home_stats?.aces || 0}</Text>
+                      <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
+                      <Text style={styles.statsCompareValue}>{matchData.away_stats?.aces || 0}</Text>
+                    </View>
+                    
+                    {/* Double Faults */}
+                    <View style={styles.statsCompareRow}>
+                      <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.home_stats?.doubleFaults || 0}</Text>
+                      <Text style={styles.statsCompareStatName}>❌ Doppi Falli</Text>
+                      <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.away_stats?.doubleFaults || 0}</Text>
+                    </View>
+                    
+                    {/* Winners */}
+                    <View style={styles.statsCompareRow}>
+                      <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.home_stats?.winners || 0}</Text>
+                      <Text style={styles.statsCompareStatName}>🏆 Winners</Text>
+                      <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.away_stats?.winners || 0}</Text>
+                    </View>
+                    
+                    {/* Unforced Errors */}
+                    <View style={styles.statsCompareRow}>
+                      <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.home_stats?.unforcedErrors || 0}</Text>
+                      <Text style={styles.statsCompareStatName}>⚠️ Errori NF</Text>
+                      <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.away_stats?.unforcedErrors || 0}</Text>
+                    </View>
+                    
+                    {/* Smash Winners (Padel only) */}
+                    {isPadel && (
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.home_stats?.smashWinners || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>💥 Smash</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.away_stats?.smashWinners || 0}</Text>
+                      </View>
+                    )}
+                  </View>
                 </>
               ) : events.length === 0 ? (
                 <View style={styles.noStatsContainer}>

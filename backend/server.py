@@ -1302,10 +1302,13 @@ async def get_matches_live(tournament_id: str):
             # These are updated in real-time by the organizer via TennisMatchModal
             home_score = match.get("home_goals", 0) or 0
             away_score = match.get("away_goals", 0) or 0
-            # Has live data if any set is recorded or match is in progress
+            # Has live data only if match is in_progress and has some data
             tennis_sets = match.get("tennis_sets", [])
             current_game = match.get("currentGame", {})
-            has_live_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or match.get("status") == "in_progress" or current_game.get("homePoints", 0) > 0 or current_game.get("awayPoints", 0) > 0
+            is_in_progress = match.get("status") == "in_progress"
+            has_game_data = len(tennis_sets) > 0 or home_score > 0 or away_score > 0 or current_game.get("homePoints", 0) > 0 or current_game.get("awayPoints", 0) > 0
+            # Only mark as live if match is in progress (not completed)
+            has_live_data = is_in_progress and has_game_data
         else:
             # Soccer scoring - first try from events, then fallback to home_goals/away_goals
             for event in events:
