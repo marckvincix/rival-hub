@@ -530,6 +530,20 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   });
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [savingEvents, setSavingEvents] = useState(false);
+  const [extraEventsInitialized, setExtraEventsInitialized] = useState(false);
+  
+  // Auto-save extra events when they change (debounced)
+  useEffect(() => {
+    // Skip initial load and empty states
+    if (!showExtraModal || !selectedMatch || !extraEventsInitialized) return;
+    
+    const timeoutId = setTimeout(() => {
+      handleSaveExtraEvents();
+    }, 500); // 500ms debounce
+    
+    return () => clearTimeout(timeoutId);
+  }, [extraEvents, showExtraModal, selectedMatch, extraEventsInitialized]);
+  
   // Formation Modal state
   const [showFormationModal, setShowFormationModal] = useState(false);
   const [selectedTeamForFormation, setSelectedTeamForFormation] = useState<any>(null);
@@ -1024,6 +1038,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         
         setExtraEvents(newExtraEvents);
         console.log('Loaded existing events:', newExtraEvents);
+        // Mark as initialized after loading
+        setTimeout(() => setExtraEventsInitialized(true), 100);
       } catch (error) {
         console.error('Error loading existing events:', error);
         // Reset to empty if loading fails
@@ -1031,6 +1047,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           home: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] },
           away: { marcatore: [], assist: [], giallo: [], rosso: [], sostEsce: [], sostEntra: [] }
         });
+        setTimeout(() => setExtraEventsInitialized(true), 100);
       }
       
       // Also load existing ratings
@@ -1039,6 +1056,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setShowExtraModal(true);
     }
   };
+
+  // Reset extraEventsInitialized when modal closes
+  useEffect(() => {
+    if (!showExtraModal) {
+      setExtraEventsInitialized(false);
+    }
+  }, [showExtraModal]);
 
   // Save extra events to backend using batch endpoint
   const handleSaveExtraEvents = async () => {
@@ -1118,23 +1142,21 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       const updatedMatch = {
         ...selectedMatch,
         home_goals: homeGoals,
-        away_goals: awayGoals
+        away_goals: awayGoals,
+        status: 'in_progress'
       };
       setSelectedMatch(updatedMatch);
       
-      // Refresh matches list to show updated score
+      // Refresh matches list to show updated score (silently)
       const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches`);
       setMatches(matchesRes.data);
       
-      // Reload events to show in the result screen
-      await loadMatchEvents(selectedMatch.id);
-      
-      Alert.alert('Salvato', 'Statistiche salvate correttamente');
-      setShowExtraModal(false);
+      // Don't show alert or close modal - this is auto-save
+      console.log('Auto-save completed successfully');
       
     } catch (error: any) {
       console.error('Error saving events:', error);
-      Alert.alert('Errore', error.response?.data?.detail || 'Errore nel salvataggio');
+      // Don't show alert for auto-save errors to avoid spam
     } finally {
       setSavingEvents(false);
     }
