@@ -51,16 +51,22 @@ export function MatchStatsModal({
   const [loading, setLoading] = useState(false);
   const [matchData, setMatchData] = useState<any>(null);
 
+  // Determine if racket sport - check both prop and matchData
   const isRacketSport = sport === 'tennis' || sport === 'padel';
   const isPadel = sport === 'padel';
 
+  // Debug log
+  console.log('MatchStatsModal render:', { sport, isRacketSport, hasMatchData: !!matchData });
+
   useEffect(() => {
     if (visible && match) {
+      console.log('MatchStatsModal opened:', { matchId: match.id, sport, isRacketSport });
       // For racket sports, fetch the latest match data directly from the server
       if (isRacketSport) {
         setLoading(true);
         api.get(`/api/matches/${match.id}`)
           .then((res) => {
+            console.log('Match data received:', res.data);
             setMatchData(res.data);
           })
           .catch((err) => {
