@@ -851,6 +851,7 @@ export default function TournamentPublicPage() {
         onClose={() => setShowStatsModal(false)}
         match={selectedMatchForStats}
         getTeamName={getTeamName}
+        sport={tournament?.sport}
       />
 
       {/* Formation Field Modal */}

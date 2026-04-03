@@ -20,8 +20,13 @@ interface MatchStatsModalProps {
     away_team_id: string;
     home_goals?: number;
     away_goals?: number;
+    home_stats?: any;
+    away_stats?: any;
+    tennis_sets?: any[];
+    currentGame?: any;
   } | null;
   getTeamName: (teamId: string) => string;
+  sport?: string;
 }
 
 interface MatchEvent {
@@ -40,15 +45,24 @@ export function MatchStatsModal({
   onClose,
   match,
   getTeamName,
+  sport,
 }: MatchStatsModalProps) {
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const isRacketSport = sport === 'tennis' || sport === 'padel';
+  const isPadel = sport === 'padel';
+
   useEffect(() => {
     if (visible && match) {
-      loadMatchEvents();
+      // For racket sports, stats are stored in match directly, no need to load events
+      if (!isRacketSport) {
+        loadMatchEvents();
+      } else {
+        setLoading(false);
+      }
     }
-  }, [visible, match?.id]);
+  }, [visible, match?.id, isRacketSport]);
 
   const loadMatchEvents = async () => {
     if (!match) return;
@@ -175,7 +189,95 @@ export function MatchStatsModal({
               style={styles.eventsScroll}
               showsVerticalScrollIndicator={false}
             >
-              {events.length === 0 ? (
+              {/* Tennis/Padel Stats from match data */}
+              {isRacketSport ? (
+                <>
+                  {/* Sets Breakdown */}
+                  {match.tennis_sets && match.tennis_sets.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>🎾 Punteggio Set</Text>
+                      {match.tennis_sets.map((set: any, idx: number) => (
+                        <View key={idx} style={styles.setRow}>
+                          <Text style={styles.setLabel}>Set {idx + 1}</Text>
+                          <View style={styles.setScoreBox}>
+                            <Text style={[styles.setScore, set.homeGames > set.awayGames && styles.setScoreWinner]}>
+                              {set.homeGames}
+                            </Text>
+                            <Text style={styles.setScoreSeparator}>-</Text>
+                            <Text style={[styles.setScore, set.awayGames > set.homeGames && styles.setScoreWinner]}>
+                              {set.awayGames}
+                            </Text>
+                          </View>
+                          {set.completed && (
+                            <Text style={styles.setStatus}>✓</Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {/* Team Stats Comparison */}
+                  {(match.home_stats || match.away_stats) ? (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
+                      
+                      {/* Stats Header */}
+                      <View style={styles.statsCompareHeader}>
+                        <Text style={styles.statsCompareTeam}>{getTeamName(match.home_team_id)}</Text>
+                        <Text style={styles.statsCompareLabel}>Stat</Text>
+                        <Text style={styles.statsCompareTeam}>{getTeamName(match.away_team_id)}</Text>
+                      </View>
+                      
+                      {/* Aces */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={styles.statsCompareValue}>{match.home_stats?.aces || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
+                        <Text style={styles.statsCompareValue}>{match.away_stats?.aces || 0}</Text>
+                      </View>
+                      
+                      {/* Double Faults */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{match.home_stats?.doubleFaults || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>❌ Doppi Falli</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{match.away_stats?.doubleFaults || 0}</Text>
+                      </View>
+                      
+                      {/* Winners */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{match.home_stats?.winners || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>🏆 Winners</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{match.away_stats?.winners || 0}</Text>
+                      </View>
+                      
+                      {/* Unforced Errors */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{match.home_stats?.unforcedErrors || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>⚠️ Errori NF</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{match.away_stats?.unforcedErrors || 0}</Text>
+                      </View>
+                      
+                      {/* Smash Winners (Padel only) */}
+                      {isPadel && (
+                        <View style={styles.statsCompareRow}>
+                          <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{match.home_stats?.smashWinners || 0}</Text>
+                          <Text style={styles.statsCompareStatName}>💥 Smash</Text>
+                          <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{match.away_stats?.smashWinners || 0}</Text>
+                        </View>
+                      )}
+                    </View>
+                  ) : (
+                    <View style={styles.noStatsContainer}>
+                      <Ionicons name="tennis-ball-outline" size={48} color="#CCC" />
+                      <Text style={styles.noStatsText}>
+                        Statistiche non ancora disponibili
+                      </Text>
+                      <Text style={styles.noStatsSubtext}>
+                        Le statistiche appariranno durante la partita
+                      </Text>
+                    </View>
+                  )}
+                </>
+              ) : events.length === 0 ? (
                 <View style={styles.noStatsContainer}>
                   <Ionicons name="document-outline" size={48} color="#CCC" />
                   <Text style={styles.noStatsText}>
@@ -495,5 +597,93 @@ const styles = StyleSheet.create({
   eventTeam: {
     fontSize: 12,
     color: '#666',
+  },
+  // Tennis/Padel specific styles
+  setRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  setLabel: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#666',
+    width: 60,
+  },
+  setScoreBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  setScore: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    minWidth: 30,
+    textAlign: 'center',
+  },
+  setScoreWinner: {
+    color: '#10B981',
+  },
+  setScoreSeparator: {
+    fontSize: 18,
+    color: '#999',
+    marginHorizontal: 8,
+  },
+  setStatus: {
+    fontSize: 14,
+    color: '#10B981',
+    marginLeft: 8,
+  },
+  statsCompareHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    borderBottomWidth: 2,
+    borderBottomColor: '#000',
+    marginBottom: 8,
+  },
+  statsCompareTeam: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'center',
+  },
+  statsCompareLabel: {
+    width: 100,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    textAlign: 'center',
+  },
+  statsCompareRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  statsCompareValue: {
+    flex: 1,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    textAlign: 'center',
+  },
+  statsCompareStatName: {
+    width: 100,
+    fontSize: 12,
+    color: '#666',
+    textAlign: 'center',
+  },
+  noStatsSubtext: {
+    fontSize: 12,
+    color: '#BBB',
+    marginTop: 4,
+    fontStyle: 'italic',
   },
 });
