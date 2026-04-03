@@ -1,456 +1,585 @@
 #!/usr/bin/env python3
 """
-Backend Testing Script for Tennis LIVE Scoring System
-Tests the specific tennis match functionality as requested.
+Comprehensive Backend Testing for Tournament App - Padel/Tennis Live Scoring System
+Testing all endpoints mentioned in the review request with authentication.
 """
 
-import asyncio
-import httpx
+import requests
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime
+import uuid
 
-# Backend URL from environment
-BACKEND_URL = "https://torneo-live.preview.emergentagent.com/api"
+# Configuration
+BASE_URL = "https://torneo-live.preview.emergentagent.com/api"
+TEST_EMAIL = "testpadel@test.com"
+TEST_PASSWORD = "password"
 
-class TennisLiveTestSuite:
+class TournamentTester:
     def __init__(self):
+        self.session = requests.Session()
         self.session_token = None
-        self.client = httpx.AsyncClient(timeout=30.0)
-        self.test_results = []
+        self.user_id = None
+        self.test_tournament_id = None
+        self.test_match_id = None
+        self.home_team_id = None
+        self.away_team_id = None
         
-    async def log_result(self, test_name, success, message, details=None):
-        """Log test result"""
-        result = {
-            "test": test_name,
-            "success": success,
-            "message": message,
-            "details": details,
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        }
-        self.test_results.append(result)
-        status = "✅ PASS" if success else "❌ FAIL"
-        print(f"{status} {test_name}: {message}")
-        if details and not success:
-            print(f"   Details: {details}")
-    
-    async def authenticate(self):
-        """Authenticate user to get session token"""
-        print("\n🔐 AUTHENTICATION PHASE")
+    def log(self, message):
+        """Log message with timestamp"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        print(f"[{timestamp}] {message}")
         
-        # Try to register a new test user
-        register_data = {
-            "email": "tennis_tester@test.com",
-            "password": "TennisTest123!",
-            "name": "Tennis Tester"
+    def authenticate(self):
+        """Authenticate with the provided credentials"""
+        self.log("🔐 Starting authentication...")
+        
+        # Try to login first
+        login_data = {
+            "email": TEST_EMAIL,
+            "password": TEST_PASSWORD
         }
         
-        try:
-            response = await self.client.post(f"{BACKEND_URL}/auth/register", json=register_data)
-            if response.status_code == 200:
-                data = response.json()
-                self.session_token = data.get("session_token")
-                await self.log_result("User Registration", True, f"Registered new user: {data.get('email')}")
-                return True
-            elif response.status_code == 400 and "già registrata" in response.text:
-                # User exists, try login
-                login_data = {
-                    "email": register_data["email"],
-                    "password": register_data["password"]
-                }
-                response = await self.client.post(f"{BACKEND_URL}/auth/login", json=login_data)
-                if response.status_code == 200:
-                    data = response.json()
-                    self.session_token = data.get("session_token")
-                    await self.log_result("User Login", True, f"Logged in user: {data.get('email')}")
-                    return True
-                else:
-                    await self.log_result("User Login", False, f"Login failed: {response.status_code}", response.text)
-                    return False
-            else:
-                await self.log_result("User Registration", False, f"Registration failed: {response.status_code}", response.text)
+        response = self.session.post(f"{BASE_URL}/auth/login", json=login_data)
+        
+        if response.status_code == 401:
+            self.log("❌ Login failed - User doesn't exist, attempting registration...")
+            
+            # Register new user
+            register_data = {
+                "email": TEST_EMAIL,
+                "password": TEST_PASSWORD,
+                "name": "Basketball Test User"
+            }
+            
+            response = self.session.post(f"{BASE_URL}/auth/register", json=register_data)
+            
+            if response.status_code != 200:
+                self.log(f"❌ Registration failed: {response.status_code} - {response.text}")
                 return False
-        except Exception as e:
-            await self.log_result("Authentication", False, f"Authentication error: {str(e)}")
-            return False
-    
-    def get_headers(self):
-        """Get headers with authentication"""
-        return {"Authorization": f"Bearer {self.session_token}"} if self.session_token else {}
-    
-    async def create_tennis_tournament_and_match(self):
-        """Create a tennis tournament and match for testing"""
-        print("\n🎾 CREATING TENNIS TOURNAMENT AND MATCH FOR TESTING")
+                
+            self.log("✅ User registered successfully")
         
-        # Create tennis tournament
+        elif response.status_code != 200:
+            self.log(f"❌ Authentication failed: {response.status_code} - {response.text}")
+            return False
+        
+        # Extract session token and user info
+        auth_data = response.json()
+        self.session_token = auth_data.get("session_token")
+        self.user_id = auth_data.get("user_id")
+        
+        if not self.session_token:
+            self.log("❌ No session token received")
+            return False
+            
+        # Set authorization header for future requests
+        self.session.headers.update({"Authorization": f"Bearer {self.session_token}"})
+        
+        self.log(f"✅ Authentication successful - User ID: {self.user_id}")
+        return True
+        
+    def create_test_tournament(self):
+        """Create a test Padel tournament"""
+        self.log("🏆 Creating test Padel tournament...")
+        
         tournament_data = {
-            "name": "Tennis Test Tournament",
-            "description": "Test tournament for tennis live scoring",
-            "sport": "tennis",
+            "name": f"Test Padel Tournament {uuid.uuid4().hex[:8]}",
+            "description": "Test tournament for Padel live scoring system",
+            "sport": "padel",
             "category": "Open",
             "format": "league",
-            "game_format": "1v1",
+            "game_format": "2v2",
             "game_structure": "3_sets",
             "is_public": True
         }
         
-        try:
-            response = await self.client.post(
-                f"{BACKEND_URL}/tournaments", 
-                json=tournament_data,
-                headers=self.get_headers()
-            )
-            
-            if response.status_code == 200:
-                tournament = response.json()
-                tournament_id = tournament.get("id")
-                await self.log_result(
-                    "Create Tennis Tournament", 
-                    True, 
-                    f"Created tennis tournament: {tournament_id}",
-                    {"tournament": tournament}
-                )
-                
-                # Create two teams
-                team1_data = {"name": "Player 1"}
-                team2_data = {"name": "Player 2"}
-                
-                team1_response = await self.client.post(
-                    f"{BACKEND_URL}/tournaments/{tournament_id}/teams",
-                    json=team1_data,
-                    headers=self.get_headers()
-                )
-                
-                team2_response = await self.client.post(
-                    f"{BACKEND_URL}/tournaments/{tournament_id}/teams",
-                    json=team2_data,
-                    headers=self.get_headers()
-                )
-                
-                if team1_response.status_code == 200 and team2_response.status_code == 200:
-                    team1 = team1_response.json()
-                    team2 = team2_response.json()
-                    
-                    await self.log_result(
-                        "Create Tennis Teams", 
-                        True, 
-                        f"Created teams: {team1.get('name')} vs {team2.get('name')}"
-                    )
-                    
-                    # Create a match
-                    match_data = {
-                        "home_team_id": team1.get("id"),
-                        "away_team_id": team2.get("id"),
-                        "round": "Giornata 6",
-                        "match_date": "2024-01-15",
-                        "match_time": "15:00"
-                    }
-                    
-                    match_response = await self.client.post(
-                        f"{BACKEND_URL}/tournaments/{tournament_id}/matches",
-                        json=match_data,
-                        headers=self.get_headers()
-                    )
-                    
-                    if match_response.status_code == 200:
-                        match = match_response.json()
-                        await self.log_result(
-                            "Create Tennis Match", 
-                            True, 
-                            f"Created tennis match: {match.get('id')}",
-                            {"match": match}
-                        )
-                        return tournament_id, match
-                    else:
-                        await self.log_result(
-                            "Create Tennis Match", 
-                            False, 
-                            f"Failed to create match: {match_response.status_code}",
-                            match_response.text
-                        )
-                        return tournament_id, None
-                else:
-                    await self.log_result(
-                        "Create Tennis Teams", 
-                        False, 
-                        f"Failed to create teams: {team1_response.status_code}, {team2_response.status_code}"
-                    )
-                    return tournament_id, None
-            else:
-                await self.log_result(
-                    "Create Tennis Tournament", 
-                    False, 
-                    f"Failed to create tournament: {response.status_code}",
-                    response.text
-                )
-                return None, None
-                
-        except Exception as e:
-            await self.log_result("Create Tennis Tournament", False, f"Request error: {str(e)}")
-            return None, None
-
-    async def test_get_tournament_matches(self, tournament_id):
-        """Test GET /api/tournaments/{tournament_id}/matches"""
-        print(f"\n🎾 TESTING TOURNAMENT MATCHES ENDPOINT FOR {tournament_id}")
+        response = self.session.post(f"{BASE_URL}/tournaments", json=tournament_data)
         
-        try:
-            response = await self.client.get(f"{BACKEND_URL}/tournaments/{tournament_id}/matches")
+        if response.status_code != 200:
+            self.log(f"❌ Tournament creation failed: {response.status_code} - {response.text}")
+            return False
             
-            if response.status_code == 200:
-                matches = response.json()
-                await self.log_result(
-                    "GET Tournament Matches", 
-                    True, 
-                    f"Retrieved {len(matches)} matches for tournament {tournament_id}",
-                    {"matches_count": len(matches), "sample_match": matches[0] if matches else None}
-                )
-                return matches
-            else:
-                await self.log_result(
-                    "GET Tournament Matches", 
-                    False, 
-                    f"Failed to get matches: HTTP {response.status_code}",
-                    response.text
-                )
-                return None
-                
-        except Exception as e:
-            await self.log_result("GET Tournament Matches", False, f"Request error: {str(e)}")
-            return None
-    
-    async def test_update_match_tennis_data(self, match_id):
-        """Test PUT /api/matches/{match_id} with tennis-specific payload"""
-        print(f"\n🎾 TESTING TENNIS MATCH UPDATE FOR {match_id}")
+        tournament = response.json()
+        self.test_tournament_id = tournament["id"]
+        self.log(f"✅ Tournament created: {self.test_tournament_id}")
+        return True
         
-        # Tennis match update payload as specified in the request
-        tennis_payload = {
-            "status": "in_progress",
-            "tennis_sets": [
-                {
-                    "setNumber": 1, 
-                    "homeGames": 4, 
-                    "awayGames": 3, 
-                    "completed": False, 
-                    "tiebreak": False, 
-                    "tiebreakHome": 0, 
-                    "tiebreakAway": 0
-                }
-            ],
-            "currentGame": {
-                "homePoints": 2,
-                "awayPoints": 1,
-                "isDeuce": False,
-                "advantage": None,
-                "currentSetIndex": 0,
-                "homeGamesInSet": 4,
-                "awayGamesInSet": 3
-            }
-            # Note: Not setting home_goals/away_goals to keep match in_progress
+    def create_test_teams_and_players(self):
+        """Create test teams and players for Padel"""
+        self.log("👥 Creating test teams and players...")
+        
+        # Create Team 1
+        team1_data = {"name": "Padel Team Alpha"}
+        response = self.session.post(f"{BASE_URL}/tournaments/{self.test_tournament_id}/teams", json=team1_data)
+        
+        if response.status_code != 200:
+            self.log(f"❌ Team 1 creation failed: {response.status_code} - {response.text}")
+            return False
+            
+        team1 = response.json()
+        self.home_team_id = team1["id"]
+        
+        # Create Team 2
+        team2_data = {"name": "Padel Team Beta"}
+        response = self.session.post(f"{BASE_URL}/tournaments/{self.test_tournament_id}/teams", json=team2_data)
+        
+        if response.status_code != 200:
+            self.log(f"❌ Team 2 creation failed: {response.status_code} - {response.text}")
+            return False
+            
+        team2 = response.json()
+        self.away_team_id = team2["id"]
+        
+        # Create players for Team 1
+        players_team1 = [
+            {"full_name": "Carlos Rodriguez", "number": 1},
+            {"full_name": "Miguel Santos", "number": 2}
+        ]
+        
+        for player_data in players_team1:
+            response = self.session.post(f"{BASE_URL}/teams/{self.home_team_id}/players", json=player_data)
+            if response.status_code != 200:
+                self.log(f"❌ Player creation failed: {response.status_code} - {response.text}")
+                return False
+                
+        # Create players for Team 2
+        players_team2 = [
+            {"full_name": "Andrea Bianchi", "number": 1},
+            {"full_name": "Marco Rossi", "number": 2}
+        ]
+        
+        for player_data in players_team2:
+            response = self.session.post(f"{BASE_URL}/teams/{self.away_team_id}/players", json=player_data)
+            if response.status_code != 200:
+                self.log(f"❌ Player creation failed: {response.status_code} - {response.text}")
+                return False
+                
+        self.log(f"✅ Teams and players created - Home: {self.home_team_id}, Away: {self.away_team_id}")
+        return True
+        
+    def create_test_match(self):
+        """Create a test Padel match"""
+        self.log("⚽ Creating test Padel match...")
+        
+        match_data = {
+            "home_team_id": self.home_team_id,
+            "away_team_id": self.away_team_id,
+            "match_date": "2024-01-15",
+            "match_time": "15:00",
+            "venue": "Padel Court 1",
+            "round": "Giornata 1"
         }
         
-        try:
-            response = await self.client.put(
-                f"{BACKEND_URL}/matches/{match_id}", 
-                json=tennis_payload,
-                headers=self.get_headers()
-            )
+        response = self.session.post(f"{BASE_URL}/tournaments/{self.test_tournament_id}/matches", json=match_data)
+        
+        if response.status_code != 200:
+            self.log(f"❌ Match creation failed: {response.status_code} - {response.text}")
+            return False
             
-            if response.status_code == 200:
-                updated_match = response.json()
-                await self.log_result(
-                    "PUT Tennis Match Update", 
-                    True, 
-                    f"Successfully updated match {match_id} with tennis data",
-                    {
-                        "status": updated_match.get("status"),
-                        "tennis_sets": updated_match.get("tennis_sets"),
-                        "currentGame": updated_match.get("currentGame")
-                    }
-                )
-                return updated_match
-            else:
-                await self.log_result(
-                    "PUT Tennis Match Update", 
-                    False, 
-                    f"Failed to update match: HTTP {response.status_code}",
-                    response.text
-                )
-                return None
+        match = response.json()
+        self.test_match_id = match["id"]
+        self.log(f"✅ Match created: {self.test_match_id}")
+        return True
+        
+    def test_padel_data_persistence(self):
+        """Test 1: Verify Padel/Tennis data persistence with PUT /api/matches/{match_id}"""
+        self.log("🎾 TEST 1: Testing Padel data persistence...")
+        
+        # Test data for Padel match update
+        padel_update_data = {
+            "tennis_sets": [
+                {"homeGames": 6, "awayGames": 4},  # Set 1: Home wins 6-4
+                {"homeGames": 3, "awayGames": 6},  # Set 2: Away wins 6-3
+                {"homeGames": 5, "awayGames": 3}   # Set 3: Home leads 5-3 (in progress)
+            ],
+            "currentGame": {
+                "homePoints": 30,
+                "awayPoints": 15,
+                "isDeuce": False,
+                "advantage": None,
+                "homeGamesInSet": 5,
+                "awayGamesInSet": 3
+            },
+            "home_stats": {
+                "aces": 8,
+                "double_faults": 2,
+                "first_serve_percentage": 75,
+                "winners": 15,
+                "unforced_errors": 8
+            },
+            "away_stats": {
+                "aces": 5,
+                "double_faults": 4,
+                "first_serve_percentage": 68,
+                "winners": 12,
+                "unforced_errors": 12
+            },
+            "home_goals": 2,  # Sets won by home team
+            "away_goals": 1,  # Sets won by away team
+            "status": "in_progress"
+        }
+        
+        # Update match with Padel data
+        response = self.session.put(f"{BASE_URL}/matches/{self.test_match_id}", json=padel_update_data)
+        
+        if response.status_code != 200:
+            self.log(f"❌ Match update failed: {response.status_code} - {response.text}")
+            return False
+            
+        updated_match = response.json()
+        self.log("✅ Match updated with Padel data")
+        
+        # Verify data was saved correctly
+        response = self.session.get(f"{BASE_URL}/matches/{self.test_match_id}")
+        
+        if response.status_code != 200:
+            self.log(f"❌ Match retrieval failed: {response.status_code} - {response.text}")
+            return False
+            
+        match_data = response.json()
+        
+        # Verify tennis_sets
+        if not match_data.get("tennis_sets"):
+            self.log("❌ tennis_sets not saved")
+            return False
+            
+        if len(match_data["tennis_sets"]) != 3:
+            self.log(f"❌ Expected 3 sets, got {len(match_data['tennis_sets'])}")
+            return False
+            
+        # Verify currentGame
+        if not match_data.get("currentGame"):
+            self.log("❌ currentGame not saved")
+            return False
+            
+        current_game = match_data["currentGame"]
+        if current_game.get("homePoints") != 30 or current_game.get("awayPoints") != 15:
+            self.log(f"❌ currentGame points incorrect: {current_game}")
+            return False
+            
+        # Verify home_stats and away_stats
+        if not match_data.get("home_stats") or not match_data.get("away_stats"):
+            self.log("❌ Player stats not saved")
+            return False
+            
+        # Verify score
+        if match_data.get("home_goals") != 2 or match_data.get("away_goals") != 1:
+            self.log(f"❌ Score incorrect: {match_data.get('home_goals')}-{match_data.get('away_goals')}")
+            return False
+            
+        self.log("✅ TEST 1 PASSED: Padel data persistence verified")
+        return True
+        
+    def test_matches_live_endpoint(self):
+        """Test 2: Verify GET /api/tournaments/{tournament_id}/matches-live endpoint"""
+        self.log("📡 TEST 2: Testing matches-live endpoint...")
+        
+        response = self.session.get(f"{BASE_URL}/tournaments/{self.test_tournament_id}/matches-live")
+        
+        if response.status_code != 200:
+            self.log(f"❌ matches-live endpoint failed: {response.status_code} - {response.text}")
+            return False
+            
+        live_matches = response.json()
+        
+        if not isinstance(live_matches, list):
+            self.log(f"❌ Expected list, got {type(live_matches)}")
+            return False
+            
+        # Find our test match
+        test_match = None
+        for match in live_matches:
+            if match.get("id") == self.test_match_id:
+                test_match = match
+                break
                 
-        except Exception as e:
-            await self.log_result("PUT Tennis Match Update", False, f"Request error: {str(e)}")
-            return None
-    
-    async def test_get_matches_live(self, tournament_id):
-        """Test GET /api/tournaments/{tournament_id}/matches-live"""
-        print(f"\n🎾 TESTING MATCHES LIVE ENDPOINT FOR {tournament_id}")
+        if not test_match:
+            self.log("❌ Test match not found in live matches")
+            return False
+            
+        # Verify has_events, live_home_score, live_away_score
+        if "has_events" not in test_match:
+            self.log("❌ has_events field missing")
+            return False
+            
+        if "live_home_score" not in test_match:
+            self.log("❌ live_home_score field missing")
+            return False
+            
+        if "live_away_score" not in test_match:
+            self.log("❌ live_away_score field missing")
+            return False
+            
+        # For Padel/Tennis, verify tennis_sets, home_stats, away_stats, currentGame
+        if not test_match.get("tennis_sets"):
+            self.log("❌ tennis_sets missing in live matches")
+            return False
+            
+        if not test_match.get("home_stats"):
+            self.log("❌ home_stats missing in live matches")
+            return False
+            
+        if not test_match.get("away_stats"):
+            self.log("❌ away_stats missing in live matches")
+            return False
+            
+        if not test_match.get("currentGame"):
+            self.log("❌ currentGame missing in live matches")
+            return False
+            
+        # Verify live scores match the sets won
+        expected_home_score = 2  # Sets won by home team
+        expected_away_score = 1  # Sets won by away team
+        
+        if test_match.get("live_home_score") != expected_home_score:
+            self.log(f"❌ live_home_score incorrect: expected {expected_home_score}, got {test_match.get('live_home_score')}")
+            return False
+            
+        if test_match.get("live_away_score") != expected_away_score:
+            self.log(f"❌ live_away_score incorrect: expected {expected_away_score}, got {test_match.get('live_away_score')}")
+            return False
+            
+        # Verify has_events is true for in_progress match
+        if not test_match.get("has_events"):
+            self.log("❌ has_events should be true for in_progress match")
+            return False
+            
+        self.log("✅ TEST 2 PASSED: matches-live endpoint verified")
+        return True
+        
+    def test_complete_cycle(self):
+        """Test 3: Test complete cycle - update match and verify both endpoints"""
+        self.log("🔄 TEST 3: Testing complete cycle...")
+        
+        # Update match with new score (home wins the third set)
+        cycle_update_data = {
+            "tennis_sets": [
+                {"homeGames": 6, "awayGames": 4},  # Set 1: Home wins 6-4
+                {"homeGames": 3, "awayGames": 6},  # Set 2: Away wins 6-3
+                {"homeGames": 6, "awayGames": 3}   # Set 3: Home wins 6-3
+            ],
+            "currentGame": None,  # Match completed
+            "home_goals": 2,  # Sets won by home team
+            "away_goals": 1,  # Sets won by away team
+            "status": "completed"
+        }
+        
+        # Update the match
+        response = self.session.put(f"{BASE_URL}/matches/{self.test_match_id}", json=cycle_update_data)
+        
+        if response.status_code != 200:
+            self.log(f"❌ Cycle update failed: {response.status_code} - {response.text}")
+            return False
+            
+        # Verify GET /api/matches/{match_id} returns updated data
+        response = self.session.get(f"{BASE_URL}/matches/{self.test_match_id}")
+        
+        if response.status_code != 200:
+            self.log(f"❌ Match retrieval failed: {response.status_code} - {response.text}")
+            return False
+            
+        match_data = response.json()
+        
+        # Verify the third set was updated
+        if len(match_data.get("tennis_sets", [])) != 3:
+            self.log("❌ Expected 3 sets in updated match")
+            return False
+            
+        third_set = match_data["tennis_sets"][2]
+        if third_set.get("homeGames") != 6 or third_set.get("awayGames") != 3:
+            self.log(f"❌ Third set incorrect: {third_set}")
+            return False
+            
+        # Verify currentGame is None (match completed)
+        if match_data.get("currentGame") is not None:
+            self.log(f"❌ currentGame should be None for completed match: {match_data.get('currentGame')}")
+            return False
+            
+        # Verify status is completed
+        if match_data.get("status") != "completed":
+            self.log(f"❌ Status should be completed: {match_data.get('status')}")
+            return False
+            
+        # Verify GET /api/tournaments/{tournament_id}/matches-live returns updated data
+        response = self.session.get(f"{BASE_URL}/tournaments/{self.test_tournament_id}/matches-live")
+        
+        if response.status_code != 200:
+            self.log(f"❌ matches-live endpoint failed: {response.status_code} - {response.text}")
+            return False
+            
+        live_matches = response.json()
+        
+        # Find our test match
+        test_match = None
+        for match in live_matches:
+            if match.get("id") == self.test_match_id:
+                test_match = match
+                break
+                
+        if not test_match:
+            self.log("❌ Test match not found in live matches")
+            return False
+            
+        # Verify updated scores in live endpoint
+        if test_match.get("live_home_score") != 2:
+            self.log(f"❌ live_home_score not updated: {test_match.get('live_home_score')}")
+            return False
+            
+        if test_match.get("live_away_score") != 1:
+            self.log(f"❌ live_away_score not updated: {test_match.get('live_away_score')}")
+            return False
+            
+        self.log("✅ TEST 3 PASSED: Complete cycle verified")
+        return True
+        
+    def test_match_status_completed(self):
+        """Test 4: Test match status - verify has_events becomes false for completed matches"""
+        self.log("🏁 TEST 4: Testing completed match status...")
+        
+        # Get live matches to check has_events for completed match
+        response = self.session.get(f"{BASE_URL}/tournaments/{self.test_tournament_id}/matches-live")
+        
+        if response.status_code != 200:
+            self.log(f"❌ matches-live endpoint failed: {response.status_code} - {response.text}")
+            return False
+            
+        live_matches = response.json()
+        
+        # Find our test match
+        test_match = None
+        for match in live_matches:
+            if match.get("id") == self.test_match_id:
+                test_match = match
+                break
+                
+        if not test_match:
+            self.log("❌ Test match not found in live matches")
+            return False
+            
+        # Verify has_events is false for completed match
+        if test_match.get("has_events") != False:
+            self.log(f"❌ has_events should be false for completed match: {test_match.get('has_events')}")
+            return False
+            
+        # Verify status is completed
+        if test_match.get("status") != "completed":
+            self.log(f"❌ Status should be completed: {test_match.get('status')}")
+            return False
+            
+        self.log("✅ TEST 4 PASSED: Completed match status verified")
+        return True
+        
+    def test_database_verification(self):
+        """Test 5: Verify data is actually in the database using mongosh"""
+        self.log("🗄️ TEST 5: Database verification...")
         
         try:
-            response = await self.client.get(f"{BACKEND_URL}/tournaments/{tournament_id}/matches-live")
+            import subprocess
             
-            if response.status_code == 200:
-                live_matches = response.json()
-                await self.log_result(
-                    "GET Matches Live", 
-                    True, 
-                    f"Retrieved {len(live_matches)} live matches for tournament {tournament_id}",
-                    {"live_matches_count": len(live_matches)}
-                )
+            # Check if match data exists in MongoDB
+            mongo_cmd = [
+                "mongosh", 
+                "mongodb://localhost:27017/test_database",
+                "--eval",
+                f"db.matches.findOne({{id: '{self.test_match_id}'}})"
+            ]
+            
+            result = subprocess.run(mongo_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode != 0:
+                self.log(f"❌ MongoDB query failed: {result.stderr}")
+                return False
                 
-                # Look for in_progress matches with tennis data
-                in_progress_matches = [m for m in live_matches if m.get("status") == "in_progress"]
-                matches_with_events = [m for m in live_matches if m.get("has_events") == True]
+            output = result.stdout
+            
+            # Check if the match exists in the output
+            if self.test_match_id not in output:
+                self.log("❌ Match not found in database")
+                return False
                 
-                await self.log_result(
-                    "Live Matches Analysis", 
-                    True, 
-                    f"Found {len(in_progress_matches)} in-progress matches, {len(matches_with_events)} with events",
-                    {
-                        "in_progress_count": len(in_progress_matches),
-                        "with_events_count": len(matches_with_events),
-                        "sample_live_match": in_progress_matches[0] if in_progress_matches else None
-                    }
-                )
+            # Check for tennis_sets in the output
+            if "tennis_sets" not in output:
+                self.log("❌ tennis_sets not found in database")
+                return False
                 
-                # If we have in-progress matches, verify tennis data structure
-                if in_progress_matches:
-                    target_match = in_progress_matches[0]
-                    
-                    # Verify tennis-specific fields
-                    has_status = target_match.get("status") == "in_progress"
-                    has_events = target_match.get("has_events") == True
-                    has_current_game = target_match.get("currentGame") is not None
-                    has_tennis_sets = target_match.get("tennis_sets") is not None
-                    
-                    success = has_status and has_events and has_current_game and has_tennis_sets
-                    
-                    await self.log_result(
-                        "Tennis Live Data Verification", 
-                        success, 
-                        f"Tennis match data validation: status={has_status}, events={has_events}, currentGame={has_current_game}, tennis_sets={has_tennis_sets}",
-                        {
-                            "match_id": target_match.get("id"),
-                            "status": target_match.get("status"),
-                            "has_events": target_match.get("has_events"),
-                            "currentGame": target_match.get("currentGame"),
-                            "tennis_sets": target_match.get("tennis_sets"),
-                            "live_home_score": target_match.get("live_home_score"),
-                            "live_away_score": target_match.get("live_away_score")
-                        }
-                    )
+            # Check for home_stats in the output
+            if "home_stats" not in output:
+                self.log("❌ home_stats not found in database")
+                return False
+                
+            self.log("✅ TEST 5 PASSED: Database verification successful")
+            return True
+            
+        except subprocess.TimeoutExpired:
+            self.log("❌ MongoDB query timed out")
+            return False
+        except FileNotFoundError:
+            self.log("⚠️ mongosh not available, skipping database verification")
+            return True  # Don't fail the test if mongosh is not available
+        except Exception as e:
+            self.log(f"❌ Database verification error: {str(e)}")
+            return False
+            
+    def run_all_tests(self):
+        """Run all tests in sequence"""
+        self.log("🚀 Starting comprehensive Padel/Tennis live scoring system tests...")
+        
+        tests = [
+            ("Authentication", self.authenticate),
+            ("Tournament Creation", self.create_test_tournament),
+            ("Teams and Players Setup", self.create_test_teams_and_players),
+            ("Match Creation", self.create_test_match),
+            ("Padel Data Persistence", self.test_padel_data_persistence),
+            ("Matches Live Endpoint", self.test_matches_live_endpoint),
+            ("Complete Cycle", self.test_complete_cycle),
+            ("Match Status Completed", self.test_match_status_completed),
+            ("Database Verification", self.test_database_verification)
+        ]
+        
+        passed = 0
+        failed = 0
+        
+        for test_name, test_func in tests:
+            self.log(f"\n{'='*60}")
+            self.log(f"Running: {test_name}")
+            self.log('='*60)
+            
+            try:
+                if test_func():
+                    passed += 1
+                    self.log(f"✅ {test_name} PASSED")
                 else:
-                    await self.log_result(
-                        "Tennis Live Data Verification", 
-                        True, 
-                        "No in-progress matches found - this is expected for new tournaments"
-                    )
+                    failed += 1
+                    self.log(f"❌ {test_name} FAILED")
+            except Exception as e:
+                failed += 1
+                self.log(f"❌ {test_name} FAILED with exception: {str(e)}")
                 
-                return live_matches
-            else:
-                await self.log_result(
-                    "GET Matches Live", 
-                    False, 
-                    f"Failed to get live matches: HTTP {response.status_code}",
-                    response.text
-                )
-                return None
-                
-        except Exception as e:
-            await self.log_result("GET Matches Live", False, f"Request error: {str(e)}")
-            return None
-    
-    async def run_tennis_live_tests(self):
-        """Run the complete tennis live scoring test suite"""
-        print("🎾 TENNIS LIVE SCORING SYSTEM TEST SUITE")
-        print("=" * 60)
+        # Final summary
+        self.log(f"\n{'='*60}")
+        self.log("🏆 FINAL TEST RESULTS")
+        self.log('='*60)
+        self.log(f"✅ Tests Passed: {passed}")
+        self.log(f"❌ Tests Failed: {failed}")
+        self.log(f"📊 Success Rate: {(passed/(passed+failed)*100):.1f}%")
         
-        # Step 1: Authenticate
-        if not await self.authenticate():
-            print("\n❌ AUTHENTICATION FAILED - Cannot proceed with tests")
-            return False
-        
-        # Step 2: Create tennis tournament and match for testing
-        tournament_id, match_data = await self.create_tennis_tournament_and_match()
-        if not tournament_id or not match_data:
-            print("\n❌ FAILED TO CREATE TENNIS TOURNAMENT/MATCH - Cannot proceed")
-            return False
-        
-        match_id = match_data.get("id")
-        
-        # Step 3: Test getting tournament matches
-        matches = await self.test_get_tournament_matches(tournament_id)
-        if not matches:
-            print("\n❌ FAILED TO GET TOURNAMENT MATCHES")
-            return False
-        
-        # Step 4: Update match with tennis data
-        updated_match = await self.test_update_match_tennis_data(match_id)
-        if not updated_match:
-            print("\n❌ FAILED TO UPDATE MATCH WITH TENNIS DATA")
-            return False
-        
-        # Step 5: Verify live matches endpoint
-        live_matches = await self.test_get_matches_live(tournament_id)
-        if not live_matches:
-            print("\n❌ FAILED TO GET LIVE MATCHES")
-            return False
-        
-        # Step 6: Also test the original tournament endpoint as requested
-        print("\n🎾 TESTING ORIGINAL TOURNAMENT ENDPOINT")
-        original_matches = await self.test_get_tournament_matches("tournament_ee5c008fc980")
-        original_live_matches = await self.test_get_matches_live("tournament_ee5c008fc980")
-        
-        # Summary
-        print("\n" + "=" * 60)
-        print("🎾 TENNIS LIVE SCORING TEST SUMMARY")
-        print("=" * 60)
-        
-        passed_tests = [r for r in self.test_results if r["success"]]
-        failed_tests = [r for r in self.test_results if not r["success"]]
-        
-        print(f"✅ PASSED: {len(passed_tests)} tests")
-        print(f"❌ FAILED: {len(failed_tests)} tests")
-        
-        if failed_tests:
-            print("\n❌ FAILED TESTS:")
-            for test in failed_tests:
-                print(f"   - {test['test']}: {test['message']}")
-        
-        return len(failed_tests) == 0
-    
-    async def close(self):
-        """Close the HTTP client"""
-        await self.client.aclose()
-
-async def main():
-    """Main test execution"""
-    test_suite = TennisLiveTestSuite()
-    
-    try:
-        success = await test_suite.run_tennis_live_tests()
-        
-        # Save detailed results
-        with open("/app/tennis_test_results.json", "w") as f:
-            json.dump({
-                "success": success,
-                "timestamp": datetime.now(timezone.utc).isoformat(),
-                "test_results": test_suite.test_results
-            }, f, indent=2)
-        
-        print(f"\n📊 Detailed results saved to: /app/tennis_test_results.json")
-        
-        if success:
-            print("\n🎉 ALL TENNIS LIVE SCORING TESTS PASSED!")
-            sys.exit(0)
+        if failed == 0:
+            self.log("🎉 ALL TESTS PASSED! Padel/Tennis live scoring system is working correctly.")
+            return True
         else:
-            print("\n💥 SOME TENNIS LIVE SCORING TESTS FAILED!")
-            sys.exit(1)
-            
-    except Exception as e:
-        print(f"\n💥 CRITICAL ERROR: {str(e)}")
+            self.log("⚠️ Some tests failed. Please check the logs above for details.")
+            return False
+
+def main():
+    """Main function to run the tests"""
+    tester = TournamentTester()
+    success = tester.run_all_tests()
+    
+    if success:
+        sys.exit(0)
+    else:
         sys.exit(1)
-    finally:
-        await test_suite.close()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
