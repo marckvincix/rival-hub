@@ -1332,6 +1332,14 @@ async def get_matches_live(tournament_id: str):
     
     return result
 
+@api_router.get("/matches/{match_id}")
+async def get_match(match_id: str):
+    """Get a single match by ID"""
+    match = await db.matches.find_one({"id": match_id}, {"_id": 0})
+    if not match:
+        raise HTTPException(status_code=404, detail="Partita non trovata")
+    return match
+
 @api_router.put("/matches/{match_id}", response_model=Match)
 async def update_match(
     match_id: str,
@@ -1356,11 +1364,14 @@ async def update_match(
     # Track if match is being completed
     is_completing = False
     
-    # If goals are being set, mark as completed
+    # If goals are being set AND status is not explicitly set to in_progress, mark as completed
+    # This allows auto-save during live matches without marking them as completed
     if "home_goals" in update_data and "away_goals" in update_data:
         if update_data["home_goals"] is not None and update_data["away_goals"] is not None:
-            update_data["status"] = "completed"
-            is_completing = match.get("status") != "completed"
+            # Only auto-complete if status is not explicitly set to "in_progress"
+            if "status" not in update_data or update_data.get("status") != "in_progress":
+                update_data["status"] = "completed"
+            is_completing = update_data.get("status") == "completed" and match.get("status") != "completed"
     
     if update_data:
         await db.matches.update_one({"id": match_id}, {"$set": update_data})
