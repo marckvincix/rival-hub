@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FieldView } from './FieldView';
 import { BasketballCourtView } from './BasketballCourtView';
 import { TennisCourtView } from './TennisCourtView';
+import { VolleyballCourtView } from './VolleyballCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
 
@@ -31,6 +32,12 @@ const GAME_FORMATS_MODULES: Record<string, string[]> = {
 const BASKETBALL_MODULES: Record<string, string[]> = {
   '5v5': ['1-2-2', '2-1-2', '1-3-1', '2-2-1', '1-2-1-1'],
   '3v3': ['1-2', '2-1', '1-1-1'],
+  'custom': ['Personalizzato'],
+};
+
+// Game format configurations for VOLLEYBALL (6 players)
+const VOLLEYBALL_MODULES: Record<string, string[]> = {
+  '6v6': ['5-1', '6-2', '4-2'],
   'custom': ['Personalizzato'],
 };
 
@@ -80,6 +87,17 @@ const BASKETBALL_MODULE_POSITIONS: Record<string, { playmaker: number; guardia: 
   '1-1-1': { playmaker: 1, guardia: 1, ala_piccola: 0, ala_grande: 0, centro: 1 },
 };
 
+// Module position breakdown for VOLLEYBALL (6 players)
+// Ruoli: Palleggiatore (Setter), Opposto (Opposite), Schiacciatore (Outside Hitter), Centrale (Middle Blocker), Libero
+const VOLLEYBALL_MODULE_POSITIONS: Record<string, { palleggiatore: number; opposto: number; schiacciatore: number; centrale: number; libero: number }> = {
+  // 5-1: 1 palleggiatore + 2 centrali + 2 schiacciatori + 1 opposto (libero fuori)
+  '5-1': { palleggiatore: 1, opposto: 1, schiacciatore: 2, centrale: 2, libero: 0 },
+  // 6-2: 2 palleggiatori/opposti + 2 schiacciatori + 2 centrali
+  '6-2': { palleggiatore: 2, opposto: 0, schiacciatore: 2, centrale: 2, libero: 0 },
+  // 4-2: 2 palleggiatori + 2 schiacciatori + 2 centrali  
+  '4-2': { palleggiatore: 2, opposto: 0, schiacciatore: 2, centrale: 2, libero: 0 },
+};
+
 interface FormationModalProps {
   visible: boolean;
   onClose: () => void;
@@ -96,6 +114,8 @@ interface FormationModalProps {
 type SoccerPositionType = 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
 // Basketball position types
 type BasketballPositionType = 'playmaker' | 'guardia' | 'ala_piccola' | 'ala_grande' | 'centro';
+// Volleyball position types
+type VolleyballPositionType = 'palleggiatore' | 'opposto' | 'schiacciatore' | 'centrale' | 'libero';
 
 const POSITION_LABELS: Record<SoccerPositionType, string> = {
   goalkeeper: '🧤 Portiere',
@@ -112,6 +132,14 @@ const BASKETBALL_POSITION_LABELS: Record<BasketballPositionType, string> = {
   centro: '🗼 Centro',
 };
 
+const VOLLEYBALL_POSITION_LABELS: Record<VolleyballPositionType, string> = {
+  palleggiatore: '🎯 Palleggiatore',
+  opposto: '💪 Opposto',
+  schiacciatore: '⚡ Schiacciatore',
+  centrale: '🏐 Centrale',
+  libero: '🛡️ Libero',
+};
+
 export function FormationModal({
   visible,
   onClose,
@@ -126,6 +154,7 @@ export function FormationModal({
   const isBasketball = sport === 'basket';
   const isTennis = sport === 'tennis';
   const isPadel = sport === 'padel';
+  const isVolleyball = sport === 'pallavolo';
   const isRacketSport = isTennis || isPadel;
   
   const [viewMode, setViewMode] = useState<'list' | 'field'>('list');
@@ -153,6 +182,8 @@ export function FormationModal({
   // Get available modules for the game format (depends on sport)
   const availableModules = isBasketball
     ? (BASKETBALL_MODULES[gameFormat] || BASKETBALL_MODULES['5v5'])
+    : isVolleyball
+    ? (VOLLEYBALL_MODULES[gameFormat] || VOLLEYBALL_MODULES['6v6'])
     : isRacketSport
     ? [] // Tennis/Padel don't have tactical modules
     : (GAME_FORMATS_MODULES[gameFormat] || GAME_FORMATS_MODULES['11v11']);
@@ -211,6 +242,24 @@ export function FormationModal({
             );
           }
         });
+      } else if (isVolleyball && VOLLEYBALL_MODULE_POSITIONS[selectedModule]) {
+        // Volleyball positions
+        const positions = VOLLEYBALL_MODULE_POSITIONS[selectedModule];
+        (['palleggiatore', 'opposto', 'schiacciatore', 'centrale', 'libero'] as VolleyballPositionType[]).forEach(position => {
+          const count = positions[position];
+          for (let i = 0; i < count; i++) {
+            const existingPlayer = starters.find(
+              s => s.position === position && s.slot_index === i
+            );
+            newStarters.push(
+              existingPlayer || {
+                player_id: '',
+                position,
+                slot_index: i,
+              }
+            );
+          }
+        });
       } else if (MODULE_POSITIONS[selectedModule]) {
         // Soccer positions
         const positions = MODULE_POSITIONS[selectedModule];
@@ -233,7 +282,7 @@ export function FormationModal({
 
       setStarters(newStarters);
     }
-  }, [selectedModule, isBasketball, isRacketSport, gameFormat]);
+  }, [selectedModule, isBasketball, isVolleyball, isRacketSport, gameFormat]);
 
   // Get assigned player IDs
   const getAssignedPlayerIds = (): string[] => {
@@ -315,6 +364,8 @@ export function FormationModal({
     // Get the label based on sport
     const label = isBasketball 
       ? BASKETBALL_POSITION_LABELS[position as BasketballPositionType] || position
+      : isVolleyball
+      ? VOLLEYBALL_POSITION_LABELS[position as VolleyballPositionType] || position
       : POSITION_LABELS[position as SoccerPositionType] || position;
 
     // Get role abbreviation based on sport
@@ -330,6 +381,15 @@ export function FormationModal({
           'centro': 'C',
         };
         return basketRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
+      } else if (isVolleyball) {
+        const volleyRoles: Record<string, string> = {
+          'palleggiatore': 'P',
+          'opposto': 'O',
+          'schiacciatore': 'S',
+          'centrale': 'C',
+          'libero': 'L',
+        };
+        return volleyRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
       } else {
         const soccerRoles: Record<string, string> = {
           'goalkeeper': 'P',
@@ -442,7 +502,7 @@ export function FormationModal({
             onPress={() => setViewMode('field')}
           >
             <Ionicons 
-              name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : 'football')} 
+              name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : (isVolleyball ? 'tennisball-outline' : 'football'))} 
               size={18} 
               color={viewMode === 'field' ? '#FFF' : '#000'} 
             />
@@ -496,6 +556,18 @@ export function FormationModal({
                   photo: players.find(p => p.id === s.player_id)?.photo,
                 }))}
                 gameFormat={gameFormat}
+              />
+            ) : isVolleyball ? (
+              <VolleyballCourtView
+                module={selectedModule}
+                homePlayers={starters.filter(s => s.player_id).map(s => ({
+                  player_id: s.player_id,
+                  full_name: players.find(p => p.id === s.player_id)?.full_name,
+                  number: players.find(p => p.id === s.player_id)?.number,
+                  position: s.position,
+                }))}
+                awayPlayers={[]}
+                homeTeamName={teamName}
               />
             ) : (
               <FieldView
@@ -575,6 +647,14 @@ export function FormationModal({
                   {renderPositionSection('ala_piccola')}
                   {renderPositionSection('ala_grande')}
                   {renderPositionSection('centro')}
+                </>
+              ) : isVolleyball ? (
+                <>
+                  {renderPositionSection('palleggiatore')}
+                  {renderPositionSection('opposto')}
+                  {renderPositionSection('schiacciatore')}
+                  {renderPositionSection('centrale')}
+                  {renderPositionSection('libero')}
                 </>
               ) : (
                 <>
