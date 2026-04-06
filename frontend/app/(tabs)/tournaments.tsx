@@ -23,7 +23,7 @@ import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal } from '../../src/components';
+import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
@@ -521,6 +521,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Volleyball Match Modal state
   const [showVolleyballMatchModal, setShowVolleyballMatchModal] = useState(false);
   const [selectedVolleyballMatch, setSelectedVolleyballMatch] = useState<any>(null);
+  // Rugby Match Modal state
+  const [showRugbyMatchModal, setShowRugbyMatchModal] = useState(false);
+  const [selectedRugbyMatch, setSelectedRugbyMatch] = useState<any>(null);
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
@@ -749,6 +752,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         setSelectedVolleyballMatch(match);
       }
       setShowVolleyballMatchModal(true);
+    } else if (tournament?.sport === 'rugby') {
+      // Rugby - use rugby modal
+      try {
+        const [homePlayersRes, awayPlayersRes] = await Promise.all([
+          api.get(`/api/teams/${match.home_team_id}/players`),
+          api.get(`/api/teams/${match.away_team_id}/players`)
+        ]);
+        setHomeTeamPlayers(homePlayersRes.data || []);
+        setAwayTeamPlayers(awayPlayersRes.data || []);
+      } catch (error) {
+        console.error('Error loading players:', error);
+      }
+      // Fetch fresh match data before opening modal
+      try {
+        const freshMatchRes = await api.get(`/api/matches/${match.id}`);
+        setSelectedRugbyMatch(freshMatchRes.data);
+      } catch (error) {
+        console.error('Error fetching fresh match:', error);
+        setSelectedRugbyMatch(match);
+      }
+      setShowRugbyMatchModal(true);
     } else {
       // Football - use existing modal
       setSelectedMatch(match);
@@ -2134,6 +2158,40 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           <Text style={styles.statLabel}>Game vinti</Text>
                         </View>
                       </>
+                    ) : tournament?.sport === 'rugby' ? (
+                      /* Rugby Stats */
+                      <>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🏉</Text>
+                          <Text style={styles.statValue}>{playerStats?.tries || 0}</Text>
+                          <Text style={styles.statLabel}>Mete</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>⚽</Text>
+                          <Text style={styles.statValue}>{playerStats?.conversions || 0}</Text>
+                          <Text style={styles.statLabel}>Trasformaz.</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🎯</Text>
+                          <Text style={styles.statValue}>{playerStats?.penalties || 0}</Text>
+                          <Text style={styles.statLabel}>Punizioni</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>💫</Text>
+                          <Text style={styles.statValue}>{playerStats?.drop_goals || 0}</Text>
+                          <Text style={styles.statLabel}>Drop</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🤝</Text>
+                          <Text style={styles.statValue}>{playerStats?.tackles || 0}</Text>
+                          <Text style={styles.statLabel}>Placcaggi</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🟨</Text>
+                          <Text style={styles.statValue}>{playerStats?.yellow_cards || 0}</Text>
+                          <Text style={styles.statLabel}>Gialli</Text>
+                        </View>
+                      </>
                     ) : (
                       /* Soccer Stats (default) */
                       <>
@@ -3233,6 +3291,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           loadData();
           setShowVolleyballMatchModal(false);
           setSelectedVolleyballMatch(null);
+        }}
+      />
+
+      {/* Rugby Match Modal */}
+      <RugbyMatchModal
+        visible={showRugbyMatchModal}
+        onClose={() => {
+          loadData();
+          setShowRugbyMatchModal(false);
+          setSelectedRugbyMatch(null);
+        }}
+        match={selectedRugbyMatch}
+        homePlayers={homeTeamPlayers}
+        awayPlayers={awayTeamPlayers}
+        homeTeamName={teams.find(t => t.id === selectedRugbyMatch?.home_team_id)?.name || 'Casa'}
+        awayTeamName={teams.find(t => t.id === selectedRugbyMatch?.away_team_id)?.name || 'Ospite'}
+        gameFormat={tournament?.game_format || '15v15'}
+        onSave={(updatedMatch) => {
+          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          loadData();
+          setShowRugbyMatchModal(false);
+          setSelectedRugbyMatch(null);
         }}
       />
     </SafeAreaView>

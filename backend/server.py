@@ -202,6 +202,9 @@ class MatchUpdate(BaseModel):
     away_stats: Optional[Dict] = None
     # Volleyball specific fields
     volleyball_sets: Optional[List[Dict]] = None
+    # Rugby specific fields
+    rugby_events: Optional[List[Dict]] = None  # List of rugby events (tries, conversions, penalties, etc.)
+    current_half: Optional[int] = None  # 1 or 2
 
 class Match(BaseModel):
     id: str
@@ -229,6 +232,9 @@ class Match(BaseModel):
     away_stats: Optional[Dict] = None
     # Volleyball specific fields
     volleyball_sets: Optional[List[Dict]] = None
+    # Rugby specific fields
+    rugby_events: Optional[List[Dict]] = None
+    current_half: Optional[int] = None
     created_at: datetime
 
 # Match Event Models
