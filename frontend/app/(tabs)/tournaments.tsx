@@ -572,10 +572,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       // For Tennis/Padel, load players for all teams immediately
       if (tournament.sport === 'tennis' || tournament.sport === 'padel') {
         const playersData: Record<string, any[]> = {};
+        const virtualFormations: Record<string, Formation | null> = {};
+        
         await Promise.all(teamsRes.data.map(async (team: any) => {
           try {
             const playersRes = await api.get(`/api/teams/${team.id}/players`);
-            playersData[team.id] = playersRes.data.map((p: any) => ({
+            const players = playersRes.data.map((p: any) => ({
               id: p.id,
               name: p.full_name,
               number: p.number,
@@ -583,11 +585,32 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               photo: p.photo,
               birthDate: p.birth_date,
             }));
+            playersData[team.id] = players;
+            
+            // Auto-generate virtual formation for Tennis/Padel if players exist
+            const isDoubles = tournament.game_format === 'doppio' || tournament.game_format === 'doubles';
+            const requiredPlayers = isDoubles ? 2 : 1;
+            if (players.length >= requiredPlayers) {
+              virtualFormations[team.id] = {
+                id: `virtual_formation_${team.id}`,
+                team_id: team.id,
+                module: isDoubles ? 'Doppio' : 'Singolo',
+                starters: players.slice(0, requiredPlayers).map((p: any, idx: number) => ({
+                  player_id: p.id,
+                  player_name: p.name,
+                  player_number: p.number,
+                  position: 'player',
+                  slot_index: idx,
+                })),
+                bench: [],
+              };
+            }
           } catch (e) {
             playersData[team.id] = [];
           }
         }));
         setTeamPlayers(playersData);
+        setTeamFormations(virtualFormations);
       }
     } catch (error) {} finally { setLoading(false); }
   };
@@ -1528,11 +1551,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                               <Ionicons name="add" size={20} color="#FFF" />
                             </TouchableOpacity>
                           )}
-                          {!isTennisSport && (
-                            <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
-                              <Ionicons name="grid" size={18} color="#FFF" />
-                            </TouchableOpacity>
-                          )}
+                          <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
+                            <Ionicons name="grid" size={18} color="#FFF" />
+                          </TouchableOpacity>
                           <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
                             <Ionicons name="trash" size={18} color="#FFF" />
                           </TouchableOpacity>
