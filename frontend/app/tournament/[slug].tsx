@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
@@ -141,6 +141,7 @@ export default function TournamentPublicPage() {
   const isTennis = tournament?.sport === 'tennis';
   const isPadel = tournament?.sport === 'padel';
   const isVolleyball = tournament?.sport === 'pallavolo';
+  const isRugby = tournament?.sport === 'rugby';
   const isRacketSport = isTennis || isPadel;
   const isDoubles = tournament?.game_format === 'doppio' || tournament?.game_format === 'doubles';
   
@@ -957,6 +958,19 @@ export default function TournamentPublicPage() {
                       })) || []}
                       gameFormat={tournament?.game_format || '5v5'}
                     />
+                  ) : isRugby ? (
+                    <RugbyCourtView
+                      module={selectedFormation.module}
+                      homePlayers={selectedFormation?.starters?.map((s: any) => ({
+                        player_id: s.player_id,
+                        full_name: s.player_name,
+                        number: s.player_number,
+                        position: s.position,
+                      })) || []}
+                      awayPlayers={[]}
+                      homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                      gameFormat={tournament?.game_format || '15v15'}
+                    />
                   ) : (
                     <FieldView
                       module={selectedFormation.module}
@@ -1119,6 +1133,94 @@ export default function TournamentPublicPage() {
                         </View>
                       )}
                     </>
+                  ) : isRugby ? (
+                    /* Rugby: Show rugby-specific positions */
+                    <>
+                      {/* Prima linea - Piloni e Tallonatore */}
+                      {selectedFormation.starters.filter((s: any) => ['pilone_sinistro', 'tallonatore', 'pilone_destro'].includes(s.position)).length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>💪 Prima Linea</Text>
+                          {selectedFormation.starters.filter((s: any) => ['pilone_sinistro', 'tallonatore', 'pilone_destro'].includes(s.position)).map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Seconda Linea */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'seconda_linea').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🏉 Seconda Linea</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'seconda_linea').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Terza Linea - Flanker e N.8 */}
+                      {selectedFormation.starters.filter((s: any) => ['flanker', 'numero_8'].includes(s.position)).length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>⚡ Terza Linea</Text>
+                          {selectedFormation.starters.filter((s: any) => ['flanker', 'numero_8'].includes(s.position)).map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Mediani */}
+                      {selectedFormation.starters.filter((s: any) => ['mediano_mischia', 'mediano_apertura'].includes(s.position)).length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🔄 Mediani</Text>
+                          {selectedFormation.starters.filter((s: any) => ['mediano_mischia', 'mediano_apertura'].includes(s.position)).map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Centri */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'centro').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🏃 Centri</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'centro').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Ali */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'ala').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🦅 Ali</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'ala').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Estremo */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'estremo').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🛡️ Estremo</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'estremo').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </>
                   ) : (
                     <>
                       {/* Portiere */}
@@ -1236,36 +1338,177 @@ export default function TournamentPublicPage() {
                 ) : playerStatsData ? (
                   <>
                     <View style={styles.playerStatsGrid}>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>⚽</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.goals || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Gol</Text>
-                      </View>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>🅰️</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.assists || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Assist</Text>
-                      </View>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>🟨</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Gialli</Text>
-                      </View>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>🟥</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.red_cards || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Rossi</Text>
-                      </View>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>👟</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Presenze</Text>
-                      </View>
-                      <View style={styles.playerStatBox}>
-                        <Text style={styles.playerStatIcon}>⏱️</Text>
-                        <Text style={styles.playerStatValue}>{playerStatsData.minutes_played || 0}</Text>
-                        <Text style={styles.playerStatLabel}>Minuti</Text>
-                      </View>
+                      {isRugby ? (
+                        /* Rugby Stats */
+                        <>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🏉</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.tries || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Mete</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>⚽</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.conversions || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Trasform.</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🎯</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.penalties || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Punizioni</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>💫</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.drop_goals || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Drop</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🤝</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.tackles || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Placcaggi</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🟨</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Gialli</Text>
+                          </View>
+                        </>
+                      ) : isBasketball ? (
+                        /* Basketball Stats */
+                        <>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🏀</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.points || playerStatsData.total_points || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Punti</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🅰️</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.assists || playerStatsData.basketball_assists || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Assist</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>📊</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.rebounds || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Rimbalzi</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🤚</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.steals || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Palle rub.</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🚫</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.blocks || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Stoppate</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>👟</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                          </View>
+                        </>
+                      ) : isVolleyball ? (
+                        /* Volleyball Stats */
+                        <>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🏐</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.points || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Punti</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🎯</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.aces || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Ace</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🧱</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.blocks || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Muri</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>💥</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.kills || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Attacchi</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🛡️</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.digs || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Difese</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>👟</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                          </View>
+                        </>
+                      ) : isTennis || isPadel ? (
+                        /* Tennis/Padel Stats */
+                        <>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🎾</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.matches_won || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Vittorie</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>❌</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.matches_lost || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Sconfitte</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🎯</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.aces || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Ace</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>💔</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.double_faults || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Doppi falli</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>📊</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.sets_won || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Set vinti</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🎮</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.games_won || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Game vinti</Text>
+                          </View>
+                        </>
+                      ) : (
+                        /* Soccer Stats (default) */
+                        <>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>⚽</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.goals || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Gol</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🅰️</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.assists || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Assist</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🟨</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Gialli</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>🟥</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.red_cards || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Rossi</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>👟</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                          </View>
+                          <View style={styles.playerStatBox}>
+                            <Text style={styles.playerStatIcon}>⏱️</Text>
+                            <Text style={styles.playerStatValue}>{playerStatsData.minutes_played || 0}</Text>
+                            <Text style={styles.playerStatLabel}>Minuti</Text>
+                          </View>
+                        </>
+                      )}
                     </View>
                     {playerStatsData.average_rating > 0 && (
                       <View style={styles.playerStatsRating}>
