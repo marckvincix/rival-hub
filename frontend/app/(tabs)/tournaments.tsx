@@ -2029,39 +2029,146 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   </View>
                 )}
 
-                {/* Stats Grid */}
+                {/* Stats Grid - Sport-specific */}
                 {!loadingPlayerStats && (
                   <View style={styles.statsGrid}>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>⚽</Text>
-                      <Text style={styles.statValue}>{playerStats?.goals || 0}</Text>
-                      <Text style={styles.statLabel}>Gol</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>🅰️</Text>
-                      <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
-                      <Text style={styles.statLabel}>Assist</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>🟨</Text>
-                      <Text style={styles.statValue}>{playerStats?.yellow_cards || 0}</Text>
-                      <Text style={styles.statLabel}>Gialli</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>🟥</Text>
-                      <Text style={styles.statValue}>{playerStats?.red_cards || 0}</Text>
-                      <Text style={styles.statLabel}>Rossi</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>👟</Text>
-                      <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
-                      <Text style={styles.statLabel}>Presenze</Text>
-                    </View>
-                    <View style={styles.statItem}>
-                      <Text style={styles.statIcon}>⏱️</Text>
-                      <Text style={styles.statValue}>{playerStats?.minutes_played || 0}</Text>
-                      <Text style={styles.statLabel}>Minuti</Text>
-                    </View>
+                    {tournament?.sport === 'basket' ? (
+                      /* Basketball Stats */
+                      <>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🏀</Text>
+                          <Text style={styles.statValue}>{playerStats?.points || 0}</Text>
+                          <Text style={styles.statLabel}>Punti</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🅰️</Text>
+                          <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
+                          <Text style={styles.statLabel}>Assist</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>📊</Text>
+                          <Text style={styles.statValue}>{playerStats?.rebounds || 0}</Text>
+                          <Text style={styles.statLabel}>Rimbalzi</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🤚</Text>
+                          <Text style={styles.statValue}>{playerStats?.steals || 0}</Text>
+                          <Text style={styles.statLabel}>Palle rubate</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🚫</Text>
+                          <Text style={styles.statValue}>{playerStats?.blocks || 0}</Text>
+                          <Text style={styles.statLabel}>Stoppate</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>👟</Text>
+                          <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
+                          <Text style={styles.statLabel}>Presenze</Text>
+                        </View>
+                      </>
+                    ) : tournament?.sport === 'pallavolo' ? (
+                      /* Volleyball Stats */
+                      <>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🏐</Text>
+                          <Text style={styles.statValue}>{playerStats?.points || 0}</Text>
+                          <Text style={styles.statLabel}>Punti</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🎯</Text>
+                          <Text style={styles.statValue}>{playerStats?.aces || 0}</Text>
+                          <Text style={styles.statLabel}>Ace</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🧱</Text>
+                          <Text style={styles.statValue}>{playerStats?.blocks || 0}</Text>
+                          <Text style={styles.statLabel}>Muri</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>💥</Text>
+                          <Text style={styles.statValue}>{playerStats?.kills || 0}</Text>
+                          <Text style={styles.statLabel}>Attacchi</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🛡️</Text>
+                          <Text style={styles.statValue}>{playerStats?.digs || 0}</Text>
+                          <Text style={styles.statLabel}>Difese</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>👟</Text>
+                          <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
+                          <Text style={styles.statLabel}>Presenze</Text>
+                        </View>
+                      </>
+                    ) : tournament?.sport === 'tennis' || tournament?.sport === 'padel' ? (
+                      /* Tennis/Padel Stats */
+                      <>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🎾</Text>
+                          <Text style={styles.statValue}>{playerStats?.matches_won || 0}</Text>
+                          <Text style={styles.statLabel}>Vittorie</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>❌</Text>
+                          <Text style={styles.statValue}>{playerStats?.matches_lost || 0}</Text>
+                          <Text style={styles.statLabel}>Sconfitte</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🎯</Text>
+                          <Text style={styles.statValue}>{playerStats?.aces || 0}</Text>
+                          <Text style={styles.statLabel}>Ace</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>💔</Text>
+                          <Text style={styles.statValue}>{playerStats?.double_faults || 0}</Text>
+                          <Text style={styles.statLabel}>Doppi falli</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>📊</Text>
+                          <Text style={styles.statValue}>{playerStats?.sets_won || 0}</Text>
+                          <Text style={styles.statLabel}>Set vinti</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🎮</Text>
+                          <Text style={styles.statValue}>{playerStats?.games_won || 0}</Text>
+                          <Text style={styles.statLabel}>Game vinti</Text>
+                        </View>
+                      </>
+                    ) : (
+                      /* Soccer Stats (default) */
+                      <>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>⚽</Text>
+                          <Text style={styles.statValue}>{playerStats?.goals || 0}</Text>
+                          <Text style={styles.statLabel}>Gol</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🅰️</Text>
+                          <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
+                          <Text style={styles.statLabel}>Assist</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🟨</Text>
+                          <Text style={styles.statValue}>{playerStats?.yellow_cards || 0}</Text>
+                          <Text style={styles.statLabel}>Gialli</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>🟥</Text>
+                          <Text style={styles.statValue}>{playerStats?.red_cards || 0}</Text>
+                          <Text style={styles.statLabel}>Rossi</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>👟</Text>
+                          <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
+                          <Text style={styles.statLabel}>Presenze</Text>
+                        </View>
+                        <View style={styles.statItem}>
+                          <Text style={styles.statIcon}>⏱️</Text>
+                          <Text style={styles.statValue}>{playerStats?.minutes_played || 0}</Text>
+                          <Text style={styles.statLabel}>Minuti</Text>
+                        </View>
+                      </>
+                    )}
                   </View>
                 )}
 

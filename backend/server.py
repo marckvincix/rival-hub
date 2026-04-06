@@ -269,7 +269,7 @@ class MatchEventsBatchSave(BaseModel):
 class PlayerStatsResponse(BaseModel):
     player_id: str
     full_name: str
-    role: str
+    role: Optional[str] = None
     photo: Optional[str] = None
     # Football stats
     goals: int = 0
@@ -285,11 +285,22 @@ class PlayerStatsResponse(BaseModel):
     points_2pt: int = 0
     points_3pt: int = 0
     total_points: int = 0
+    points: int = 0  # Alias for total_points
     rebounds: int = 0
     basketball_assists: int = 0
     fouls: int = 0
     steals: int = 0
     blocks: int = 0
+    # Volleyball stats
+    aces: int = 0
+    kills: int = 0
+    digs: int = 0
+    # Tennis/Padel stats
+    matches_won: int = 0
+    matches_lost: int = 0
+    sets_won: int = 0
+    games_won: int = 0
+    double_faults: int = 0
 
 # News Models
 class NewsCreate(BaseModel):
