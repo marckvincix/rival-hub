@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Dimensions, ImageBackground } from 'react-native';
 
 interface Player {
   player_id?: string;
@@ -32,7 +32,7 @@ export function VolleyballCourtView({
   const courtWidth = Math.min(screenWidth - 48, 320);
   const courtHeight = courtWidth * 1.4;
 
-  // Position players in 6 zones (3 attack + 3 defense per team)
+  // Position players in 6 zones (3 front + 3 back per team)
   const getPlayerPositions = (players: Player[], isHome: boolean) => {
     const positions = [];
     const zoneWidth = courtWidth / 3;
@@ -41,23 +41,23 @@ export function VolleyballCourtView({
     // Home team (bottom half) or Away team (top half)
     const baseY = isHome ? courtHeight / 2 : 0;
     
-    // Zone positions for volleyball (Zone 1-6)
-    // Zone 4, 3, 2 (front row - attack)
-    // Zone 5, 6, 1 (back row - defense)
+    // Volleyball zones - 3 front, 3 back
     const zones = isHome ? [
-      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 1.5 }, // Zone 1 (back right)
-      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 0.5 }, // Zone 2 (front right)
-      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 0.5 }, // Zone 3 (front center)
-      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 0.5 }, // Zone 4 (front left)
-      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 1.5 }, // Zone 5 (back left)
-      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 1.5 }, // Zone 6 (back center)
+      // Home team - bottom half
+      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 1.6 }, // Back right
+      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 0.5 }, // Front right
+      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 0.5 }, // Front center
+      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 0.5 }, // Front left
+      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 1.6 }, // Back left
+      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 1.6 }, // Back center
     ] : [
-      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 0.5 }, // Zone 1 mirrored
-      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 1.5 }, // Zone 2 mirrored
-      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 1.5 }, // Zone 3 mirrored
-      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 1.5 }, // Zone 4 mirrored
-      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 0.5 }, // Zone 5 mirrored
-      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 0.5 }, // Zone 6 mirrored
+      // Away team - top half (mirrored)
+      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 0.4 }, // Back left (mirrored)
+      { x: zoneWidth * 0.5, y: baseY + zoneHeight * 1.5 }, // Front left
+      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 1.5 }, // Front center
+      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 1.5 }, // Front right
+      { x: zoneWidth * 2.5, y: baseY + zoneHeight * 0.4 }, // Back right
+      { x: zoneWidth * 1.5, y: baseY + zoneHeight * 0.4 }, // Back center
     ];
 
     for (let i = 0; i < Math.min(players.length, 6); i++) {
@@ -83,63 +83,51 @@ export function VolleyballCourtView({
         </View>
       )}
 
-      {/* Court Container */}
+      {/* Court Container with Image */}
       <View style={[styles.courtContainer, { width: courtWidth, height: courtHeight }]}>
-        {/* Green background */}
-        <View style={styles.greenBackground} />
-        
-        {/* Orange court */}
-        <View style={styles.orangeCourt}>
-          {/* Horizontal lines dividing the court */}
-          <View style={[styles.courtLine, { top: '25%' }]} />
-          <View style={[styles.courtLine, { top: '50%' }]} />
-          <View style={[styles.courtLine, { top: '75%' }]} />
-        </View>
-        
-        {/* Net (center line) */}
-        <View style={styles.netLine} />
-        
-        {/* Attack lines (3m) - dashed */}
-        <View style={[styles.attackLine, styles.attackLineTop]} />
-        <View style={[styles.attackLine, styles.attackLineBottom]} />
-        
-        {/* Away players (top half) */}
-        {awayPositions.map((pos, idx) => (
-          <View
-            key={`away-${idx}`}
-            style={[
-              styles.playerBadge,
-              styles.awayPlayerBadge,
-              { left: pos.x - 22, top: pos.y - 22 }
-            ]}
-          >
-            <Text style={styles.playerInitials}>{getInitials(pos.player?.full_name)}</Text>
-            {pos.player?.number && (
-              <View style={styles.playerNumberBadge}>
-                <Text style={styles.playerNumberText}>{pos.player.number}</Text>
-              </View>
-            )}
-          </View>
-        ))}
-        
-        {/* Home players (bottom half) */}
-        {homePositions.map((pos, idx) => (
-          <View
-            key={`home-${idx}`}
-            style={[
-              styles.playerBadge,
-              styles.homePlayerBadge,
-              { left: pos.x - 22, top: pos.y - 22 }
-            ]}
-          >
-            <Text style={styles.playerInitials}>{getInitials(pos.player?.full_name)}</Text>
-            {pos.player?.number && (
-              <View style={styles.playerNumberBadge}>
-                <Text style={styles.playerNumberText}>{pos.player.number}</Text>
-              </View>
-            )}
-          </View>
-        ))}
+        <ImageBackground
+          source={require('../../assets/images/volleyball-court.png')}
+          style={styles.courtImage}
+          resizeMode="cover"
+        >
+          {/* Away players (top half) */}
+          {awayPositions.map((pos, idx) => (
+            <View
+              key={`away-${idx}`}
+              style={[
+                styles.playerBadge,
+                styles.awayPlayerBadge,
+                { left: pos.x - 22, top: pos.y - 22 }
+              ]}
+            >
+              <Text style={styles.playerInitials}>{getInitials(pos.player?.full_name)}</Text>
+              {pos.player?.number && (
+                <View style={styles.playerNumberBadge}>
+                  <Text style={styles.playerNumberText}>{pos.player.number}</Text>
+                </View>
+              )}
+            </View>
+          ))}
+          
+          {/* Home players (bottom half) */}
+          {homePositions.map((pos, idx) => (
+            <View
+              key={`home-${idx}`}
+              style={[
+                styles.playerBadge,
+                styles.homePlayerBadge,
+                { left: pos.x - 22, top: pos.y - 22 }
+              ]}
+            >
+              <Text style={styles.playerInitials}>{getInitials(pos.player?.full_name)}</Text>
+              {pos.player?.number && (
+                <View style={styles.playerNumberBadge}>
+                  <Text style={styles.playerNumberText}>{pos.player.number}</Text>
+                </View>
+              )}
+            </View>
+          ))}
+        </ImageBackground>
       </View>
 
       {/* Home team label */}
@@ -177,55 +165,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
-  greenBackground: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#228B22', // Forest green
-  },
-  orangeCourt: {
-    position: 'absolute',
-    top: '10%',
-    left: '10%',
-    right: '10%',
-    bottom: '10%',
-    backgroundColor: '#E8813A', // Orange
-    borderWidth: 3,
-    borderColor: '#FFF',
-  },
-  courtLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: '#FFF',
-  },
-  netLine: {
-    position: 'absolute',
-    top: '50%',
-    left: '5%',
-    right: '5%',
-    height: 4,
-    backgroundColor: '#FFF',
-    marginTop: -2,
-  },
-  attackLine: {
-    position: 'absolute',
-    left: '5%',
-    right: '5%',
-    height: 2,
-    borderStyle: 'dashed',
-    borderWidth: 1,
-    borderColor: '#FFF',
-    backgroundColor: 'transparent',
-  },
-  attackLineTop: {
-    top: '35%',
-  },
-  attackLineBottom: {
-    top: '65%',
+  courtImage: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   teamLabel: {
     paddingVertical: 8,
