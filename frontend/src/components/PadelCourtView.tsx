@@ -45,7 +45,7 @@ export function PadelCourtView({
       {/* Padel Court Container with Image */}
       <View style={[styles.courtContainer, { width: courtWidth, height: courtHeight }]}>
         <ImageBackground
-          source={require('../../assets/images/padel-court-field.jpeg')}
+          source={require('../../assets/images/padel-court.png')}
           style={styles.courtImage}
           resizeMode="cover"
         >

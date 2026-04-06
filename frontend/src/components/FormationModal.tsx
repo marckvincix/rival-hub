@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { FieldView } from './FieldView';
 import { BasketballCourtView } from './BasketballCourtView';
 import { TennisCourtView } from './TennisCourtView';
+import { PadelCourtView } from './PadelCourtView';
 import { VolleyballCourtView } from './VolleyballCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
@@ -533,8 +534,21 @@ export function FormationModal({
 
           {viewMode === 'field' ? (
             /* Field View - Show appropriate court based on sport */
-            isRacketSport ? (
+            isTennis ? (
               <TennisCourtView
+                format={(gameFormat === 'singles' || gameFormat === 'singolo') ? 'singles' : 'doubles'}
+                homePlayers={starters.filter(s => s.player_id).map(s => ({
+                  player_id: s.player_id,
+                  full_name: players.find(p => p.id === s.player_id)?.full_name,
+                  number: players.find(p => p.id === s.player_id)?.number,
+                  photo: players.find(p => p.id === s.player_id)?.photo,
+                  position: s.position,
+                }))}
+                awayPlayers={[]}
+                homeTeamName={teamName}
+              />
+            ) : isPadel ? (
+              <PadelCourtView
                 format={(gameFormat === 'singles' || gameFormat === 'singolo') ? 'singles' : 'doubles'}
                 homePlayers={starters.filter(s => s.player_id).map(s => ({
                   player_id: s.player_id,
