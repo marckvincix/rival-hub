@@ -51,17 +51,21 @@ export function MatchStatsModal({
   const [loading, setLoading] = useState(false);
   const [matchData, setMatchData] = useState<any>(null);
 
-  // Determine if racket sport - check both prop and matchData
+  // Determine if racket sport or volleyball
   const isRacketSport = sport === 'tennis' || sport === 'padel';
+  const isVolleyball = sport === 'pallavolo';
   const isPadel = sport === 'padel';
+  const isSetBasedSport = isRacketSport || isVolleyball;
 
   useEffect(() => {
-    if (visible && match) {
-      // For racket sports, fetch the latest match data directly from the server
-      if (isRacketSport) {
+    if (visible && match?.id) {
+      // For set-based sports (tennis, padel, volleyball), fetch the latest match data directly from the server
+      if (isSetBasedSport) {
         setLoading(true);
+        setMatchData(null); // Reset before fetching
         api.get(`/api/matches/${match.id}`)
           .then((res) => {
+            console.log('MatchStatsModal: Fetched match data for', sport, res.data);
             setMatchData(res.data);
           })
           .catch((err) => {
@@ -75,8 +79,9 @@ export function MatchStatsModal({
       }
     } else {
       setMatchData(null);
+      setEvents([]);
     }
-  }, [visible, match?.id, isRacketSport]);
+  }, [visible, match?.id, sport]);
 
   const loadMatchEvents = async () => {
     if (!match) return;
@@ -204,11 +209,11 @@ export function MatchStatsModal({
               style={styles.eventsScroll}
               showsVerticalScrollIndicator={false}
             >
-              {/* Tennis/Padel Stats from match data */}
-              {isRacketSport ? (
+              {/* Tennis/Padel/Volleyball Stats from match data */}
+              {isSetBasedSport ? (
                 <>
-                  {/* Sets Breakdown */}
-                  {matchData.tennis_sets && matchData.tennis_sets.length > 0 && (
+                  {/* Sets Breakdown - Tennis/Padel */}
+                  {isRacketSport && matchData.tennis_sets && matchData.tennis_sets.length > 0 && (
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>🎾 Punteggio Set</Text>
                       {matchData.tennis_sets.map((set: any, idx: number) => (
@@ -231,9 +236,34 @@ export function MatchStatsModal({
                     </View>
                   )}
                   
-                  {/* Team Stats Comparison - Always show for racket sports */}
-                  <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
+                  {/* Sets Breakdown - Volleyball */}
+                  {isVolleyball && matchData.volleyball_sets && matchData.volleyball_sets.length > 0 && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>🏐 Punteggio Set</Text>
+                      {matchData.volleyball_sets.map((set: any, idx: number) => (
+                        <View key={idx} style={styles.setRow}>
+                          <Text style={styles.setLabel}>Set {idx + 1}</Text>
+                          <View style={styles.setScoreBox}>
+                            <Text style={[styles.setScore, set.homeScore > set.awayScore && styles.setScoreWinner]}>
+                              {set.homeScore || 0}
+                            </Text>
+                            <Text style={styles.setScoreSeparator}>-</Text>
+                            <Text style={[styles.setScore, set.awayScore > set.homeScore && styles.setScoreWinner]}>
+                              {set.awayScore || 0}
+                            </Text>
+                          </View>
+                          {set.completed && (
+                            <Text style={styles.setStatus}>✓</Text>
+                          )}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                  
+                  {/* Team Stats Comparison - Tennis/Padel */}
+                  {isRacketSport && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
                     
                     {/* Stats Header */}
                     <View style={styles.statsCompareHeader}>
@@ -279,6 +309,42 @@ export function MatchStatsModal({
                       </View>
                     )}
                   </View>
+                  )}
+                  
+                  {/* Team Stats Comparison - Volleyball */}
+                  {isVolleyball && (matchData.home_stats || matchData.away_stats) && (
+                    <View style={styles.section}>
+                      <Text style={styles.sectionTitle}>📊 Statistiche Pallavolo</Text>
+                      
+                      {/* Stats Header */}
+                      <View style={styles.statsCompareHeader}>
+                        <Text style={styles.statsCompareTeam}>{getTeamName(matchData.home_team_id)}</Text>
+                        <Text style={styles.statsCompareLabel}>Stat</Text>
+                        <Text style={styles.statsCompareTeam}>{getTeamName(matchData.away_team_id)}</Text>
+                      </View>
+                      
+                      {/* Points */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={styles.statsCompareValue}>{matchData.home_stats?.points || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>🏐 Punti</Text>
+                        <Text style={styles.statsCompareValue}>{matchData.away_stats?.points || 0}</Text>
+                      </View>
+                      
+                      {/* Aces */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.home_stats?.aces || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.away_stats?.aces || 0}</Text>
+                      </View>
+                      
+                      {/* Blocks */}
+                      <View style={styles.statsCompareRow}>
+                        <Text style={[styles.statsCompareValue, { color: '#3B82F6' }]}>{matchData.home_stats?.blocks || 0}</Text>
+                        <Text style={styles.statsCompareStatName}>🧱 Muri</Text>
+                        <Text style={[styles.statsCompareValue, { color: '#3B82F6' }]}>{matchData.away_stats?.blocks || 0}</Text>
+                      </View>
+                    </View>
+                  )}
                 </>
               ) : events.length === 0 ? (
                 <View style={styles.noStatsContainer}>
