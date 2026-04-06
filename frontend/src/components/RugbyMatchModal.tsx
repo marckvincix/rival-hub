@@ -153,17 +153,14 @@ export function RugbyMatchModal({
         });
         setAutoSaveStatus('saved');
         setTimeout(() => setAutoSaveStatus('idle'), 2000);
-        onSave({
-          rugby_events: events,
-          home_goals: homeScore,
-          away_goals: awayScore,
-        });
+        // Don't call onSave here - it would close the modal
+        // Just update silently in the background
       } catch (error) {
         console.error('Auto-save failed:', error);
         setAutoSaveStatus('idle');
       }
     }, 500);
-  }, [events, homeScore, awayScore, timerSeconds, currentHalf, match?.id, onSave]);
+  }, [events, homeScore, awayScore, timerSeconds, currentHalf, match?.id]);
 
   // Trigger auto-save when events change
   useEffect(() => {

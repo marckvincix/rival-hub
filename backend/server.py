@@ -1339,6 +1339,14 @@ async def get_matches_live(tournament_id: str):
             is_in_progress = match.get("status") == "in_progress"
             has_game_data = len(volleyball_sets) > 0 or home_score > 0 or away_score > 0
             has_live_data = is_in_progress and has_game_data
+        elif sport == "rugby":
+            # Rugby: Use home_goals/away_goals directly (updated via RugbyMatchModal)
+            home_score = match.get("home_goals", 0) or 0
+            away_score = match.get("away_goals", 0) or 0
+            rugby_events = match.get("rugby_events", [])
+            is_in_progress = match.get("status") == "in_progress"
+            has_game_data = len(rugby_events) > 0 or home_score > 0 or away_score > 0
+            has_live_data = is_in_progress and has_game_data
         else:
             # Soccer scoring - first try from events, then fallback to home_goals/away_goals
             for event in events:

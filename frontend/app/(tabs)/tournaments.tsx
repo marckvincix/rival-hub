@@ -3309,10 +3309,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         awayTeamName={teams.find(t => t.id === selectedRugbyMatch?.away_team_id)?.name || 'Ospite'}
         gameFormat={tournament?.game_format || '15v15'}
         onSave={(updatedMatch) => {
-          setMatches(matches.map(m => m.id === updatedMatch.id ? updatedMatch : m));
+          // Only update local state, don't close modal
+          // Modal will be closed by onClose when user clicks X or "Fine Partita"
+          setMatches(matches.map(m => m.id === selectedRugbyMatch?.id ? { ...m, ...updatedMatch } : m));
           loadData();
-          setShowRugbyMatchModal(false);
-          setSelectedRugbyMatch(null);
         }}
       />
     </SafeAreaView>
