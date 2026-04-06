@@ -16,6 +16,7 @@ import { BasketballCourtView } from './BasketballCourtView';
 import { TennisCourtView } from './TennisCourtView';
 import { PadelCourtView } from './PadelCourtView';
 import { VolleyballCourtView } from './VolleyballCourtView';
+import { RugbyCourtView } from './RugbyCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
 
@@ -99,6 +100,60 @@ const VOLLEYBALL_MODULE_POSITIONS: Record<string, { palleggiatore: number; oppos
   '4-2': { palleggiatore: 2, opposto: 0, schiacciatore: 2, centrale: 2, libero: 0 },
 };
 
+// Game format configurations for RUGBY
+const RUGBY_MODULES: Record<string, string[]> = {
+  '15v15': ['3-4-1', '4-3-1', '3-3-2'],
+  '7v7': ['3-3-1', '3-2-2', '2-3-2'],
+  'custom': ['Personalizzato'],
+};
+
+// Module position breakdown for RUGBY (15 players for 15v15, 7 for 7v7)
+const RUGBY_MODULE_POSITIONS: Record<string, { 
+  pilone_sinistro: number; tallonatore: number; pilone_destro: number;
+  seconda_linea: number; flanker: number; numero_8: number;
+  mediano_mischia: number; mediano_apertura: number;
+  centro: number; ala: number; estremo: number;
+}> = {
+  // 15v15 modules - 3 front row + 4 second/back row + 1 fullback = 8 forwards + 7 backs
+  '3-4-1': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 1, // Front row: 3
+    seconda_linea: 2, flanker: 2, numero_8: 1, // Pack: 5
+    mediano_mischia: 1, mediano_apertura: 1, // Half backs: 2
+    centro: 2, ala: 2, estremo: 1 // Backs: 5
+  },
+  '4-3-1': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 1,
+    seconda_linea: 2, flanker: 2, numero_8: 1,
+    mediano_mischia: 1, mediano_apertura: 1,
+    centro: 2, ala: 2, estremo: 1
+  },
+  '3-3-2': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 1,
+    seconda_linea: 2, flanker: 2, numero_8: 1,
+    mediano_mischia: 1, mediano_apertura: 1,
+    centro: 2, ala: 2, estremo: 1
+  },
+  // 7v7 modules
+  '3-3-1': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 1, // 3
+    seconda_linea: 0, flanker: 0, numero_8: 0,
+    mediano_mischia: 1, mediano_apertura: 1, // 2
+    centro: 1, ala: 0, estremo: 1 // 2
+  },
+  '3-2-2': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 1,
+    seconda_linea: 0, flanker: 0, numero_8: 0,
+    mediano_mischia: 1, mediano_apertura: 1,
+    centro: 1, ala: 0, estremo: 1
+  },
+  '2-3-2': { 
+    pilone_sinistro: 1, tallonatore: 1, pilone_destro: 0,
+    seconda_linea: 0, flanker: 0, numero_8: 0,
+    mediano_mischia: 1, mediano_apertura: 1,
+    centro: 2, ala: 0, estremo: 1
+  },
+};
+
 interface FormationModalProps {
   visible: boolean;
   onClose: () => void;
@@ -117,6 +172,8 @@ type SoccerPositionType = 'goalkeeper' | 'defender' | 'midfielder' | 'forward';
 type BasketballPositionType = 'playmaker' | 'guardia' | 'ala_piccola' | 'ala_grande' | 'centro';
 // Volleyball position types
 type VolleyballPositionType = 'palleggiatore' | 'opposto' | 'schiacciatore' | 'centrale' | 'libero';
+// Rugby position types
+type RugbyPositionType = 'pilone_sinistro' | 'tallonatore' | 'pilone_destro' | 'seconda_linea' | 'flanker' | 'numero_8' | 'mediano_mischia' | 'mediano_apertura' | 'centro' | 'ala' | 'estremo';
 
 const POSITION_LABELS: Record<SoccerPositionType, string> = {
   goalkeeper: '🧤 Portiere',
@@ -141,6 +198,20 @@ const VOLLEYBALL_POSITION_LABELS: Record<VolleyballPositionType, string> = {
   libero: '🛡️ Libero',
 };
 
+const RUGBY_POSITION_LABELS: Record<RugbyPositionType, string> = {
+  pilone_sinistro: '💪 Pilone Sinistro',
+  tallonatore: '🎯 Tallonatore',
+  pilone_destro: '💪 Pilone Destro',
+  seconda_linea: '🏉 Seconda Linea',
+  flanker: '⚡ Flanker',
+  numero_8: '8️⃣ Numero 8',
+  mediano_mischia: '🔄 Mediano Mischia',
+  mediano_apertura: '🎯 Mediano Apertura',
+  centro: '🏃 Centro',
+  ala: '🦅 Ala',
+  estremo: '🛡️ Estremo',
+};
+
 export function FormationModal({
   visible,
   onClose,
@@ -156,6 +227,7 @@ export function FormationModal({
   const isTennis = sport === 'tennis';
   const isPadel = sport === 'padel';
   const isVolleyball = sport === 'pallavolo';
+  const isRugby = sport === 'rugby';
   const isRacketSport = isTennis || isPadel;
   
   const [viewMode, setViewMode] = useState<'list' | 'field'>('list');
@@ -185,6 +257,8 @@ export function FormationModal({
     ? (BASKETBALL_MODULES[gameFormat] || BASKETBALL_MODULES['5v5'])
     : isVolleyball
     ? (VOLLEYBALL_MODULES[gameFormat] || VOLLEYBALL_MODULES['6v6'])
+    : isRugby
+    ? (RUGBY_MODULES[gameFormat] || RUGBY_MODULES['15v15'])
     : isRacketSport
     ? [] // Tennis/Padel don't have tactical modules
     : (GAME_FORMATS_MODULES[gameFormat] || GAME_FORMATS_MODULES['11v11']);
@@ -261,6 +335,24 @@ export function FormationModal({
             );
           }
         });
+      } else if (isRugby && RUGBY_MODULE_POSITIONS[selectedModule]) {
+        // Rugby positions
+        const positions = RUGBY_MODULE_POSITIONS[selectedModule];
+        (['pilone_sinistro', 'tallonatore', 'pilone_destro', 'seconda_linea', 'flanker', 'numero_8', 'mediano_mischia', 'mediano_apertura', 'centro', 'ala', 'estremo'] as RugbyPositionType[]).forEach(position => {
+          const count = positions[position];
+          for (let i = 0; i < count; i++) {
+            const existingPlayer = starters.find(
+              s => s.position === position && s.slot_index === i
+            );
+            newStarters.push(
+              existingPlayer || {
+                player_id: '',
+                position,
+                slot_index: i,
+              }
+            );
+          }
+        });
       } else if (MODULE_POSITIONS[selectedModule]) {
         // Soccer positions
         const positions = MODULE_POSITIONS[selectedModule];
@@ -283,7 +375,7 @@ export function FormationModal({
 
       setStarters(newStarters);
     }
-  }, [selectedModule, isBasketball, isVolleyball, isRacketSport, gameFormat]);
+  }, [selectedModule, isBasketball, isVolleyball, isRugby, isRacketSport, gameFormat]);
 
   // Get assigned player IDs
   const getAssignedPlayerIds = (): string[] => {
@@ -367,6 +459,8 @@ export function FormationModal({
       ? BASKETBALL_POSITION_LABELS[position as BasketballPositionType] || position
       : isVolleyball
       ? VOLLEYBALL_POSITION_LABELS[position as VolleyballPositionType] || position
+      : isRugby
+      ? RUGBY_POSITION_LABELS[position as RugbyPositionType] || position
       : POSITION_LABELS[position as SoccerPositionType] || position;
 
     // Get role abbreviation based on sport
@@ -391,6 +485,21 @@ export function FormationModal({
           'libero': 'L',
         };
         return volleyRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
+      } else if (isRugby) {
+        const rugbyRoles: Record<string, string> = {
+          'pilone_sinistro': 'PS',
+          'tallonatore': 'TL',
+          'pilone_destro': 'PD',
+          'seconda_linea': 'SL',
+          'flanker': 'FL',
+          'numero_8': 'N8',
+          'mediano_mischia': 'MM',
+          'mediano_apertura': 'MA',
+          'centro': 'CE',
+          'ala': 'AL',
+          'estremo': 'ES',
+        };
+        return rugbyRoles[role?.toLowerCase()] || role?.substring(0, 2).toUpperCase() || '?';
       } else {
         const soccerRoles: Record<string, string> = {
           'goalkeeper': 'P',
@@ -503,7 +612,7 @@ export function FormationModal({
             onPress={() => setViewMode('field')}
           >
             <Ionicons 
-              name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : (isVolleyball ? 'tennisball-outline' : 'football'))} 
+              name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : (isVolleyball ? 'tennisball-outline' : (isRugby ? 'american-football' : 'football')))} 
               size={18} 
               color={viewMode === 'field' ? '#FFF' : '#000'} 
             />
@@ -582,6 +691,19 @@ export function FormationModal({
                 }))}
                 awayPlayers={[]}
                 homeTeamName={teamName}
+              />
+            ) : isRugby ? (
+              <RugbyCourtView
+                module={selectedModule}
+                homePlayers={starters.filter(s => s.player_id).map(s => ({
+                  player_id: s.player_id,
+                  full_name: players.find(p => p.id === s.player_id)?.full_name,
+                  number: players.find(p => p.id === s.player_id)?.number,
+                  position: s.position,
+                }))}
+                awayPlayers={[]}
+                homeTeamName={teamName}
+                gameFormat={gameFormat}
               />
             ) : (
               <FieldView
@@ -669,6 +791,20 @@ export function FormationModal({
                   {renderPositionSection('schiacciatore')}
                   {renderPositionSection('centrale')}
                   {renderPositionSection('libero')}
+                </>
+              ) : isRugby ? (
+                <>
+                  {renderPositionSection('pilone_sinistro')}
+                  {renderPositionSection('tallonatore')}
+                  {renderPositionSection('pilone_destro')}
+                  {renderPositionSection('seconda_linea')}
+                  {renderPositionSection('flanker')}
+                  {renderPositionSection('numero_8')}
+                  {renderPositionSection('mediano_mischia')}
+                  {renderPositionSection('mediano_apertura')}
+                  {renderPositionSection('centro')}
+                  {renderPositionSection('ala')}
+                  {renderPositionSection('estremo')}
                 </>
               ) : (
                 <>
