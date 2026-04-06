@@ -140,6 +140,7 @@ export default function TournamentPublicPage() {
   const isBasketball = tournament?.sport === 'basket';
   const isTennis = tournament?.sport === 'tennis';
   const isPadel = tournament?.sport === 'padel';
+  const isVolleyball = tournament?.sport === 'pallavolo';
   const isRacketSport = isTennis || isPadel;
   const isDoubles = tournament?.game_format === 'doppio' || tournament?.game_format === 'doubles';
   
@@ -150,6 +151,7 @@ export default function TournamentPublicPage() {
       case 'basket': return 'basketball';
       case 'tennis':
       case 'padel': return 'tennisball';
+      case 'pallavolo': return 'tennisball-outline';
       case 'rugby': return 'american-football';
       case 'baseball': return 'baseball';
       default: return 'football';
@@ -888,7 +890,7 @@ export default function TournamentPublicPage() {
                   style={[styles.publicToggleButton, publicFormationViewMode === 'field' && styles.publicToggleButtonActive]}
                   onPress={() => setPublicFormationViewMode('field')}
                 >
-                  <Ionicons name={isRacketSport ? 'tennisball' : 'football'} size={18} color={publicFormationViewMode === 'field' ? '#FFF' : '#000'} />
+                  <Ionicons name={isRacketSport ? 'tennisball' : (isBasketball ? 'basketball' : (isVolleyball ? 'tennisball-outline' : 'football'))} size={18} color={publicFormationViewMode === 'field' ? '#FFF' : '#000'} />
                   <Text style={[styles.publicToggleText, publicFormationViewMode === 'field' && styles.publicToggleTextActive]}>Campo</Text>
                 </TouchableOpacity>
               </View>
@@ -932,6 +934,18 @@ export default function TournamentPublicPage() {
                         awayTeamName={teams.find(t => t.id === selectedAwayFormation?.team_id)?.name}
                       />
                     )
+                  ) : isVolleyball ? (
+                    <VolleyballCourtView
+                      module={selectedFormation.module}
+                      homePlayers={selectedFormation?.starters?.map((s: any) => ({
+                        player_id: s.player_id,
+                        full_name: s.player_name,
+                        number: s.player_number,
+                        position: s.position,
+                      })) || []}
+                      awayPlayers={[]}
+                      homeTeamName={teams.find(t => t.id === selectedFormation?.team_id)?.name}
+                    />
                   ) : (
                     <FieldView
                       module={selectedFormation.module}
@@ -958,6 +972,70 @@ export default function TournamentPublicPage() {
                         <View style={styles.publicPositionSection}>
                           <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedAwayFormation?.team_id)?.name || 'Giocatore 2'}</Text>
                           {selectedAwayFormation?.starters?.map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                    </>
+                  ) : isVolleyball ? (
+                    /* Volleyball: Show volleyball-specific positions */
+                    <>
+                      {/* Palleggiatore */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'palleggiatore').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🎯 Palleggiatore</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'palleggiatore').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Opposto */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'opposto').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>💪 Opposto</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'opposto').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Schiacciatore */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'schiacciatore').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>⚡ Schiacciatore</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'schiacciatore').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Centrale */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'centrale').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🏐 Centrale</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'centrale').map((player: any, idx: number) => (
+                            <View key={idx} style={styles.publicPlayerRow}>
+                              <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
+                              <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
+                            </View>
+                          ))}
+                        </View>
+                      )}
+                      {/* Libero */}
+                      {selectedFormation.starters.filter((s: any) => s.position === 'libero').length > 0 && (
+                        <View style={styles.publicPositionSection}>
+                          <Text style={styles.publicPositionTitle}>🛡️ Libero</Text>
+                          {selectedFormation.starters.filter((s: any) => s.position === 'libero').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
                               <Text style={styles.publicPlayerName}>{player.player_name || '?'}</Text>
