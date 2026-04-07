@@ -23,7 +23,7 @@ import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal } from '../../src/components';
+import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal, CyclingMatchModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
@@ -524,6 +524,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Rugby Match Modal state
   const [showRugbyMatchModal, setShowRugbyMatchModal] = useState(false);
   const [selectedRugbyMatch, setSelectedRugbyMatch] = useState<any>(null);
+  // Cycling Match Modal state
+  const [showCyclingMatchModal, setShowCyclingMatchModal] = useState(false);
+  const [selectedCyclingMatch, setSelectedCyclingMatch] = useState<any>(null);
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
@@ -773,6 +776,27 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         setSelectedRugbyMatch(match);
       }
       setShowRugbyMatchModal(true);
+    } else if (tournament?.sport === 'ciclismo') {
+      // Cycling - use cycling modal
+      try {
+        const [homePlayersRes, awayPlayersRes] = await Promise.all([
+          api.get(`/api/teams/${match.home_team_id}/players`),
+          api.get(`/api/teams/${match.away_team_id}/players`)
+        ]);
+        setHomeTeamPlayers(homePlayersRes.data || []);
+        setAwayTeamPlayers(awayPlayersRes.data || []);
+      } catch (error) {
+        console.error('Error loading players:', error);
+      }
+      // Fetch fresh match data before opening modal
+      try {
+        const freshMatchRes = await api.get(`/api/matches/${match.id}`);
+        setSelectedCyclingMatch(freshMatchRes.data);
+      } catch (error) {
+        console.error('Error fetching fresh match:', error);
+        setSelectedCyclingMatch(match);
+      }
+      setShowCyclingMatchModal(true);
     } else {
       // Football - use existing modal
       setSelectedMatch(match);
@@ -3312,6 +3336,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           // Only update local state, don't close modal
           // Modal will be closed by onClose when user clicks X or "Fine Partita"
           setMatches(matches.map(m => m.id === selectedRugbyMatch?.id ? { ...m, ...updatedMatch } : m));
+          loadData();
+        }}
+      />
+
+      {/* Cycling Match Modal */}
+      <CyclingMatchModal
+        visible={showCyclingMatchModal}
+        onClose={() => {
+          loadData();
+          setShowCyclingMatchModal(false);
+          setSelectedCyclingMatch(null);
+        }}
+        match={selectedCyclingMatch}
+        homePlayers={homeTeamPlayers}
+        awayPlayers={awayTeamPlayers}
+        homeTeamName={teams.find(t => t.id === selectedCyclingMatch?.home_team_id)?.name || 'Squadra 1'}
+        awayTeamName={teams.find(t => t.id === selectedCyclingMatch?.away_team_id)?.name || 'Squadra 2'}
+        homeTeamId={selectedCyclingMatch?.home_team_id || ''}
+        awayTeamId={selectedCyclingMatch?.away_team_id || ''}
+        stageName={selectedCyclingMatch?.round}
+        onSave={(updatedMatch) => {
+          setMatches(matches.map(m => m.id === selectedCyclingMatch?.id ? { ...m, ...updatedMatch } : m));
           loadData();
         }}
       />

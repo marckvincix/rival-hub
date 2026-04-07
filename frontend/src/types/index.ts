@@ -163,11 +163,23 @@ export const SPORTS_CONFIG: SportConfig[] = [
     name: 'Ciclismo',
     emoji: '🚴',
     formats: [
-      { value: 'individuale', label: 'Individuale' },
-      { value: 'squadre', label: 'Squadre' },
+      { value: 'individuale', label: 'Cronometro Individuale' },
+      { value: 'squadre', label: 'A Squadre' },
+      { value: 'tappe', label: 'Corsa a Tappe' },
       { value: 'custom', label: 'Personalizzato' },
     ],
-    hideRoles: true,
+    structures: [
+      { value: 'single_stage', label: 'Tappa Singola' },
+      { value: 'multi_stage', label: 'Più Tappe' },
+    ],
+    roles: [
+      { value: 'capitano', label: 'Capitano' },
+      { value: 'gregario', label: 'Gregario' },
+      { value: 'scalatore', label: 'Scalatore' },
+      { value: 'velocista', label: 'Velocista' },
+      { value: 'cronoman', label: 'Cronoman' },
+      { value: 'passista', label: 'Passista' },
+    ],
   },
   {
     id: 'atletica',

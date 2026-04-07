@@ -203,8 +203,10 @@ class MatchUpdate(BaseModel):
     # Volleyball specific fields
     volleyball_sets: Optional[List[Dict]] = None
     # Rugby specific fields
-    rugby_events: Optional[List[Dict]] = None  # List of rugby events (tries, conversions, penalties, etc.)
+    rugby_events: Optional[List[Dict]] = None
     current_half: Optional[int] = None  # 1 or 2
+    # Cycling specific fields
+    cycling_times: Optional[List[Dict]] = None  # List of athlete times {player_id, time_seconds, time_display}
 
 class Match(BaseModel):
     id: str
@@ -235,6 +237,8 @@ class Match(BaseModel):
     # Rugby specific fields
     rugby_events: Optional[List[Dict]] = None
     current_half: Optional[int] = None
+    # Cycling specific fields
+    cycling_times: Optional[List[Dict]] = None
     created_at: datetime
 
 # Match Event Models
