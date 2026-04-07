@@ -59,9 +59,10 @@ export default function RegisterScreen() {
   const handleGoogleLogin = async () => {
     try {
       // For web platform, use window.location.origin for proper redirect
+      // For mobile, use EXPO_PUBLIC_BACKEND_URL to ensure it works across environments
       const callbackUrl = Platform.OS === 'web' 
         ? `${window.location.origin}/(auth)/callback`
-        : Linking.createURL('(auth)/callback');
+        : `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace('/api', '') || window.location.origin}/(auth)/callback`;
       const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(callbackUrl)}`;
       const result = await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
       if (result.type === 'success' && result.url) {
