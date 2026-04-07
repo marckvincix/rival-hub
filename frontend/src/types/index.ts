@@ -1,6 +1,6 @@
 // GoalManager Types
 
-export type Sport = 'calcio' | 'basket' | 'padel' | 'tennis' | 'pallavolo' | 'rugby' | 'baseball' | 'nuoto' | 'ciclismo' | 'atletica';
+export type Sport = 'calcio' | 'basket' | 'padel' | 'tennis' | 'pallavolo' | 'rugby';
 
 export interface SportConfig {
   id: Sport;
@@ -128,69 +128,6 @@ export const SPORTS_CONFIG: SportConfig[] = [
       { value: 'centro_2', label: 'Centro' },
       { value: 'estremo', label: 'Estremo' },
     ],
-  },
-  {
-    id: 'baseball',
-    name: 'Baseball',
-    emoji: '⚾',
-    formats: [
-      { value: '9v9', label: '9 vs 9' },
-      { value: 'custom', label: 'Personalizzato' },
-    ],
-    roles: [
-      { value: 'lanciatore', label: 'Lanciatore' },
-      { value: 'ricevitore', label: 'Ricevitore' },
-      { value: 'prima_base', label: 'Prima Base' },
-      { value: 'seconda_base', label: 'Seconda Base' },
-      { value: 'terza_base', label: 'Terza Base' },
-      { value: 'interbase', label: 'Interbase' },
-      { value: 'esterno', label: 'Esterno' },
-    ],
-  },
-  {
-    id: 'nuoto',
-    name: 'Nuoto',
-    emoji: '🏊',
-    formats: [
-      { value: 'individuale', label: 'Individuale' },
-      { value: 'staffetta', label: 'Staffetta' },
-      { value: 'custom', label: 'Personalizzato' },
-    ],
-    hideRoles: true,
-  },
-  {
-    id: 'ciclismo',
-    name: 'Ciclismo',
-    emoji: '🚴',
-    formats: [
-      { value: 'individuale', label: 'Cronometro Individuale' },
-      { value: 'squadre', label: 'A Squadre' },
-      { value: 'tappe', label: 'Corsa a Tappe' },
-      { value: 'custom', label: 'Personalizzato' },
-    ],
-    structures: [
-      { value: 'single_stage', label: 'Tappa Singola' },
-      { value: 'multi_stage', label: 'Più Tappe' },
-    ],
-    roles: [
-      { value: 'capitano', label: 'Capitano' },
-      { value: 'gregario', label: 'Gregario' },
-      { value: 'scalatore', label: 'Scalatore' },
-      { value: 'velocista', label: 'Velocista' },
-      { value: 'cronoman', label: 'Cronoman' },
-      { value: 'passista', label: 'Passista' },
-    ],
-  },
-  {
-    id: 'atletica',
-    name: 'Atletica',
-    emoji: '🏃',
-    formats: [
-      { value: 'individuale', label: 'Individuale' },
-      { value: 'staffetta', label: 'Staffetta' },
-      { value: 'custom', label: 'Personalizzato' },
-    ],
-    hideRoles: true,
   },
 ];
 

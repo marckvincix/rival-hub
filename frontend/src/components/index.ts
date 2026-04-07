@@ -18,5 +18,3 @@ export { VolleyballCourtView } from './VolleyballCourtView';
 export { VolleyballMatchModal } from './VolleyballMatchModal';
 export { RugbyCourtView } from './RugbyCourtView';
 export { RugbyMatchModal } from './RugbyMatchModal';
-export { CyclingMatchModal } from './CyclingMatchModal';
-export { CyclingStartOrderView } from './CyclingStartOrderView';
