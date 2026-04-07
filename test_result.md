@@ -581,7 +581,7 @@ metadata:
 
 test_plan:
   current_focus:
-    - "Soccer (Calcio) LIVE Scoring System - Complete functionality testing per review request"
+    - "Push Notifications & Favorites System - Verification completed"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"

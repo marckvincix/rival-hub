@@ -3,9 +3,19 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '../src/store/authStore';
 import { Loading } from '../src/components';
+import { useNotifications } from '../src/hooks/useNotifications';
 
 export default function RootLayout() {
-  const { isLoading, checkAuth } = useAuthStore();
+  const { isLoading, checkAuth, user } = useAuthStore();
+  
+  // Register push notifications when user is authenticated
+  const { expoPushToken } = useNotifications();
+  
+  useEffect(() => {
+    if (expoPushToken && user) {
+      console.log('Push token ready for user:', user.email, '- Token:', expoPushToken?.substring(0, 20) + '...');
+    }
+  }, [expoPushToken, user]);
 
   useEffect(() => {
     checkAuth();

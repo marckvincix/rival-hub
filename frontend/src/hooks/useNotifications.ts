@@ -97,7 +97,7 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
 async function registerTokenWithBackend(token: string) {
   try {
     const deviceType = Platform.OS;
-    await api.post('/push-tokens', { token, device_type: deviceType });
+    await api.post('/api/push-tokens', { token, device_type: deviceType });
     console.log('Push token registered with backend');
   } catch (error) {
     console.log('Error registering push token:', error);
