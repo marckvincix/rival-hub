@@ -16,13 +16,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player, Sport, getSportEmoji } from '../../src/types';
 
-type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info';
+type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info' | 'highlights';
 
 export default function TournamentPublicPage() {
   const router = useRouter();
@@ -291,6 +291,7 @@ export default function TournamentPublicPage() {
     { id: 'standings', label: 'Classifica', icon: 'podium-outline' },
     { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
     { id: 'matches', label: 'Partite', icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
+    { id: 'highlights', label: 'Highlights', icon: 'film-outline' },
     // Hide "Marcatori" for Tennis/Padel
     ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: 'Marcatori', icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
@@ -812,6 +813,14 @@ export default function TournamentPublicPage() {
               ))
             )}
           </View>
+        )}
+
+        {/* Highlights Tab */}
+        {activeTab === 'highlights' && tournament && (
+          <HighlightsTab 
+            tournamentId={tournament.id}
+            isOrganizer={user?.user_id === tournament.organizer_id}
+          />
         )}
 
         {/* Info Tab */}

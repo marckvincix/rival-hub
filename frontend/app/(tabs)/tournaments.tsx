@@ -23,7 +23,7 @@ import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal } from '../../src/components';
+import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal, HighlightsUploadModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 const FORMATS = [
@@ -560,6 +560,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [editingNews, setEditingNews] = useState<any>(null);
   const [newsForm, setNewsForm] = useState({ title: '', content: '', photo: '' });
   const [savingNews, setSavingNews] = useState(false);
+  
+  // Highlights Management state
+  const [showHighlightsModal, setShowHighlightsModal] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
@@ -1299,6 +1302,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     return plural ? 'Giocatori' : 'Giocatore';
   };
   
+  // Get unique rounds from matches for Highlights upload
+  const getRounds = () => {
+    const roundsSet = new Set(matches.map(m => m.round || 'Giornata 1'));
+    return Array.from(roundsSet).sort((a, b) => {
+      const numA = parseInt(a.replace(/\D/g, '')) || 0;
+      const numB = parseInt(b.replace(/\D/g, '')) || 0;
+      return numA - numB;
+    });
+  };
+  
   // Get display name for a team (for Tennis, show player names instead of team name)
   const getTeamDisplayName = (team: any) => {
     if (!isTennisSport) return team.name;
@@ -1509,6 +1522,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     { id: 'matches', label: 'Partite', icon: sportIcon },
     { id: 'results', label: 'Risultati', icon: 'create' },
     { id: 'news', label: 'News', icon: 'newspaper' },
+    { id: 'highlights', label: 'Highlights', icon: 'film' },
     { id: 'settings', label: 'Impostazioni', icon: 'settings' }
   ];
 
@@ -1788,6 +1802,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </View>
                   ))
                 )}
+              </View>
+            )}
+
+            {/* Highlights Tab */}
+            {activeTab === 'highlights' && (
+              <View style={styles.highlightsTabContent}>
+                <TouchableOpacity 
+                  style={styles.addNewsButton} 
+                  onPress={() => setShowHighlightsModal(true)}
+                >
+                  <Ionicons name="film" size={20} color="#FFF" />
+                  <Text style={styles.addNewsButtonText}>Carica Highlights</Text>
+                </TouchableOpacity>
+                <View style={styles.highlightsInfoCard}>
+                  <Ionicons name="information-circle" size={24} color="#666" />
+                  <View style={{ flex: 1, marginLeft: 12 }}>
+                    <Text style={styles.highlightsInfoTitle}>Gestisci Highlights</Text>
+                    <Text style={styles.highlightsInfoText}>
+                      Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chi vuoi.
+                    </Text>
+                  </View>
+                </View>
               </View>
             )}
 
@@ -3311,6 +3347,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           loadData();
         }}
       />
+
+      {/* Highlights Upload Modal */}
+      <HighlightsUploadModal
+        visible={showHighlightsModal}
+        onClose={() => setShowHighlightsModal(false)}
+        tournamentId={tournament?.id || ''}
+        rounds={getRounds()}
+      />
     </SafeAreaView>
   );
 }
@@ -4080,4 +4124,9 @@ const styles = StyleSheet.create({
   autoSaveIndicator: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingVertical: 8 },
   autoSaveText: { fontSize: 12, color: '#10B981', fontWeight: '500' },
   extraFooterButtons: { marginBottom: 40, gap: 12 },
+  // Highlights tab styles
+  highlightsTabContent: { paddingTop: 8 },
+  highlightsInfoCard: { flexDirection: 'row', backgroundColor: '#F8F8F8', borderRadius: 12, padding: 16, marginTop: 16 },
+  highlightsInfoTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 4 },
+  highlightsInfoText: { fontSize: 13, color: '#666', lineHeight: 18 },
 });

@@ -1,5 +1,6 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Header
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Header, UploadFile, File, Form
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -15,9 +16,29 @@ from passlib.context import CryptContext
 from jose import jwt, JWTError
 import re
 import unicodedata
+import string
+import random
+import shutil
+import subprocess
+from PIL import Image
+import io
+import base64
+import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Uploads directory for Highlights
+UPLOADS_DIR = Path("/app/uploads/highlights")
+UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
+
+# Highlights configuration
+HIGHLIGHTS_MAX_PHOTOS_PER_ROUND = 10
+HIGHLIGHTS_MAX_VIDEOS_PER_ROUND = 10
+HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS = 30
+HIGHLIGHTS_MAX_PHOTO_SIZE_MB = 10
+HIGHLIGHTS_MAX_VIDEO_SIZE_MB = 100
+HIGHLIGHTS_RETENTION_DAYS = 365
 
 # MongoDB connection
 mongo_url = os.environ['MONGO_URL']
@@ -393,7 +414,174 @@ class PushToken(BaseModel):
 class NotificationSettingsUpdate(BaseModel):
     notifications_enabled: bool  # Global toggle
 
+# Highlights Models
+class Highlight(BaseModel):
+    id: str
+    tournament_id: str
+    round: str  # "Giornata 1", "Giornata 2", etc.
+    file_type: str  # "photo" or "video"
+    file_path: str  # Relative path in uploads folder
+    file_name: str
+    file_size: int  # bytes
+    duration_seconds: Optional[float] = None  # For videos
+    uploaded_by: str  # user_id
+    created_at: datetime
+    expires_at: datetime  # Auto-delete after 365 days
+
+class HighlightCodeVerify(BaseModel):
+    code: str
+
+class HighlightResponse(BaseModel):
+    id: str
+    tournament_id: str
+    round: str
+    file_type: str
+    file_url: str  # URL to access the file
+    file_name: str
+    file_size: int
+    duration_seconds: Optional[float] = None
+    created_at: datetime
+
+class HighlightsRoundSummary(BaseModel):
+    round: str
+    photo_count: int
+    video_count: int
+    highlights: List[HighlightResponse]
+
 # ===================== HELPER FUNCTIONS =====================
+
+def generate_highlights_code() -> str:
+    """Generate a random 6-character alphanumeric code for highlights access"""
+    chars = string.ascii_uppercase + string.digits
+    # Exclude confusing characters like 0, O, I, 1
+    chars = chars.replace('0', '').replace('O', '').replace('I', '').replace('1', '')
+    return ''.join(random.choices(chars, k=6))
+
+async def compress_image(input_path: Path, max_size_mb: int = 5) -> Path:
+    """Compress image to target size"""
+    output_path = input_path.with_suffix('.compressed.jpg')
+    
+    with Image.open(input_path) as img:
+        # Convert to RGB if necessary
+        if img.mode in ('RGBA', 'P'):
+            img = img.convert('RGB')
+        
+        # Calculate target quality
+        quality = 85
+        img.save(output_path, 'JPEG', quality=quality, optimize=True)
+        
+        # Reduce quality if still too large
+        while output_path.stat().st_size > max_size_mb * 1024 * 1024 and quality > 20:
+            quality -= 10
+            img.save(output_path, 'JPEG', quality=quality, optimize=True)
+    
+    return output_path
+
+async def compress_video(input_path: Path, max_size_mb: int = 50) -> Path:
+    """Compress video using FFmpeg"""
+    output_path = input_path.with_suffix('.compressed.mp4')
+    
+    try:
+        # Use FFmpeg to compress video
+        cmd = [
+            'ffmpeg', '-y', '-i', str(input_path),
+            '-c:v', 'libx264', '-preset', 'medium',
+            '-crf', '28',  # Higher CRF = more compression
+            '-c:a', 'aac', '-b:a', '128k',
+            '-movflags', '+faststart',
+            str(output_path)
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        await process.communicate()
+        
+        if process.returncode == 0 and output_path.exists():
+            return output_path
+    except Exception as e:
+        logger.error(f"Video compression failed: {e}")
+    
+    return input_path  # Return original if compression fails
+
+async def get_video_duration(file_path: Path) -> float:
+    """Get video duration in seconds using FFmpeg"""
+    try:
+        cmd = [
+            'ffprobe', '-v', 'error',
+            '-show_entries', 'format=duration',
+            '-of', 'default=noprint_wrappers=1:nokey=1',
+            str(file_path)
+        ]
+        
+        process = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE
+        )
+        stdout, _ = await process.communicate()
+        
+        if process.returncode == 0 and stdout:
+            return float(stdout.decode().strip())
+    except Exception as e:
+        logger.error(f"Failed to get video duration: {e}")
+    
+    return 0.0
+
+async def cleanup_expired_highlights():
+    """Delete highlights that have expired (older than 365 days)"""
+    now = datetime.now(timezone.utc)
+    
+    # Find expired highlights
+    expired = await db.highlights.find(
+        {"expires_at": {"$lte": now}},
+        {"_id": 0}
+    ).to_list(1000)
+    
+    for highlight in expired:
+        # Delete file from filesystem
+        file_path = UPLOADS_DIR / highlight["file_path"]
+        if file_path.exists():
+            file_path.unlink()
+        
+        # Delete from database
+        await db.highlights.delete_one({"id": highlight["id"]})
+    
+    logger.info(f"Cleaned up {len(expired)} expired highlights")
+    return len(expired)
+
+async def send_expiry_warning_notifications():
+    """Send notifications to organizers 30 days before highlights expire"""
+    now = datetime.now(timezone.utc)
+    warning_date = now + timedelta(days=30)
+    
+    # Find highlights expiring in ~30 days that haven't been warned
+    highlights = await db.highlights.find({
+        "expires_at": {"$lte": warning_date, "$gt": now},
+        "expiry_warning_sent": {"$ne": True}
+    }).to_list(1000)
+    
+    # Group by tournament
+    tournament_ids = set(h["tournament_id"] for h in highlights)
+    
+    for tournament_id in tournament_ids:
+        tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+        if tournament:
+            await send_push_notification(
+                [tournament["organizer_id"]],
+                "⚠️ Highlights in scadenza",
+                f"I tuoi Highlights del {tournament['name']} verranno eliminati tra 30 giorni",
+                {"type": "highlights_expiry_warning", "tournament_id": tournament_id}
+            )
+    
+    # Mark as warned
+    for h in highlights:
+        await db.highlights.update_one(
+            {"id": h["id"]},
+            {"$set": {"expiry_warning_sent": True}}
+        )
 
 def generate_slug(name: str) -> str:
     """Generate URL-friendly slug from name"""
@@ -718,6 +906,7 @@ async def create_tournament(
         "location": tournament_data.location,
         "logo": tournament_data.logo,
         "is_public": tournament_data.is_public,
+        "highlights_code": generate_highlights_code(),  # Auto-generate access code
         "created_at": now
     }
     
@@ -3098,6 +3287,361 @@ async def get_notification_settings(user: User = Depends(get_current_user)):
     
     return {"notifications_enabled": user_doc.get("notifications_enabled", True) if user_doc else True}
 
+# ===================== HIGHLIGHTS ENDPOINTS =====================
+
+@api_router.get("/tournaments/{tournament_id}/highlights-code")
+async def get_highlights_code(
+    tournament_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get highlights code for organizer"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    if tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    # Generate code if not exists (for old tournaments)
+    if not tournament.get("highlights_code"):
+        code = generate_highlights_code()
+        await db.tournaments.update_one(
+            {"id": tournament_id},
+            {"$set": {"highlights_code": code}}
+        )
+        return {"code": code}
+    
+    return {"code": tournament["highlights_code"]}
+
+@api_router.post("/tournaments/{tournament_id}/highlights-code/regenerate")
+async def regenerate_highlights_code(
+    tournament_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Regenerate highlights code (organizer only)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    if tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    new_code = generate_highlights_code()
+    await db.tournaments.update_one(
+        {"id": tournament_id},
+        {"$set": {"highlights_code": new_code}}
+    )
+    
+    return {"code": new_code, "message": "Codice rigenerato con successo"}
+
+@api_router.post("/tournaments/{tournament_id}/highlights/verify-code")
+async def verify_highlights_code(
+    tournament_id: str,
+    data: HighlightCodeVerify
+):
+    """Verify highlights access code (public)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    stored_code = tournament.get("highlights_code", "")
+    
+    if not stored_code:
+        raise HTTPException(status_code=400, detail="Codice non configurato")
+    
+    if data.code.upper() != stored_code.upper():
+        raise HTTPException(status_code=401, detail="Codice non valido. Riprova.")
+    
+    return {"valid": True, "message": "Accesso autorizzato"}
+
+@api_router.get("/tournaments/{tournament_id}/highlights")
+async def get_highlights(
+    tournament_id: str,
+    code: Optional[str] = None,
+    current_user: Optional[User] = Depends(get_optional_user)
+):
+    """Get all highlights for a tournament (requires valid code or organizer access)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    # Check access: organizer always has access, others need valid code
+    is_organizer = current_user and tournament["organizer_id"] == current_user.user_id
+    
+    if not is_organizer:
+        stored_code = tournament.get("highlights_code", "")
+        if not code or code.upper() != stored_code.upper():
+            raise HTTPException(status_code=401, detail="Accesso non autorizzato")
+    
+    # Get all highlights for tournament
+    highlights = await db.highlights.find(
+        {"tournament_id": tournament_id},
+        {"_id": 0}
+    ).sort([("round", 1), ("created_at", 1)]).to_list(1000)
+    
+    # Group by round
+    rounds_data: Dict[str, Dict] = {}
+    for h in highlights:
+        round_name = h["round"]
+        if round_name not in rounds_data:
+            rounds_data[round_name] = {
+                "round": round_name,
+                "photo_count": 0,
+                "video_count": 0,
+                "highlights": []
+            }
+        
+        if h["file_type"] == "photo":
+            rounds_data[round_name]["photo_count"] += 1
+        else:
+            rounds_data[round_name]["video_count"] += 1
+        
+        rounds_data[round_name]["highlights"].append({
+            "id": h["id"],
+            "tournament_id": h["tournament_id"],
+            "round": h["round"],
+            "file_type": h["file_type"],
+            "file_url": f"/api/highlights/file/{h['id']}",
+            "file_name": h["file_name"],
+            "file_size": h["file_size"],
+            "duration_seconds": h.get("duration_seconds"),
+            "created_at": h["created_at"]
+        })
+    
+    # Sort rounds by number (Giornata 1, Giornata 2, etc.)
+    def sort_round(r):
+        import re
+        match = re.search(r'\d+', r["round"])
+        return int(match.group()) if match else 999
+    
+    return sorted(rounds_data.values(), key=sort_round)
+
+@api_router.get("/tournaments/{tournament_id}/highlights/rounds-with-content")
+async def get_rounds_with_content(
+    tournament_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Get list of rounds that already have highlights (for upload form)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    if tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    # Get unique rounds with content
+    pipeline = [
+        {"$match": {"tournament_id": tournament_id}},
+        {"$group": {
+            "_id": "$round",
+            "photo_count": {"$sum": {"$cond": [{"$eq": ["$file_type", "photo"]}, 1, 0]}},
+            "video_count": {"$sum": {"$cond": [{"$eq": ["$file_type", "video"]}, 1, 0]}}
+        }}
+    ]
+    
+    rounds = await db.highlights.aggregate(pipeline).to_list(100)
+    
+    return {r["_id"]: {"photo_count": r["photo_count"], "video_count": r["video_count"]} for r in rounds}
+
+@api_router.post("/tournaments/{tournament_id}/highlights")
+async def upload_highlight(
+    tournament_id: str,
+    round: str = Form(...),
+    file_type: str = Form(...),  # "photo" or "video"
+    file: UploadFile = File(...),
+    compress: bool = Form(False),
+    terms_accepted: bool = Form(False),
+    current_user: User = Depends(get_current_user)
+):
+    """Upload a highlight (photo or video)"""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    
+    if tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    if not terms_accepted:
+        raise HTTPException(status_code=400, detail="Devi accettare i Termini e Condizioni")
+    
+    # Check limits
+    existing_count = await db.highlights.count_documents({
+        "tournament_id": tournament_id,
+        "round": round,
+        "file_type": file_type
+    })
+    
+    max_count = HIGHLIGHTS_MAX_PHOTOS_PER_ROUND if file_type == "photo" else HIGHLIGHTS_MAX_VIDEOS_PER_ROUND
+    if existing_count >= max_count:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Limite {'foto' if file_type == 'photo' else 'video'} raggiunto per questa giornata"
+        )
+    
+    # Validate file type
+    allowed_photo_types = ['image/jpeg', 'image/png', 'image/jpg']
+    allowed_video_types = ['video/mp4', 'video/quicktime', 'video/mov']
+    
+    if file_type == "photo" and file.content_type not in allowed_photo_types:
+        raise HTTPException(status_code=400, detail="Formato foto non supportato. Usa JPG o PNG.")
+    
+    if file_type == "video" and file.content_type not in allowed_video_types:
+        raise HTTPException(status_code=400, detail="Formato video non supportato. Usa MP4 o MOV.")
+    
+    # Create directory structure
+    round_dir = UPLOADS_DIR / tournament_id / round.replace(" ", "_")
+    round_dir.mkdir(parents=True, exist_ok=True)
+    
+    # Generate unique filename
+    file_ext = Path(file.filename).suffix.lower() if file.filename else ('.jpg' if file_type == 'photo' else '.mp4')
+    highlight_id = f"highlight_{uuid.uuid4().hex[:12]}"
+    file_name = f"{highlight_id}{file_ext}"
+    file_path = round_dir / file_name
+    
+    # Save file
+    content = await file.read()
+    file_size = len(content)
+    
+    # Check size and compress if needed
+    max_size = HIGHLIGHTS_MAX_PHOTO_SIZE_MB if file_type == "photo" else HIGHLIGHTS_MAX_VIDEO_SIZE_MB
+    
+    if file_size > max_size * 1024 * 1024:
+        if not compress:
+            return {
+                "needs_compression": True,
+                "file_size_mb": round(file_size / (1024 * 1024), 2),
+                "max_size_mb": max_size,
+                "message": f"Il file supera {max_size}MB. Vuoi comprimerlo?"
+            }
+    
+    # Write file
+    with open(file_path, 'wb') as f:
+        f.write(content)
+    
+    # Compress if requested
+    if compress or file_size > max_size * 1024 * 1024:
+        if file_type == "photo":
+            compressed_path = await compress_image(file_path)
+            if compressed_path != file_path:
+                file_path.unlink()  # Delete original
+                compressed_path.rename(file_path)  # Rename compressed to original name
+                file_size = file_path.stat().st_size
+        else:
+            compressed_path = await compress_video(file_path)
+            if compressed_path != file_path:
+                file_path.unlink()
+                compressed_path.rename(file_path)
+                file_size = file_path.stat().st_size
+    
+    # Check video duration
+    duration_seconds = None
+    if file_type == "video":
+        duration_seconds = await get_video_duration(file_path)
+        if duration_seconds > HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS:
+            file_path.unlink()  # Delete the file
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Il video supera la durata massima di {HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS} secondi"
+            )
+    
+    # Save to database
+    now = datetime.now(timezone.utc)
+    relative_path = f"{tournament_id}/{round.replace(' ', '_')}/{file_name}"
+    
+    highlight_doc = {
+        "id": highlight_id,
+        "tournament_id": tournament_id,
+        "round": round,
+        "file_type": file_type,
+        "file_path": relative_path,
+        "file_name": file.filename or file_name,
+        "file_size": file_size,
+        "duration_seconds": duration_seconds,
+        "uploaded_by": current_user.user_id,
+        "created_at": now,
+        "expires_at": now + timedelta(days=HIGHLIGHTS_RETENTION_DAYS)
+    }
+    
+    await db.highlights.insert_one(highlight_doc)
+    
+    # Send push notifications to team followers
+    teams = await db.teams.find({"tournament_id": tournament_id}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    
+    for team in teams:
+        await notify_team_followers(
+            team["id"],
+            f"🎬 Nuovi Highlights disponibili!",
+            f"Nuovi Highlights per {team['name']}! Inserisci il codice per visualizzarli su Rival Hub",
+            {"type": "new_highlights", "tournament_id": tournament_id}
+        )
+    
+    return {
+        "id": highlight_id,
+        "message": "Contenuto caricato con successo",
+        "file_url": f"/api/highlights/file/{highlight_id}"
+    }
+
+@api_router.get("/highlights/file/{highlight_id}")
+async def get_highlight_file(highlight_id: str):
+    """Get highlight file (public endpoint for viewing)"""
+    highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
+    
+    if not highlight:
+        raise HTTPException(status_code=404, detail="File non trovato")
+    
+    file_path = UPLOADS_DIR / highlight["file_path"]
+    
+    if not file_path.exists():
+        raise HTTPException(status_code=404, detail="File non trovato sul server")
+    
+    media_type = "image/jpeg" if highlight["file_type"] == "photo" else "video/mp4"
+    
+    return FileResponse(
+        path=str(file_path),
+        media_type=media_type,
+        filename=highlight["file_name"]
+    )
+
+@api_router.delete("/highlights/{highlight_id}")
+async def delete_highlight(
+    highlight_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Delete a highlight"""
+    highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
+    
+    if not highlight:
+        raise HTTPException(status_code=404, detail="Highlight non trovato")
+    
+    # Check authorization
+    tournament = await db.tournaments.find_one({"id": highlight["tournament_id"]}, {"_id": 0})
+    
+    if not tournament or tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    
+    # Delete file
+    file_path = UPLOADS_DIR / highlight["file_path"]
+    if file_path.exists():
+        file_path.unlink()
+    
+    # Delete from database
+    await db.highlights.delete_one({"id": highlight_id})
+    
+    return {"message": "Highlight eliminato"}
+
+@api_router.post("/highlights/cleanup-expired")
+async def manual_cleanup_expired():
+    """Manual endpoint to cleanup expired highlights (can be called by cron job)"""
+    count = await cleanup_expired_highlights()
+    await send_expiry_warning_notifications()
+    return {"deleted_count": count}
+
 # ===================== INTERNAL NOTIFICATION HELPERS =====================
 
 async def send_push_notification(user_ids: List[str], title: str, body: str, data: dict = None):
@@ -3182,3 +3726,17 @@ app.add_middleware(
 @app.on_event("shutdown")
 async def shutdown_db_client():
     client.close()
+
+@app.on_event("startup")
+async def startup_cleanup_task():
+    """Run cleanup tasks on startup"""
+    try:
+        # Cleanup expired highlights
+        count = await cleanup_expired_highlights()
+        logger.info(f"Startup: Cleaned up {count} expired highlights")
+        
+        # Send expiry warning notifications
+        await send_expiry_warning_notifications()
+        logger.info("Startup: Sent expiry warning notifications")
+    except Exception as e:
+        logger.error(f"Startup cleanup failed: {e}")
