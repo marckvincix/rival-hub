@@ -197,6 +197,9 @@
     "format": "Format",
     "startDate": "Start date",
     "inProgress": "In progress",
+    "starters": "Starters",
+    "viewField": "View Field",
+    "formation": "Formation",
     "pending": "Pending"
   },
   "teams": {
@@ -274,7 +277,8 @@
     "endMatchConfirm": "End the match?",
     "date": "Date",
     "time": "Time",
-    "roundPlaceholder": "Round"
+    "roundPlaceholder": "Round",
+    "dateTBD": "Date TBD"
   },
   "stats": {
     "title": "Statistics",

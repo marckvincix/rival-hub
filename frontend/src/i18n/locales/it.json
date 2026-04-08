@@ -197,6 +197,9 @@
     "format": "Formato",
     "startDate": "Data inizio",
     "inProgress": "In corso",
+    "starters": "Titolari",
+    "viewField": "Vedi Campo",
+    "formation": "Modulo",
     "pending": "In attesa"
   },
   "teams": {

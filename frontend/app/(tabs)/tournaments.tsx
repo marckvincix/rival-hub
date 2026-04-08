@@ -205,7 +205,7 @@ export default function TournamentsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>I Miei Tornei</Text>
+        <Text style={styles.title}>{t('tournaments.myTournaments')}</Text>
         <TouchableOpacity style={styles.addButton} onPress={() => {
           setTournamentDate(null);
           setTournamentTime(null);

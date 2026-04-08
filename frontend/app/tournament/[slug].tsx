@@ -188,7 +188,7 @@ export default function TournamentPublicPage() {
     if (match.match_time) {
       result += result ? ` • ${match.match_time}` : match.match_time;
     }
-    return result || 'Data da definire';
+    return result || t('matches.dateTBD', 'Date TBD');
   };
 
   // Add to calendar function
@@ -600,7 +600,7 @@ export default function TournamentPublicPage() {
                                     </View>
                                   </View>
                                   <View style={styles.viewFormationBtn}>
-                                    <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                    <Text style={styles.viewFormationBtnText}>{t('tournaments.viewField', 'View Field')}</Text>
                                     <Ionicons name="chevron-forward" size={18} color="#FFF" />
                                   </View>
                                 </TouchableOpacity>
@@ -640,16 +640,16 @@ export default function TournamentPublicPage() {
                                         <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
                                         <View style={styles.formationTeamDetails}>
                                           <Text style={styles.formationTeamName}>{getTeamName(match.home_team_id)}</Text>
-                                          <Text style={styles.formationModuleBadge}>Modulo: {homeFormation.module}</Text>
+                                          <Text style={styles.formationModuleBadge}>{t('tournaments.formation', 'Formation')}: {homeFormation.module}</Text>
                                         </View>
                                       </View>
                                       <View style={styles.viewFormationBtn}>
-                                        <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                        <Text style={styles.viewFormationBtnText}>{t('tournaments.viewField', 'View Field')}</Text>
                                         <Ionicons name="chevron-forward" size={18} color="#FFF" />
                                       </View>
                                     </TouchableOpacity>
                                     <View style={styles.formationPreview}>
-                                      <Text style={styles.formationPreviewLabel}>Titolari ({homeFormation.starters.length}):</Text>
+                                      <Text style={styles.formationPreviewLabel}>{t('tournaments.starters', 'Starters')} ({homeFormation.starters.length}):</Text>
                                       <View style={styles.formationPlayersList}>
                                         {homeFormation.starters.slice(0, 6).map((s: any, idx: number) => (
                                           <View key={idx} style={styles.formationPlayerChip}>
@@ -679,16 +679,16 @@ export default function TournamentPublicPage() {
                                         <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                                         <View style={styles.formationTeamDetails}>
                                           <Text style={styles.formationTeamName}>{getTeamName(match.away_team_id)}</Text>
-                                          <Text style={styles.formationModuleBadge}>Modulo: {awayFormation.module}</Text>
+                                          <Text style={styles.formationModuleBadge}>{t('tournaments.formation', 'Formation')}: {awayFormation.module}</Text>
                                         </View>
                                       </View>
                                       <View style={styles.viewFormationBtn}>
-                                        <Text style={styles.viewFormationBtnText}>Vedi Campo</Text>
+                                        <Text style={styles.viewFormationBtnText}>{t('tournaments.viewField', 'View Field')}</Text>
                                         <Ionicons name="chevron-forward" size={18} color="#FFF" />
                                       </View>
                                     </TouchableOpacity>
                                     <View style={styles.formationPreview}>
-                                      <Text style={styles.formationPreviewLabel}>Titolari ({awayFormation.starters.length}):</Text>
+                                      <Text style={styles.formationPreviewLabel}>{t('tournaments.starters', 'Starters')} ({awayFormation.starters.length}):</Text>
                                       <View style={styles.formationPlayersList}>
                                         {awayFormation.starters.slice(0, 6).map((s: any, idx: number) => (
                                           <View key={idx} style={styles.formationPlayerChip}>
@@ -910,7 +910,7 @@ export default function TournamentPublicPage() {
               {publicFormationViewMode === 'field' ? (
                 <>
                   {!isRacketSport && (
-                    <Text style={styles.formationModalModule}>Modulo: {selectedFormation.module}</Text>
+                    <Text style={styles.formationModalModule}>{t('tournaments.formation', 'Formation')}: {selectedFormation.module}</Text>
                   )}
                   {isRacketSport ? (
                     isPadel ? (
