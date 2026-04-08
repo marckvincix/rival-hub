@@ -87,6 +87,8 @@ export function HighlightsUploadModal({
   const [videoLoading, setVideoLoading] = useState(true);
   const [videoError, setVideoError] = useState(false);
   const videoRef = useRef<Video>(null);
+  
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     if (visible) {
@@ -513,18 +515,23 @@ export function HighlightsUploadModal({
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity
-            style={styles.termsRow}
-            onPress={() => setTermsAccepted(!termsAccepted)}
-          >
-            <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-              {termsAccepted ? <Ionicons name="checkmark" size={16} color="#FFF" /> : null}
-            </View>
+          <View style={styles.termsRow}>
+            <TouchableOpacity
+              style={styles.checkboxTouchable}
+              onPress={() => setTermsAccepted(!termsAccepted)}
+            >
+              <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
+                {termsAccepted ? <Ionicons name="checkmark" size={16} color="#FFF" /> : null}
+              </View>
+            </TouchableOpacity>
             <Text style={styles.termsText}>
               Caricando questi contenuti accetto i{' '}
-              <Text style={styles.termsLink}>Termini e Condizioni</Text> di Rival Hub.
+              <Text style={styles.termsLinkClickable} onPress={() => setShowTermsModal(true)}>
+                Termini e Condizioni
+              </Text>{' '}
+              di Rival Hub.
             </Text>
-          </TouchableOpacity>
+          </View>
 
           {uploading ? (
             <View style={styles.progressContainer}>
@@ -679,6 +686,95 @@ export function HighlightsUploadModal({
               />
             ) : null}
           </View>
+        </Modal>
+
+        {/* Terms and Conditions Modal */}
+        <Modal
+          visible={showTermsModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => setShowTermsModal(false)}
+        >
+          <SafeAreaView style={styles.termsModalContainer}>
+            <View style={styles.termsModalHeader}>
+              <TouchableOpacity onPress={() => setShowTermsModal(false)} style={styles.termsModalCloseButton}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+              <Text style={styles.termsModalHeaderTitle}>Termini e Privacy</Text>
+              <View style={{ width: 40 }} />
+            </View>
+            
+            <ScrollView style={styles.termsModalContent} showsVerticalScrollIndicator={false}>
+              <Text style={styles.termsSectionTitle}>TERMINI DI SERVIZIO</Text>
+              
+              <Text style={styles.termsSubtitle}>1. Informazioni generali</Text>
+              <Text style={styles.termsTextContent}>
+                Rival Hub è una piattaforma digitale gratuita per la gestione di tornei sportivi, fornita da Omniaweb srls. Il servizio è offerto a titolo gratuito per tutti gli utenti.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>2. Responsabilità dell'Utente (Contenuti e Terzi)</Text>
+              <Text style={styles.termsTextContent}>
+                L'utente è l'unico ed esclusivo responsabile di tutti i dati inseriti nell'app, inclusi ma non limitati a: nomi, cognomi, dati anagrafici, foto profilo e immagini di giocatori, squadre o collaboratori.
+              </Text>
+              <Text style={styles.termsTextContent}>
+                L'utente dichiara e garantisce di aver ottenuto il consenso preventivo e informato da parte di ogni soggetto terzo (giocatori, minori, staff) prima di caricarne i dati o le immagini sulla piattaforma.
+              </Text>
+              <Text style={styles.termsTextContent}>
+                Rival Hub (Omniaweb srls) non si assume alcuna responsabilità, civile o penale, per l'inserimento non autorizzato di dati personali di terzi effettuato dall'utente.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>3. Divieti e Sospensione</Text>
+              <Text style={styles.termsTextContent}>
+                È vietato l'uso dell'app per scopi illeciti o fraudolenti. In caso di segnalazioni o violazioni della privacy, il titolare si riserva il diritto di eliminare i contenuti o sospendere l'account senza preavviso.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>4. Limitazione di responsabilità</Text>
+              <Text style={styles.termsTextContent}>
+                Il titolare non garantisce la disponibilità ininterrotta del servizio e non è responsabile per eventuali perdite di dati o interruzioni tecniche.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>5. Legge applicabile</Text>
+              <Text style={styles.termsTextContent}>
+                Foro competente: Napoli. Legge Italiana.
+              </Text>
+              
+              <Text style={styles.termsSectionTitle}>HIGHLIGHTS — FOTO E VIDEO</Text>
+              
+              <Text style={styles.termsSubtitle}>6. Caricamento contenuti multimediali</Text>
+              <Text style={styles.termsTextContent}>
+                L'utente garantisce di essere titolare dei diritti o di avere il consenso scritto (anche dei genitori/tutori per i minori) per ogni foto o video caricato. Caricando il contenuto, l'utente manleva totalmente Rival Hub da ogni pretesa di terzi relativa alla violazione della privacy o dei diritti d'immagine.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>7. Conservazione</Text>
+              <Text style={styles.termsTextContent}>
+                I contenuti della sezione Highlights vengono eliminati automaticamente dopo 365 giorni.
+              </Text>
+              
+              <Text style={styles.termsSectionTitle}>PRIVACY POLICY (GDPR)</Text>
+              
+              <Text style={styles.termsSubtitle}>8. Titolare del trattamento</Text>
+              <Text style={styles.termsTextContent}>
+                Omniaweb srls — info@rivalhub.app
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>9. Dati raccolti</Text>
+              <Text style={styles.termsTextContent}>
+                Email, nome, cognome dell'utente registrato; dati identificativi e immagini di terzi (giocatori/squadre) inseriti dall'utente stesso. Non vengono raccolti dati di pagamento.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>10. Diritti dell'utente</Text>
+              <Text style={styles.termsTextContent}>
+                Accesso, rettifica e cancellazione (oblio) scrivendo a info@rivalhub.app. L'utente può richiedere in ogni momento la cancellazione dei dati dei giocatori da lui inseriti.
+              </Text>
+              
+              <Text style={styles.termsSubtitle}>11. Cookie</Text>
+              <Text style={styles.termsTextContent}>
+                Solo tecnici necessari. Nessuna profilazione.
+              </Text>
+              
+              <View style={{ height: 40 }} />
+            </ScrollView>
+          </SafeAreaView>
         </Modal>
       </SafeAreaView>
     </Modal>
@@ -1102,5 +1198,62 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#000',
     fontWeight: '600',
+  },
+  checkboxTouchable: {
+    padding: 4,
+  },
+  termsLinkClickable: {
+    color: '#000',
+    textDecorationLine: 'underline',
+    fontWeight: '600',
+  },
+  // Terms Modal styles
+  termsModalContainer: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  termsModalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  termsModalCloseButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  termsModalHeaderTitle: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#000',
+  },
+  termsModalContent: {
+    flex: 1,
+    padding: 20,
+  },
+  termsSectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000',
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  termsSubtitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#333',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  termsTextContent: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 22,
+    marginBottom: 8,
   },
 });
