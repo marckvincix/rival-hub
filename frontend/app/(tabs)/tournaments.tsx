@@ -475,6 +475,7 @@ export default function TournamentsScreen() {
 // Tournament Detail Component
 function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefresh }: any) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('teams');
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
