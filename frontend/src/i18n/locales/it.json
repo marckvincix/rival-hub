@@ -490,6 +490,27 @@
     "timeout": "Timeout",
     "substitution": "Cambio"
   },
+  "formation": {
+    "title": "Formazione",
+    "list": "Lista",
+    "field": "Campo",
+    "tacticalModule": "Modulo Tattico",
+    "selectPlayer": "Seleziona giocatore...",
+    "noBenchPlayers": "Nessun giocatore in panchina",
+    "saved": "Formazione salvata!",
+    "saveError": "Impossibile salvare la formazione",
+    "goalkeeper": "Portiere",
+    "goalkeepers": "Portieri",
+    "defenders": "Difensori",
+    "midfielders": "Centrocampisti",
+    "forwards": "Attaccanti",
+    "player": "Giocatore",
+    "player1": "Giocatore 1",
+    "player2": "Giocatore 2",
+    "singles": "Singolo",
+    "doubles": "Doppio",
+    "pair": "Coppia"
+  },
   "soccer": {
     "goals": "Gol",
     "assists": "Assist",

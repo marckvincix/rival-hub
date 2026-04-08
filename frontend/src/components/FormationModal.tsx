@@ -19,6 +19,7 @@ import { VolleyballCourtView } from './VolleyballCourtView';
 import { RugbyCourtView } from './RugbyCourtView';
 import { FormationPlayer, Player, Formation } from '../types';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 // Game format configurations for SOCCER
 const GAME_FORMATS_MODULES: Record<string, string[]> = {
@@ -223,6 +224,7 @@ export function FormationModal({
   onSave,
   sport = 'calcio',
 }: FormationModalProps) {
+  const { t } = useTranslation();
   const isBasketball = sport === 'basket';
   const isTennis = sport === 'tennis';
   const isPadel = sport === 'padel';
@@ -434,11 +436,11 @@ export function FormationModal({
         bench: benchPlayerIds,
       });
       onSave(response.data);
-      Alert.alert('Successo', 'Formazione salvata!');
+      Alert.alert(t('common.success'), t('formation.saved'));
       onClose();
     } catch (error) {
       console.error('Error saving formation:', error);
-      Alert.alert('Errore', 'Impossibile salvare la formazione');
+      Alert.alert(t('common.error'), t('formation.saveError'));
     } finally {
       setSaving(false);
     }
@@ -528,7 +530,7 @@ export function FormationModal({
                 <Text style={selectedPlayer ? styles.dropdownText : styles.dropdownPlaceholder}>
                   {selectedPlayer
                     ? `${selectedPlayer.number || ''} ${selectedPlayer.full_name}`
-                    : `Seleziona giocatore...`}
+                    : t('formation.selectPlayer')}
                 </Text>
                 <Ionicons
                   name={showDropdown === dropdownKey ? 'chevron-up' : 'chevron-down'}
@@ -543,7 +545,7 @@ export function FormationModal({
                     style={styles.dropdownItem}
                     onPress={() => handlePlayerSelect(position, idx, '')}
                   >
-                    <Text style={styles.dropdownItemPlaceholder}>— Nessuno —</Text>
+                    <Text style={styles.dropdownItemPlaceholder}>— {t('common.none')} —</Text>
                   </TouchableOpacity>
                   {availablePlayers.map(player => (
                     <TouchableOpacity
@@ -583,14 +585,14 @@ export function FormationModal({
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.cancelText}>Annulla</Text>
+            <Text style={styles.cancelText}>{t('common.cancel')}</Text>
           </TouchableOpacity>
-          <Text style={styles.title}>Formazione</Text>
+          <Text style={styles.title}>{t('formation.title')}</Text>
           <TouchableOpacity onPress={handleSave} disabled={saving}>
             {saving ? (
               <ActivityIndicator size="small" color="#000" />
             ) : (
-              <Text style={styles.saveText}>Salva</Text>
+              <Text style={styles.saveText}>{t('common.save')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -605,7 +607,7 @@ export function FormationModal({
             onPress={() => setViewMode('list')}
           >
             <Ionicons name="list" size={18} color={viewMode === 'list' ? '#FFF' : '#000'} />
-            <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>Lista</Text>
+            <Text style={[styles.toggleText, viewMode === 'list' && styles.toggleTextActive]}>{t('formation.list')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={[styles.toggleButton, viewMode === 'field' && styles.toggleButtonActive]}
@@ -616,7 +618,7 @@ export function FormationModal({
               size={18} 
               color={viewMode === 'field' ? '#FFF' : '#000'} 
             />
-            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>Campo</Text>
+            <Text style={[styles.toggleText, viewMode === 'field' && styles.toggleTextActive]}>{t('formation.field')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -624,7 +626,7 @@ export function FormationModal({
           {/* Module selector - Hide for Tennis/Padel */}
           {!isRacketSport && (
             <>
-              <Text style={styles.sectionLabel}>Modulo Tattico</Text>
+              <Text style={styles.sectionLabel}>{t('formation.tacticalModule')}</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.moduleScroll}>
                 {availableModules.map(module => (
                   <TouchableOpacity
@@ -719,14 +721,14 @@ export function FormationModal({
                 /* Tennis/Padel: Simple player list without positions */
                 <View style={styles.tennisPlayerList}>
                   <Text style={styles.positionTitle}>
-                    🎾 {gameFormat === 'singles' || gameFormat === 'singolo' ? 'Singolo' : (isTennis ? 'Doppio' : 'Coppia')}
+                    🎾 {gameFormat === 'singles' || gameFormat === 'singolo' ? t('formation.singles') : (isTennis ? t('formation.doubles') : t('formation.pair'))}
                   </Text>
                   {starters.map((slot, idx) => {
                     const dropdownKey = `player-${idx}`;
                     const selectedPlayer = players.find(p => p.id === slot.player_id);
                     const availablePlayers = getAvailablePlayers(slot);
                     const format = isTennis ? TENNIS_FORMATS[gameFormat] : PADEL_FORMATS[gameFormat];
-                    const label = format?.labels?.[idx] || `Giocatore ${idx + 1}`;
+                    const label = format?.labels?.[idx] ? t(`formation.player${idx + 1}`, format.labels[idx]) : t('formation.player');
 
                     return (
                       <View key={dropdownKey} style={styles.slotContainer}>
@@ -738,7 +740,7 @@ export function FormationModal({
                           <Text style={selectedPlayer ? styles.dropdownText : styles.dropdownPlaceholder}>
                             {selectedPlayer
                               ? `${selectedPlayer.number || ''} ${selectedPlayer.full_name}`
-                              : `Seleziona giocatore...`}
+                              : t('formation.selectPlayer')}
                           </Text>
                           <Ionicons
                             name={showDropdown === dropdownKey ? 'chevron-up' : 'chevron-down'}
@@ -753,7 +755,7 @@ export function FormationModal({
                               style={styles.dropdownItem}
                               onPress={() => { handlePlayerSelect('player', idx, ''); setShowDropdown(null); }}
                             >
-                              <Text style={styles.dropdownItemPlaceholder}>— Nessuno —</Text>
+                              <Text style={styles.dropdownItemPlaceholder}>— {t('common.none')} —</Text>
                             </TouchableOpacity>
                             {availablePlayers.map(player => (
                               <TouchableOpacity
@@ -819,9 +821,9 @@ export function FormationModal({
 
           {/* Bench section */}
           <View style={styles.benchSection}>
-            <Text style={styles.benchTitle}>🔁 Panchina ({benchPlayers.length})</Text>
+            <Text style={styles.benchTitle}>🔁 {t('tournaments.bench')} ({benchPlayers.length})</Text>
             {benchPlayers.length === 0 ? (
-              <Text style={styles.benchEmpty}>Nessun giocatore in panchina</Text>
+              <Text style={styles.benchEmpty}>{t('formation.noBenchPlayers')}</Text>
             ) : (
               <View style={styles.benchList}>
                 {benchPlayers.map(player => (
