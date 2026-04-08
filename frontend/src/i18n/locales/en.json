@@ -68,7 +68,8 @@
     "none": "None",
     "selectDate": "Select Date",
     "autoSave": "Auto-save",
-    "autoSaveActive": "Auto-save active"
+    "autoSaveActive": "Auto-save active",
+    "datePlaceholder": "DD/MM/YYYY"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -260,7 +261,10 @@
     "venue": "Venue",
     "venueName": "Name",
     "venueAddress": "Address",
-    "endMatchConfirm": "End the match?"
+    "endMatchConfirm": "End the match?",
+    "date": "Date",
+    "time": "Time",
+    "roundPlaceholder": "Round"
   },
   "stats": {
     "title": "Statistics",
@@ -334,7 +338,13 @@
     "editNews": "Edit News",
     "deleteNews": "Delete News",
     "newsTitle": "Title",
-    "newsDescription": "Description"
+    "newsDescription": "Description",
+    "publish": "Publish",
+    "addPhotoOptional": "Add photo (optional)",
+    "title": "Title",
+    "description": "Description",
+    "titlePlaceholder": "Enter news title...",
+    "descriptionPlaceholder": "Enter news description..."
   },
   "events": {
     "title": "Events",
@@ -467,6 +477,13 @@
     "votes": "votes",
     "saves": "Saves",
     "cleanSheets": "Clean Sheets",
+    "scorer": "Scorer",
+    "yellowCard": "Yellow",
+    "redCard": "Red",
+    "subOut": "Sub Out",
+    "subIn": "Sub In",
+    "ratings": "Ratings",
+    "quickRatings": "Quick ratings",
     "scorers": "Scorers",
     "yellowCardsLong": "Yellow Cards",
     "redCardsLong": "Red Cards",

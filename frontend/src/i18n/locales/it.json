@@ -68,7 +68,8 @@
     "none": "Nessuno",
     "selectDate": "Seleziona Data",
     "autoSave": "Salvataggio automatico",
-    "autoSaveActive": "Salvataggio automatico attivo"
+    "autoSaveActive": "Salvataggio automatico attivo",
+    "datePlaceholder": "GG/MM/AAAA"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -260,7 +261,10 @@
     "venue": "Luogo",
     "venueName": "Nome",
     "venueAddress": "Indirizzo",
-    "endMatchConfirm": "Terminare la partita?"
+    "endMatchConfirm": "Terminare la partita?",
+    "date": "Data",
+    "time": "Orario",
+    "roundPlaceholder": "Giornata"
   },
   "stats": {
     "title": "Statistiche",
@@ -334,7 +338,13 @@
     "editNews": "Modifica News",
     "deleteNews": "Elimina News",
     "newsTitle": "Titolo",
-    "newsDescription": "Descrizione"
+    "newsDescription": "Descrizione",
+    "publish": "Pubblica",
+    "addPhotoOptional": "Aggiungi foto (opzionale)",
+    "title": "Titolo",
+    "description": "Descrizione",
+    "titlePlaceholder": "Inserisci titolo news...",
+    "descriptionPlaceholder": "Inserisci descrizione news..."
   },
   "events": {
     "title": "Eventi",
@@ -467,6 +477,13 @@
     "votes": "voti",
     "saves": "Parate",
     "cleanSheets": "Clean Sheet",
+    "scorer": "Marcatore",
+    "yellowCard": "Giallo",
+    "redCard": "Rosso",
+    "subOut": "Sost. esce",
+    "subIn": "Sost. entra",
+    "ratings": "Voti",
+    "quickRatings": "Voti rapidi",
     "scorers": "Marcatori",
     "yellowCardsLong": "Cartellini Gialli",
     "redCardsLong": "Cartellini Rossi",

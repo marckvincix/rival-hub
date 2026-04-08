@@ -882,7 +882,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   // Add new round to list
   const handleAddNewRound = () => {
-    const roundName = newRoundInput.trim() || `Giornata ${nextRoundNumber}`;
+    const roundName = newRoundInput.trim() || `${t('matches.round', 'Round')} ${nextRoundNumber}`;
     if (!existingRounds.includes(roundName)) {
       setCustomRounds(prev => [...prev, roundName]);
       setNewMatchData({ ...newMatchData, round: roundName });
@@ -2620,7 +2620,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
 
             {/* Giornata */}
-            <Text style={styles.newMatchLabel}>Giornata</Text>
+            <Text style={styles.newMatchLabel}>{t('matches.round', 'Round')}</Text>
             <View style={styles.giornataContainer}>
               {existingRounds.map((round) => (
                 <TouchableOpacity 
@@ -2640,7 +2640,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <View style={styles.newGiornataRow}>
                 <TextInput
                   style={styles.newGiornataInput}
-                  placeholder={`Giornata ${nextRoundNumber}`}
+                  placeholder={t('matches.roundPlaceholder', `Round ${nextRoundNumber}`)}
                   placeholderTextColor="#999"
                   value={newRoundInput}
                   onChangeText={setNewRoundInput}
@@ -2657,25 +2657,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {/* Data e Orario - Side by Side */}
             <View style={styles.dateTimeRow}>
               <View style={styles.dateTimeCol}>
-                <Text style={styles.newMatchLabel}>Data</Text>
+                <Text style={styles.newMatchLabel}>{t('matches.date', 'Date')}</Text>
                 <TouchableOpacity 
                   style={styles.newMatchInputWithIcon}
                   onPress={() => setShowMatchDatePicker(true)}
                 >
                   <Text style={matchDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
-                    {matchDate ? matchDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
+                    {matchDate ? matchDate.toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT') : t('common.datePlaceholder', 'DD/MM/YYYY')}
                   </Text>
                   <Ionicons name="calendar-outline" size={22} color="#000" />
                 </TouchableOpacity>
               </View>
               <View style={styles.dateTimeCol}>
-                <Text style={styles.newMatchLabel}>Orario</Text>
+                <Text style={styles.newMatchLabel}>{t('matches.time', 'Time')}</Text>
                 <TouchableOpacity 
                   style={styles.newMatchInputWithIcon}
                   onPress={() => setShowMatchTimePicker(true)}
                 >
                   <Text style={matchTime ? styles.inputFieldText : styles.inputFieldPlaceholder}>
-                    {matchTime ? matchTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM'}
+                    {matchTime ? matchTime.toLocaleTimeString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { hour: '2-digit', minute: '2-digit' }) : 'HH:MM'}
                   </Text>
                   <Ionicons name="time-outline" size={22} color="#000" />
                 </TouchableOpacity>
@@ -3028,7 +3028,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       </View>
                       <EventDropdown 
                         icon="football" 
-                        label="Marcatore" 
+                        label={t('soccer.scorer', 'Scorer')} 
                         players={homeTeamPlayers}
                         selectedIds={extraEvents.home.marcatore}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3057,7 +3057,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FFD700" 
-                        label="Cart. Giallo"
+                        label={t('soccer.yellowCard', 'Yellow')}
                         players={homeTeamPlayers}
                         selectedIds={extraEvents.home.giallo}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3072,7 +3072,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FF0000" 
-                        label="Cart. Rosso"
+                        label={t('soccer.redCard', 'Red')}
                         players={homeTeamPlayers}
                         selectedIds={extraEvents.home.rosso}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3086,7 +3086,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       />
                       <EventDropdown 
                         icon="arrow-back" 
-                        label="Sost. esce"
+                        label={t('soccer.subOut', 'Sub Out')}
                         players={homeTeamPlayers}
                         selectedIds={extraEvents.home.sostEsce}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3100,7 +3100,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       />
                       <EventDropdown 
                         icon="arrow-forward" 
-                        label="Sost. entra"
+                        label={t('soccer.subIn', 'Sub In')}
                         players={homeTeamPlayers}
                         selectedIds={extraEvents.home.sostEntra}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3121,7 +3121,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       </View>
                       <EventDropdown 
                         icon="football" 
-                        label="Marcatore"
+                        label={t('soccer.scorer', 'Scorer')}
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.marcatore}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3150,7 +3150,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FFD700" 
-                        label="Cart. Giallo"
+                        label={t('soccer.yellowCard', 'Yellow')}
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.giallo}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3165,7 +3165,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <EventDropdown 
                         icon="square" 
                         iconColor="#FF0000" 
-                        label="Cart. Rosso"
+                        label={t('soccer.redCard', 'Red')}
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.rosso}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3179,7 +3179,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       />
                       <EventDropdown 
                         icon="arrow-back" 
-                        label="Sost. esce"
+                        label={t('soccer.subOut', 'Sub Out')}
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.sostEsce}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3193,7 +3193,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       />
                       <EventDropdown 
                         icon="arrow-forward" 
-                        label="Sost. entra"
+                        label={t('soccer.subIn', 'Sub In')}
                         players={awayTeamPlayers}
                         selectedIds={extraEvents.away.sostEntra}
                         onAdd={(id) => setExtraEvents(prev => ({
@@ -3212,7 +3212,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   <View style={styles.votiSection}>
                     <View style={styles.votiHeader}>
                       <Ionicons name="checkbox-outline" size={20} color="#FFF" />
-                      <Text style={styles.votiHeaderText}>Voti</Text>
+                      <Text style={styles.votiHeaderText}>{t('soccer.ratings', 'Ratings')}</Text>
                     </View>
 
                     {/* Home Team Ratings */}
@@ -3319,7 +3319,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               {savingNews ? (
                 <ActivityIndicator size="small" color="#000" />
               ) : (
-                <Text style={styles.newsModalSave}>Pubblica</Text>
+                <Text style={styles.newsModalSave}>{t('news.publish', 'Publish')}</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -3332,26 +3332,26 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               ) : (
                 <View style={styles.newsPhotoPlaceholder}>
                   <Ionicons name="camera" size={40} color="#999" />
-                  <Text style={styles.newsPhotoText}>{t('common.add', 'Add')} foto (opzionale)</Text>
+                  <Text style={styles.newsPhotoText}>{t('news.addPhotoOptional', 'Add photo (optional)')}</Text>
                 </View>
               )}
             </TouchableOpacity>
 
             {/* Title Input */}
-            <Text style={styles.newsInputLabel}>📝 Titolo *</Text>
+            <Text style={styles.newsInputLabel}>📝 {t('news.title', 'Title')} *</Text>
             <TextInput
               style={styles.newsInput}
-              placeholder={t('tournaments.newsTitle', 'Enter news title...')}
+              placeholder={t('news.titlePlaceholder', 'Enter news title...')}
               value={newsForm.title}
               onChangeText={(text) => setNewsForm(prev => ({ ...prev, title: text }))}
               placeholderTextColor="#999"
             />
 
             {/* Description Input */}
-            <Text style={styles.newsInputLabel}>📄 Descrizione</Text>
+            <Text style={styles.newsInputLabel}>📄 {t('news.description', 'Description')}</Text>
             <TextInput
               style={[styles.newsInput, styles.newsTextArea]}
-              placeholder={t('tournaments.newsDescription', 'Enter news description...')}
+              placeholder={t('news.descriptionPlaceholder', 'Enter news description...')}
               value={newsForm.content}
               onChangeText={(text) => setNewsForm(prev => ({ ...prev, content: text }))}
               placeholderTextColor="#999"
@@ -3735,7 +3735,7 @@ function TeamRatingsAccordion({
 
             {/* Quick select common ratings */}
             <View style={styles.quickRatings}>
-              <Text style={styles.quickRatingsLabel}>Voti rapidi:</Text>
+              <Text style={styles.quickRatingsLabel}>{t('soccer.quickRatings', 'Quick ratings')}:</Text>
               <View style={styles.quickRatingsRow}>
                 {[5, 5.5, 6, 6.5, 7, 7.5, 8].map((r) => (
                   <TouchableOpacity 
