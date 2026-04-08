@@ -101,6 +101,84 @@ export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
   const { t, i18n } = useTranslation();
   
+  // Translated sport categories
+  const translatedSportCategories = useMemo(() => ({
+    'calcio': {
+      label: t('sports.soccer', 'Soccer'),
+      emoji: '⚽',
+      formats: [
+        { key: '11v11', label: t('sports.soccer11', '11v11') },
+        { key: '8v8', label: t('sports.soccer8', '8v8') },
+        { key: '7v7', label: t('sports.soccer7', '7v7') },
+        { key: '6v6', label: t('sports.soccer6', '6v6') },
+        { key: '5v5', label: t('sports.soccer5', '5v5') },
+      ]
+    },
+    'basket': {
+      label: t('sports.basketball', 'Basketball'),
+      emoji: '🏀',
+      formats: [
+        { key: '5v5', label: t('sports.basketball5', '5v5') },
+        { key: '3v3', label: t('sports.basketball3', '3v3') },
+      ]
+    },
+    'padel': {
+      label: t('sports.padel', 'Padel'),
+      emoji: '🎾',
+      formats: [
+        { key: 'singolo', label: t('sports.singles', 'Singles') },
+        { key: 'doppio', label: t('sports.doubles', 'Doubles') },
+      ]
+    },
+    'tennis': {
+      label: t('sports.tennis', 'Tennis'),
+      emoji: '🎾',
+      formats: [
+        { key: 'singolo', label: t('sports.singles', 'Singles') },
+        { key: 'doppio', label: t('sports.doubles', 'Doubles') },
+      ]
+    },
+    'pallavolo': {
+      label: t('sports.volleyball', 'Volleyball'),
+      emoji: '🏐',
+      formats: [
+        { key: '6v6', label: t('sports.volleyball6', '6v6') },
+        { key: '4v4', label: t('sports.beachVolleyball', 'Beach 4v4') },
+        { key: '2v2', label: t('sports.beachVolleyball2', 'Beach 2v2') },
+      ]
+    },
+    'rugby': {
+      label: t('sports.rugby', 'Rugby'),
+      emoji: '🏉',
+      formats: [
+        { key: '15v15', label: t('sports.rugbyUnion', 'Union 15v15') },
+        { key: '7v7', label: t('sports.rugbySevens', 'Sevens 7v7') },
+      ]
+    },
+    'baseball': {
+      label: t('sports.baseball', 'Baseball'),
+      emoji: '⚾',
+      formats: [
+        { key: '9v9', label: t('sports.baseball9', '9v9') },
+      ]
+    },
+    'hockey': {
+      label: t('sports.hockey', 'Hockey'),
+      emoji: '🏑',
+      formats: [
+        { key: '11v11', label: t('sports.fieldHockey', 'Field 11v11') },
+        { key: '6v6', label: t('sports.indoorHockey', 'Indoor 6v6') },
+      ]
+    },
+    'pallamano': {
+      label: t('sports.handball', 'Handball'),
+      emoji: '🤾',
+      formats: [
+        { key: '7v7', label: t('sports.handball7', '7v7') },
+      ]
+    },
+  }), [t, i18n.language]);
+  
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
   const [locationQuery, setLocationQuery] = useState('');
@@ -150,7 +228,7 @@ export default function LandingPage() {
     const sports = new Set<string>();
     allTournaments.forEach(t => {
       const sport = t.sport || 'calcio';
-      if (SPORT_CATEGORIES[sport]) {
+      if (translatedSportCategories[sport]) {
         sports.add(sport);
       }
     });
@@ -161,7 +239,7 @@ export default function LandingPage() {
   const availableFormats = useMemo(() => {
     if (!selectedSport) return [];
     
-    const sportConfig = SPORT_CATEGORIES[selectedSport];
+    const sportConfig = translatedSportCategories[selectedSport];
     if (!sportConfig) return [];
     
     // Get formats that have at least one tournament
@@ -382,10 +460,10 @@ export default function LandingPage() {
                   onPress={() => setShowSportPicker(true)}
                 >
                   <Text style={{ fontSize: 16 }}>
-                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.emoji : '🏆'}
+                    {selectedSport ? translatedSportCategories[selectedSport]?.emoji : '🏆'}
                   </Text>
                   <Text style={[styles.filterChipText, selectedSport && styles.filterChipTextActive]}>
-                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.label : t('home.sport')}
+                    {selectedSport ? translatedSportCategories[selectedSport]?.label : t('home.sport')}
                   </Text>
                   {selectedSport && (
                     <TouchableOpacity onPress={() => { setSelectedSport(null); setSelectedFormat(null); setSelectedCategory(null); }} style={styles.filterClearBtn}>
@@ -574,7 +652,7 @@ export default function LandingPage() {
             </View>
             <ScrollView style={styles.modalList}>
               {availableSports.map((sport) => {
-                const config = SPORT_CATEGORIES[sport];
+                const config = translatedSportCategories[sport];
                 if (!config) return null;
                 return (
                   <TouchableOpacity

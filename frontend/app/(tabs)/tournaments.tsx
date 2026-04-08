@@ -1314,18 +1314,52 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     const sport = tournament?.sport || 'calcio';
     switch (sport) {
       case 'basket':
-        return ['Playmaker', 'Guardia', 'Ala Piccola', 'Ala Grande', 'Centro'];
+        return [
+          t('roles.basketball.pointGuard', 'Point Guard'), 
+          t('roles.basketball.guard', 'Guard'), 
+          t('roles.basketball.smallForward', 'Small Forward'), 
+          t('roles.basketball.powerForward', 'Power Forward'), 
+          t('roles.basketball.center', 'Center')
+        ];
       case 'pallavolo':
-        return ['Palleggiatore', 'Schiacciatore', 'Opposto', 'Libero', 'Centrale'];
+        return [
+          t('roles.volleyball.setter', 'Setter'), 
+          t('roles.volleyball.outsideHitter', 'Outside Hitter'), 
+          t('roles.volleyball.opposite', 'Opposite'), 
+          t('roles.volleyball.libero', 'Libero'), 
+          t('roles.volleyball.middleBlocker', 'Middle Blocker')
+        ];
       case 'rugby':
-        return ['Pilone', 'Tallonatore', 'Flanker', 'Mediano', 'Ala', 'Centro', 'Estremo'];
+        return [
+          t('roles.rugby.prop', 'Prop'), 
+          t('roles.rugby.hooker', 'Hooker'), 
+          t('roles.rugby.flanker', 'Flanker'), 
+          t('roles.rugby.scrumHalf', 'Scrum Half'), 
+          t('roles.rugby.winger', 'Winger'), 
+          t('roles.rugby.centre', 'Centre'), 
+          t('roles.rugby.fullback', 'Fullback')
+        ];
       case 'baseball':
-        return ['Lanciatore', 'Ricevitore', 'Prima Base', 'Seconda Base', 'Terza Base', 'Interbase', 'Esterno'];
+        return [
+          t('roles.baseball.pitcher', 'Pitcher'), 
+          t('roles.baseball.catcher', 'Catcher'), 
+          t('roles.baseball.firstBase', 'First Base'), 
+          t('roles.baseball.secondBase', 'Second Base'), 
+          t('roles.baseball.thirdBase', 'Third Base'), 
+          t('roles.baseball.shortstop', 'Shortstop'), 
+          t('roles.baseball.outfielder', 'Outfielder')
+        ];
       case 'tennis':
       case 'padel':
-        return []; // Tennis e Padel non hanno ruoli specifici
+        return []; // Tennis and Padel don't have specific roles
       default:
-        return ['Portiere', 'Difensore', 'Centrocampista', 'Attaccante'];
+        // Soccer/Football roles
+        return [
+          t('roles.soccer.goalkeeper', 'Goalkeeper'), 
+          t('roles.soccer.defender', 'Defender'), 
+          t('roles.soccer.midfielder', 'Midfielder'), 
+          t('roles.soccer.forward', 'Forward')
+        ];
     }
   };
 
@@ -2325,32 +2359,32 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>⚽</Text>
                           <Text style={styles.statValue}>{playerStats?.goals || 0}</Text>
-                          <Text style={styles.statLabel}>Gol</Text>
+                          <Text style={styles.statLabel}>{t('soccer.goals', 'Goals')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🅰️</Text>
                           <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
-                          <Text style={styles.statLabel}>Assist</Text>
+                          <Text style={styles.statLabel}>{t('soccer.assists', 'Assists')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🟨</Text>
                           <Text style={styles.statValue}>{playerStats?.yellow_cards || 0}</Text>
-                          <Text style={styles.statLabel}>Gialli</Text>
+                          <Text style={styles.statLabel}>{t('soccer.yellowCards', 'Yellow')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🟥</Text>
                           <Text style={styles.statValue}>{playerStats?.red_cards || 0}</Text>
-                          <Text style={styles.statLabel}>Rossi</Text>
+                          <Text style={styles.statLabel}>{t('soccer.redCards', 'Red')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>👟</Text>
                           <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
-                          <Text style={styles.statLabel}>Presenze</Text>
+                          <Text style={styles.statLabel}>{t('soccer.appearances', 'Apps')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>⏱️</Text>
                           <Text style={styles.statValue}>{playerStats?.minutes_played || 0}</Text>
-                          <Text style={styles.statLabel}>Minuti</Text>
+                          <Text style={styles.statLabel}>{t('soccer.minutes', 'Min')}</Text>
                         </View>
                       </>
                     )}
@@ -2360,21 +2394,21 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {/* Average Rating */}
                 {!loadingPlayerStats && playerStats?.ratings_count > 0 && (
                   <View style={styles.averageRatingSection}>
-                    <Text style={styles.averageRatingLabel}>⭐ Media Voto</Text>
+                    <Text style={styles.averageRatingLabel}>⭐ {t('soccer.averageRating', 'Avg Rating')}</Text>
                     <Text style={styles.averageRatingValue}>{playerStats.average_rating}</Text>
-                    <Text style={styles.averageRatingSubtext}>({playerStats.ratings_count} {playerStats.ratings_count === 1 ? 'voto' : 'voti'})</Text>
+                    <Text style={styles.averageRatingSubtext}>({playerStats.ratings_count} {playerStats.ratings_count === 1 ? t('soccer.vote', 'vote') : t('soccer.votes', 'votes')})</Text>
                   </View>
                 )}
 
                 {/* Additional Stats for specific roles */}
-                {selectedPlayerForStats.role === 'Portiere' && (
+                {selectedPlayerForStats.role === t('roles.soccer.goalkeeper', 'Goalkeeper') && (
                   <View style={styles.additionalStats}>
                     <View style={styles.additionalStatRow}>
-                      <Text style={styles.additionalStatLabel}>🧤 Parate</Text>
+                      <Text style={styles.additionalStatLabel}>🧤 {t('soccer.saves', 'Saves')}</Text>
                       <Text style={styles.additionalStatValue}>{selectedPlayerForStats.stats?.saves || 0}</Text>
                     </View>
                     <View style={styles.additionalStatRow}>
-                      <Text style={styles.additionalStatLabel}>🚫 Clean Sheet</Text>
+                      <Text style={styles.additionalStatLabel}>🚫 {t('soccer.cleanSheets', 'Clean Sheets')}</Text>
                       <Text style={styles.additionalStatValue}>{selectedPlayerForStats.stats?.cleanSheets || 0}</Text>
                     </View>
                   </View>
@@ -2435,7 +2469,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Goals */}
                         {matchStatsEvents.filter(e => e.event_type === 'goal').length > 0 && (
                           <View style={styles.matchStatsSection}>
-                            <Text style={styles.matchStatsSectionTitle}>⚽ Marcatori</Text>
+                            <Text style={styles.matchStatsSectionTitle}>⚽ {t('soccer.scorers', 'Scorers')}</Text>
                             {matchStatsEvents.filter(e => e.event_type === 'goal').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
                                 <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
@@ -2450,7 +2484,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Assists */}
                         {matchStatsEvents.filter(e => e.event_type === 'assist').length > 0 && (
                           <View style={styles.matchStatsSection}>
-                            <Text style={styles.matchStatsSectionTitle}>🅰️ Assist</Text>
+                            <Text style={styles.matchStatsSectionTitle}>🅰️ {t('soccer.assists', 'Assists')}</Text>
                             {matchStatsEvents.filter(e => e.event_type === 'assist').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
                                 <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
@@ -2465,7 +2499,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Yellow Cards */}
                         {matchStatsEvents.filter(e => e.event_type === 'yellow_card').length > 0 && (
                           <View style={styles.matchStatsSection}>
-                            <Text style={styles.matchStatsSectionTitle}>🟨 Cartellini Gialli</Text>
+                            <Text style={styles.matchStatsSectionTitle}>🟨 {t('soccer.yellowCardsLong', 'Yellow Cards')}</Text>
                             {matchStatsEvents.filter(e => e.event_type === 'yellow_card').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
                                 <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
@@ -2480,7 +2514,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Red Cards */}
                         {matchStatsEvents.filter(e => e.event_type === 'red_card').length > 0 && (
                           <View style={styles.matchStatsSection}>
-                            <Text style={styles.matchStatsSectionTitle}>🟥 Cartellini Rossi</Text>
+                            <Text style={styles.matchStatsSectionTitle}>🟥 {t('soccer.redCardsLong', 'Red Cards')}</Text>
                             {matchStatsEvents.filter(e => e.event_type === 'red_card').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
                                 <Text style={styles.matchStatsEventPlayer}>{event.player_name}</Text>
