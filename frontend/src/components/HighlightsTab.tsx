@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,12 +10,11 @@ import {
   TextInput,
   Dimensions,
   ActivityIndicator,
-  Alert,
   Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import api from '../utils/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -62,6 +61,9 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
   // Video player state
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Highlight | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef<Video>(null);
 
   // Storage key specific to each tournament
   const STORAGE_KEY = `highlights_unlocked_${tournamentId}`;
@@ -155,12 +157,34 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
 
   const openVideo = (highlight: Highlight) => {
     setSelectedVideo(highlight);
+    setVideoLoading(true);
+    setVideoError(false);
     setShowVideoPlayer(true);
+  };
+
+  const closeVideoPlayer = () => {
+    setShowVideoPlayer(false);
+    setSelectedVideo(null);
+    setVideoLoading(true);
+    setVideoError(false);
   };
 
   const getFileUrl = (highlight: Highlight) => {
     const baseUrl = api.defaults.baseURL || '';
     return `${baseUrl}${highlight.file_url}`;
+  };
+
+  const handleVideoPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      setVideoLoading(false);
+      setVideoError(false);
+    }
+  };
+
+  const handleVideoError = (error: string) => {
+    console.error('Video error:', error);
+    setVideoLoading(false);
+    setVideoError(true);
   };
 
   // Wait until we've checked storage before rendering
@@ -192,7 +216,6 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
           </TouchableOpacity>
         </View>
 
-        {/* Code Input Modal */}
         <Modal
           visible={showCodeModal}
           animationType="fade"
@@ -281,7 +304,6 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
             </Text>
           </View>
 
-          {/* Photos Grid */}
           {roundData.highlights.filter(h => h.file_type === 'photo').length > 0 && (
             <View style={styles.photosGrid}>
               {roundData.highlights
@@ -302,7 +324,6 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
             </View>
           )}
 
-          {/* Videos List */}
           {roundData.highlights.filter(h => h.file_type === 'video').length > 0 && (
             <View style={styles.videosList}>
               {roundData.highlights
@@ -320,11 +341,11 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
                       <Text style={styles.videoName} numberOfLines={1}>
                         {video.file_name}
                       </Text>
-                      {video.duration_seconds && (
+                      {video.duration_seconds != null && video.duration_seconds > 0 ? (
                         <Text style={styles.videoDuration}>
                           {Math.floor(video.duration_seconds)}s
                         </Text>
-                      )}
+                      ) : null}
                     </View>
                     <Ionicons name="chevron-forward" size={20} color="#999" />
                   </TouchableOpacity>
@@ -334,7 +355,6 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         </View>
       ))}
 
-      {/* Image Lightbox */}
       <Modal
         visible={showLightbox}
         animationType="fade"
@@ -350,7 +370,6 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
               <Ionicons name="close" size={24} color="#FFF" />
             </View>
           </TouchableOpacity>
-          
           {selectedImage && (
             <Image
               source={{ uri: getFileUrl(selectedImage) }}
@@ -361,30 +380,57 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         </View>
       </Modal>
 
-      {/* Video Player Modal */}
       <Modal
         visible={showVideoPlayer}
         animationType="fade"
         transparent
-        onRequestClose={() => setShowVideoPlayer(false)}
+        onRequestClose={closeVideoPlayer}
       >
         <View style={styles.videoPlayerContainer}>
           <TouchableOpacity
             style={styles.closeButtonOverlay}
-            onPress={() => setShowVideoPlayer(false)}
+            onPress={closeVideoPlayer}
           >
             <View style={styles.closeButtonCircle}>
               <Ionicons name="close" size={24} color="#FFF" />
             </View>
           </TouchableOpacity>
           
+          {videoLoading && (
+            <View style={styles.videoLoadingOverlay}>
+              <ActivityIndicator size="large" color="#FFF" />
+              <Text style={styles.videoLoadingText}>Caricamento video...</Text>
+            </View>
+          )}
+          
+          {videoError && (
+            <View style={styles.videoErrorOverlay}>
+              <Ionicons name="alert-circle" size={48} color="#FFF" />
+              <Text style={styles.videoErrorText}>Errore durante il caricamento del video</Text>
+              <TouchableOpacity style={styles.retryButton} onPress={() => {
+                setVideoLoading(true);
+                setVideoError(false);
+                // Force reload
+                if (videoRef.current) {
+                  videoRef.current.playAsync();
+                }
+              }}>
+                <Text style={styles.retryButtonText}>Riprova</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          
           {selectedVideo && (
             <Video
+              ref={videoRef}
               source={{ uri: getFileUrl(selectedVideo) }}
               style={styles.videoPlayer}
               useNativeControls
               resizeMode={ResizeMode.CONTAIN}
               shouldPlay
+              isLooping={false}
+              onPlaybackStatusUpdate={handleVideoPlaybackStatusUpdate}
+              onError={(e) => handleVideoError(e)}
             />
           )}
         </View>
@@ -631,5 +677,40 @@ const styles = StyleSheet.create({
   videoPlayer: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT - 100,
+  },
+  videoLoadingOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  videoLoadingText: {
+    color: '#FFF',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  videoErrorOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+    padding: 20,
+  },
+  videoErrorText: {
+    color: '#FFF',
+    marginTop: 12,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#000',
+    fontWeight: '600',
   },
 });

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,7 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
-import { Video, ResizeMode } from 'expo-av';
+import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
 import api from '../utils/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -77,16 +77,16 @@ export function HighlightsUploadModal({
   const [showCodeSection, setShowCodeSection] = useState(false);
   const [loading, setLoading] = useState(true);
   
-  // Highlights list for organizer view
   const [highlights, setHighlights] = useState<RoundSummary[]>([]);
   
-  // Lightbox state
   const [showLightbox, setShowLightbox] = useState(false);
   const [selectedImage, setSelectedImage] = useState<Highlight | null>(null);
   
-  // Video player state
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Highlight | null>(null);
+  const [videoLoading, setVideoLoading] = useState(true);
+  const [videoError, setVideoError] = useState(false);
+  const videoRef = useRef<Video>(null);
 
   useEffect(() => {
     if (visible) {
@@ -97,15 +97,12 @@ export function HighlightsUploadModal({
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load highlights code
       const codeRes = await api.get(`/api/tournaments/${tournamentId}/highlights-code`);
       setHighlightsCode(codeRes.data.code || '');
 
-      // Load rounds with content
       const roundsRes = await api.get(`/api/tournaments/${tournamentId}/highlights/rounds-with-content`);
       setRoundsWithContent(roundsRes.data || {});
       
-      // Load all highlights (organizer doesn't need code)
       const highlightsRes = await api.get(`/api/tournaments/${tournamentId}/highlights`);
       setHighlights(highlightsRes.data || []);
     } catch (error) {
@@ -241,10 +238,7 @@ export function HighlightsUploadModal({
           `Il file supera ${maxSize}MB. Vuoi comprimerlo?`,
           [
             { text: 'Scegli altro', style: 'cancel' },
-            {
-              text: 'Comprimi',
-              onPress: () => uploadFile(asset, fileType, true),
-            },
+            { text: 'Comprimi', onPress: () => uploadFile(asset, fileType, true) },
           ]
         );
         return;
@@ -273,11 +267,7 @@ export function HighlightsUploadModal({
       const response = await api.post(
         `/api/tournaments/${tournamentId}/highlights`,
         formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
+        { headers: { 'Content-Type': 'multipart/form-data' } }
       );
 
       if (response.data.needs_compression) {
@@ -287,17 +277,14 @@ export function HighlightsUploadModal({
           `Il file supera ${response.data.max_size_mb}MB. Vuoi comprimerlo?`,
           [
             { text: 'Scegli altro', style: 'cancel' },
-            {
-              text: 'Comprimi',
-              onPress: () => uploadFile(asset, fileType, true),
-            },
+            { text: 'Comprimi', onPress: () => uploadFile(asset, fileType, true) },
           ]
         );
         return;
       }
 
       Alert.alert('Successo', 'Contenuto caricato con successo!');
-      loadData(); // Refresh counts and highlights list
+      loadData();
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Errore durante il caricamento';
       Alert.alert('Errore', message);
@@ -335,7 +322,34 @@ export function HighlightsUploadModal({
 
   const openVideo = (highlight: Highlight) => {
     setSelectedVideo(highlight);
+    setVideoLoading(true);
+    setVideoError(false);
     setShowVideoPlayer(true);
+  };
+
+  const closeVideoPlayer = () => {
+    setShowVideoPlayer(false);
+    setSelectedVideo(null);
+    setVideoLoading(true);
+    setVideoError(false);
+  };
+
+  const handleVideoPlaybackStatusUpdate = (status: AVPlaybackStatus) => {
+    if (status.isLoaded) {
+      setVideoLoading(false);
+      setVideoError(false);
+    }
+  };
+
+  const handleVideoError = (error: string) => {
+    console.error('Video error:', error);
+    setVideoLoading(false);
+    setVideoError(true);
+  };
+
+  const formatDuration = (seconds: number | undefined | null): string => {
+    if (seconds == null || seconds <= 0) return '';
+    return `${Math.floor(seconds)}s`;
   };
 
   if (loading) {
@@ -356,7 +370,6 @@ export function HighlightsUploadModal({
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#000" />
@@ -366,7 +379,6 @@ export function HighlightsUploadModal({
         </View>
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {/* Code Section */}
           <TouchableOpacity
             style={styles.codeSection}
             onPress={() => setShowCodeSection(!showCodeSection)}
@@ -407,7 +419,6 @@ export function HighlightsUploadModal({
             </View>
           )}
 
-          {/* Round Selector */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Carica Nuovi Contenuti</Text>
             
@@ -451,25 +462,19 @@ export function HighlightsUploadModal({
             )}
           </View>
 
-          {/* Current Counts */}
-          {selectedRound && (
+          {selectedRound ? (
             <View style={styles.countsRow}>
               <View style={styles.countItem}>
                 <Ionicons name="image" size={16} color="#666" />
-                <Text style={styles.countText}>
-                  {counts.photos}/{MAX_PHOTOS} foto
-                </Text>
+                <Text style={styles.countText}>{counts.photos}/{MAX_PHOTOS} foto</Text>
               </View>
               <View style={styles.countItem}>
                 <Ionicons name="videocam" size={16} color="#666" />
-                <Text style={styles.countText}>
-                  {counts.videos}/{MAX_VIDEOS} video
-                </Text>
+                <Text style={styles.countText}>{counts.videos}/{MAX_VIDEOS} video</Text>
               </View>
             </View>
-          )}
+          ) : null}
 
-          {/* Upload Buttons */}
           <View style={styles.uploadSection}>
             <TouchableOpacity
               style={[
@@ -484,7 +489,7 @@ export function HighlightsUploadModal({
                 <Text style={[styles.uploadButtonTitle, counts.photos >= MAX_PHOTOS && styles.uploadButtonTitleDisabled]}>
                   {counts.photos >= MAX_PHOTOS ? 'Limite foto raggiunto' : 'Carica Foto'}
                 </Text>
-                <Text style={styles.uploadButtonSubtitle}>JPG, PNG • Max 10MB</Text>
+                <Text style={styles.uploadButtonSubtitle}>JPG, PNG · Max 10MB</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
@@ -502,19 +507,18 @@ export function HighlightsUploadModal({
                 <Text style={[styles.uploadButtonTitle, counts.videos >= MAX_VIDEOS && styles.uploadButtonTitleDisabled]}>
                   {counts.videos >= MAX_VIDEOS ? 'Limite video raggiunto' : 'Carica Video'}
                 </Text>
-                <Text style={styles.uploadButtonSubtitle}>MP4, MOV • Max 30 sec • Max 100MB</Text>
+                <Text style={styles.uploadButtonSubtitle}>MP4, MOV · Max 30 sec · Max 100MB</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>
           </View>
 
-          {/* Terms Checkbox */}
           <TouchableOpacity
             style={styles.termsRow}
             onPress={() => setTermsAccepted(!termsAccepted)}
           >
             <View style={[styles.checkbox, termsAccepted && styles.checkboxChecked]}>
-              {termsAccepted && <Ionicons name="checkmark" size={16} color="#FFF" />}
+              {termsAccepted ? <Ionicons name="checkmark" size={16} color="#FFF" /> : null}
             </View>
             <Text style={styles.termsText}>
               Caricando questi contenuti accetto i{' '}
@@ -522,16 +526,14 @@ export function HighlightsUploadModal({
             </Text>
           </TouchableOpacity>
 
-          {/* Upload Progress */}
-          {uploading && (
+          {uploading ? (
             <View style={styles.progressContainer}>
               <ActivityIndicator size="small" color="#000" />
               <Text style={styles.progressText}>{uploadProgress}</Text>
             </View>
-          )}
+          ) : null}
           
-          {/* Existing Highlights - Organizer View */}
-          {highlights.length > 0 && (
+          {highlights.length > 0 ? (
             <View style={styles.existingSection}>
               <Text style={styles.sectionTitle}>Contenuti Caricati</Text>
               
@@ -544,8 +546,7 @@ export function HighlightsUploadModal({
                     </Text>
                   </View>
 
-                  {/* Photos Grid */}
-                  {roundData.highlights.filter(h => h.file_type === 'photo').length > 0 && (
+                  {roundData.highlights.filter(h => h.file_type === 'photo').length > 0 ? (
                     <View style={styles.photosGrid}>
                       {roundData.highlights
                         .filter(h => h.file_type === 'photo')
@@ -563,10 +564,9 @@ export function HighlightsUploadModal({
                           </TouchableOpacity>
                         ))}
                     </View>
-                  )}
+                  ) : null}
 
-                  {/* Videos List */}
-                  {roundData.highlights.filter(h => h.file_type === 'video').length > 0 && (
+                  {roundData.highlights.filter(h => h.file_type === 'video').length > 0 ? (
                     <View style={styles.videosList}>
                       {roundData.highlights
                         .filter(h => h.file_type === 'video')
@@ -580,29 +580,30 @@ export function HighlightsUploadModal({
                               <Ionicons name="play-circle" size={32} color="#FFF" />
                             </View>
                             <View style={styles.videoInfo}>
-                              <Text style={styles.videoName} numberOfLines={1}>
-                                {video.file_name}
-                              </Text>
-                              {video.duration_seconds && (
-                                <Text style={styles.videoDuration}>
-                                  {Math.floor(video.duration_seconds)}s
-                                </Text>
-                              )}
+                              <Text style={styles.videoName} numberOfLines={1}>{video.file_name}</Text>
+                              {formatDuration(video.duration_seconds) ? (
+                                <Text style={styles.videoDuration}>{formatDuration(video.duration_seconds)}</Text>
+                              ) : null}
                             </View>
                             <Ionicons name="chevron-forward" size={20} color="#999" />
                           </TouchableOpacity>
                         ))}
                     </View>
-                  )}
+                  ) : null}
                 </View>
               ))}
             </View>
-          )}
+          ) : null}
 
-          <View style={{ height: 40 }} />
+          <View style={{ height: 100 }} />
         </ScrollView>
         
-        {/* Image Lightbox */}
+        <View style={styles.bottomBar}>
+          <TouchableOpacity style={styles.finishButton} onPress={onClose}>
+            <Text style={styles.finishButtonText}>Fine caricamento</Text>
+          </TouchableOpacity>
+        </View>
+        
         <Modal
           visible={showLightbox}
           animationType="fade"
@@ -618,43 +619,65 @@ export function HighlightsUploadModal({
                 <Ionicons name="close" size={24} color="#FFF" />
               </View>
             </TouchableOpacity>
-            
-            {selectedImage && (
+            {selectedImage ? (
               <Image
                 source={{ uri: getFileUrl(selectedImage) }}
                 style={styles.lightboxImage}
                 resizeMode="contain"
               />
-            )}
+            ) : null}
           </View>
         </Modal>
 
-        {/* Video Player Modal */}
         <Modal
           visible={showVideoPlayer}
           animationType="fade"
           transparent
-          onRequestClose={() => setShowVideoPlayer(false)}
+          onRequestClose={closeVideoPlayer}
         >
           <View style={styles.videoPlayerContainer}>
             <TouchableOpacity
               style={styles.closeButtonOverlay}
-              onPress={() => setShowVideoPlayer(false)}
+              onPress={closeVideoPlayer}
             >
               <View style={styles.closeButtonCircle}>
                 <Ionicons name="close" size={24} color="#FFF" />
               </View>
             </TouchableOpacity>
             
-            {selectedVideo && (
+            {videoLoading ? (
+              <View style={styles.videoLoadingOverlay}>
+                <ActivityIndicator size="large" color="#FFF" />
+                <Text style={styles.videoLoadingText}>Caricamento video...</Text>
+              </View>
+            ) : null}
+            
+            {videoError ? (
+              <View style={styles.videoErrorOverlay}>
+                <Ionicons name="alert-circle" size={48} color="#FFF" />
+                <Text style={styles.videoErrorText}>Errore durante il caricamento del video</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={() => {
+                  setVideoLoading(true);
+                  setVideoError(false);
+                }}>
+                  <Text style={styles.retryButtonText}>Riprova</Text>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+            
+            {selectedVideo ? (
               <Video
+                ref={videoRef}
                 source={{ uri: getFileUrl(selectedVideo) }}
                 style={styles.videoPlayer}
                 useNativeControls
                 resizeMode={ResizeMode.CONTAIN}
                 shouldPlay
+                isLooping={false}
+                onPlaybackStatusUpdate={handleVideoPlaybackStatusUpdate}
+                onError={(e) => handleVideoError(e)}
               />
-            )}
+            ) : null}
           </View>
         </Modal>
       </SafeAreaView>
@@ -995,6 +1018,22 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
+  bottomBar: {
+    padding: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  finishButton: {
+    backgroundColor: '#000',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  finishButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
   lightboxContainer: {
     flex: 1,
     backgroundColor: '#000',
@@ -1028,5 +1067,40 @@ const styles = StyleSheet.create({
   videoPlayer: {
     width: SCREEN_WIDTH,
     height: SCREEN_HEIGHT - 100,
+  },
+  videoLoadingOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  videoLoadingText: {
+    color: '#FFF',
+    marginTop: 12,
+    fontSize: 14,
+  },
+  videoErrorOverlay: {
+    position: 'absolute',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+    padding: 20,
+  },
+  videoErrorText: {
+    color: '#FFF',
+    marginTop: 12,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+    marginTop: 16,
+  },
+  retryButtonText: {
+    color: '#000',
+    fontWeight: '600',
   },
 });

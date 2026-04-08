@@ -563,6 +563,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   
   // Highlights Management state
   const [showHighlightsModal, setShowHighlightsModal] = useState(false);
+  const [tournamentHighlights, setTournamentHighlights] = useState<any[]>([]);
+  const [highlightsLoading, setHighlightsLoading] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
 
@@ -620,6 +622,26 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       }
     } catch (error) {} finally { setLoading(false); }
   };
+
+  // Load highlights for organizer view
+  const loadHighlights = async () => {
+    setHighlightsLoading(true);
+    try {
+      const response = await api.get(`/api/tournaments/${tournament.id}/highlights`);
+      setTournamentHighlights(response.data || []);
+    } catch (error) {
+      console.error('Error loading highlights:', error);
+    } finally {
+      setHighlightsLoading(false);
+    }
+  };
+
+  // Load highlights when tab becomes active
+  useEffect(() => {
+    if (activeTab === 'highlights') {
+      loadHighlights();
+    }
+  }, [activeTab]);
 
   // Load player statistics from backend
   const loadPlayerStats = async (playerId: string) => {
@@ -1815,15 +1837,67 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   <Ionicons name="film" size={20} color="#FFF" />
                   <Text style={styles.addNewsButtonText}>Carica Highlights</Text>
                 </TouchableOpacity>
-                <View style={styles.highlightsInfoCard}>
-                  <Ionicons name="information-circle" size={24} color="#666" />
-                  <View style={{ flex: 1, marginLeft: 12 }}>
-                    <Text style={styles.highlightsInfoTitle}>Gestisci Highlights</Text>
-                    <Text style={styles.highlightsInfoText}>
-                      Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chi vuoi.
-                    </Text>
+                
+                {highlightsLoading ? (
+                  <View style={styles.highlightsLoadingContainer}>
+                    <ActivityIndicator size="large" color="#000" />
+                    <Text style={styles.highlightsLoadingText}>Caricamento...</Text>
                   </View>
-                </View>
+                ) : tournamentHighlights.length === 0 ? (
+                  <View style={styles.highlightsInfoCard}>
+                    <Ionicons name="information-circle" size={24} color="#666" />
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text style={styles.highlightsInfoTitle}>Nessun Highlight</Text>
+                      <Text style={styles.highlightsInfoText}>
+                        Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chi vuoi.
+                      </Text>
+                    </View>
+                  </View>
+                ) : (
+                  <View style={styles.highlightsList}>
+                    {tournamentHighlights.map((roundData: any) => (
+                      <View key={roundData.round} style={styles.highlightsRoundSection}>
+                        <View style={styles.highlightsRoundHeader}>
+                          <Text style={styles.highlightsRoundTitle}>{roundData.round}</Text>
+                          <Text style={styles.highlightsRoundStats}>
+                            {roundData.photo_count} foto · {roundData.video_count} video
+                          </Text>
+                        </View>
+                        
+                        {roundData.highlights.filter((h: any) => h.file_type === 'photo').length > 0 ? (
+                          <View style={styles.highlightsPhotosGrid}>
+                            {roundData.highlights
+                              .filter((h: any) => h.file_type === 'photo')
+                              .map((photo: any) => (
+                                <View key={photo.id} style={styles.highlightsPhotoThumbnail}>
+                                  <Image
+                                    source={{ uri: `${api.defaults.baseURL}${photo.file_url}` }}
+                                    style={styles.highlightsPhotoImage}
+                                    resizeMode="cover"
+                                  />
+                                </View>
+                              ))}
+                          </View>
+                        ) : null}
+                        
+                        {roundData.highlights.filter((h: any) => h.file_type === 'video').length > 0 ? (
+                          <View style={styles.highlightsVideosList}>
+                            {roundData.highlights
+                              .filter((h: any) => h.file_type === 'video')
+                              .map((video: any) => (
+                                <View key={video.id} style={styles.highlightsVideoItem}>
+                                  <View style={styles.highlightsVideoThumbnail}>
+                                    <Ionicons name="play-circle" size={28} color="#FFF" />
+                                  </View>
+                                  <Text style={styles.highlightsVideoName} numberOfLines={1}>{video.file_name}</Text>
+                                </View>
+                              ))}
+                          </View>
+                        ) : null}
+                      </View>
+                    ))}
+                  </View>
+                )}
               </View>
             )}
 
@@ -3351,7 +3425,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       {/* Highlights Upload Modal */}
       <HighlightsUploadModal
         visible={showHighlightsModal}
-        onClose={() => setShowHighlightsModal(false)}
+        onClose={() => {
+          setShowHighlightsModal(false);
+          loadHighlights(); // Reload highlights after closing modal
+        }}
         tournamentId={tournament?.id || ''}
         rounds={getRounds()}
       />
@@ -4129,4 +4206,18 @@ const styles = StyleSheet.create({
   highlightsInfoCard: { flexDirection: 'row', backgroundColor: '#F8F8F8', borderRadius: 12, padding: 16, marginTop: 16 },
   highlightsInfoTitle: { fontSize: 15, fontWeight: '600', color: '#333', marginBottom: 4 },
   highlightsInfoText: { fontSize: 13, color: '#666', lineHeight: 18 },
+  highlightsLoadingContainer: { alignItems: 'center', paddingVertical: 40 },
+  highlightsLoadingText: { marginTop: 12, fontSize: 14, color: '#666' },
+  highlightsList: { marginTop: 16 },
+  highlightsRoundSection: { marginBottom: 20, backgroundColor: '#F8F8F8', borderRadius: 12, padding: 16 },
+  highlightsRoundHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
+  highlightsRoundTitle: { fontSize: 15, fontWeight: '600', color: '#000' },
+  highlightsRoundStats: { fontSize: 12, color: '#666' },
+  highlightsPhotosGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginBottom: 12 },
+  highlightsPhotoThumbnail: { width: 80, height: 80, borderRadius: 8, overflow: 'hidden', backgroundColor: '#E5E5E5' },
+  highlightsPhotoImage: { width: '100%', height: '100%' },
+  highlightsVideosList: { gap: 8 },
+  highlightsVideoItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFF', borderRadius: 8, padding: 10, gap: 10 },
+  highlightsVideoThumbnail: { width: 44, height: 44, borderRadius: 6, backgroundColor: '#333', justifyContent: 'center', alignItems: 'center' },
+  highlightsVideoName: { flex: 1, fontSize: 13, color: '#333' },
 });
