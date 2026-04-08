@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "GoalManager",
-    "slug": "frontend",
+    "name": "Rival Hub",
+    "slug": "rival-hub",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "frontend",
+    "scheme": "rivalhub",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
