@@ -1740,7 +1740,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             onPress={() => handleOpenMatchStats(match)}
                           >
                             <Ionicons name="stats-chart" size={16} color="#666" />
-                            <Text style={styles.matchStatsBtnText}{t('stats.title')}</Text>
+                            <Text style={styles.matchStatsBtnText}>{t('stats.title')}</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -1942,7 +1942,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </TouchableOpacity>
                   </View>
                 </View>
-                <Button title=t('tournaments.deleteTournament') onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
+                <Button title={t('tournaments.deleteTournament')} onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
               </View>
             )}
           </>
@@ -2860,7 +2860,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   {/* Statistiche Section */}
                   <View style={styles.statsSection}>
                     <View style={styles.statsHeader}>
-                      <Text style={styles.statsHeaderText}{t('stats.title')}</Text>
+                      <Text style={styles.statsHeaderText}>{t('stats.title')}</Text>
                     </View>
                     
                     {/* Show message if no events */}
@@ -3745,7 +3745,7 @@ function ResultInput({ match, homeTeam, awayTeam, onSave }: any) {
           <Text style={styles.resultTeamName}>{awayTeam}</Text>
         </View>
       </View>
-      <Button title=t('common.save') onPress={handleSave} loading={loading} size="small" />
+      <Button title={t('common.save')} onPress={handleSave} loading={loading} size="small" />
     </View>
   );
 }
