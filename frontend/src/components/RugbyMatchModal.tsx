@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 interface Player {
   id: string;
@@ -53,16 +54,16 @@ const POINT_VALUES = {
   red_card: 0,
 };
 
-// Event labels
-const EVENT_LABELS: Record<string, string> = {
-  try: '🏉 Meta (5pt)',
-  conversion: '⚽ Trasformazione (2pt)',
-  penalty: '🎯 Calcio punizione (3pt)',
-  drop_goal: '💫 Drop goal (3pt)',
-  tackle: '🤝 Placcaggio',
-  yellow_card: '🟨 Cartellino giallo',
-  red_card: '🟥 Cartellino rosso',
-};
+// Event labels - moved inside component to use translation
+const getEventLabels = (t: any) => ({
+  try: `🏉 ${t('rugby.try', 'Try')} (5pt)`,
+  conversion: `⚽ ${t('rugby.conversion', 'Conversion')} (2pt)`,
+  penalty: `🎯 ${t('rugby.penalty', 'Penalty')} (3pt)`,
+  drop_goal: `💫 ${t('rugby.dropGoal', 'Drop goal')} (3pt)`,
+  tackle: `🤝 ${t('rugby.tackle', 'Tackle')}`,
+  yellow_card: `🟨 ${t('rugby.yellowCard', 'Yellow card')}`,
+  red_card: `🟥 ${t('rugby.redCard', 'Red card')}`,
+});
 
 export function RugbyMatchModal({
   visible,
@@ -75,6 +76,7 @@ export function RugbyMatchModal({
   onSave,
   gameFormat = '15v15',
 }: RugbyMatchModalProps) {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<RugbyEvent[]>([]);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
@@ -235,12 +237,12 @@ export function RugbyMatchModal({
   // End match
   const handleEndMatch = () => {
     Alert.alert(
-      'Fine Partita',
-      `Terminare la partita?\n${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}`,
+      t('matches.endMatch', 'End Match'),
+      `${t('matches.endMatchConfirm', 'End the match?')}\n${homeTeamName} ${homeScore} - ${awayScore} ${awayTeamName}`,
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Conferma',
+          text: t('common.confirm'),
           onPress: async () => {
             try {
               await api.put(`/api/matches/${match.id}`, {
@@ -257,7 +259,7 @@ export function RugbyMatchModal({
               });
               onClose();
             } catch (error) {
-              Alert.alert('Errore', 'Impossibile salvare la partita');
+              Alert.alert(t('common.error'), t('errors.saveFailed', 'Could not save the match'));
             }
           },
         },
@@ -276,13 +278,13 @@ export function RugbyMatchModal({
           <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
             <Ionicons name="close" size={28} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>🏉 Rugby Match</Text>
+          <Text style={styles.headerTitle}>🏉 {t('rugby.match', 'Rugby Match')}</Text>
           <View style={styles.autoSaveIndicator}>
             {autoSaveStatus === 'saving' && (
-              <Text style={styles.autoSaveText}>Salvando...</Text>
+              <Text style={styles.autoSaveText}>{t('common.saving', 'Saving...')}</Text>
             )}
             {autoSaveStatus === 'saved' && (
-              <Text style={[styles.autoSaveText, { color: '#2D8A2E' }]}>✓ Salvato</Text>
+              <Text style={[styles.autoSaveText, { color: '#2D8A2E' }]}>✓ {t('common.saved', 'Saved')}</Text>
             )}
           </View>
         </View>
@@ -320,7 +322,7 @@ export function RugbyMatchModal({
               ]}>
                 {formatTime(timerSeconds)} / {formatTime(halfDuration)}
               </Text>
-              <Text style={styles.halfText}>Tempo {currentHalf}</Text>
+              <Text style={styles.halfText}>{t('rugby.period', 'Period')} {currentHalf}</Text>
             </View>
             <View style={styles.timerControls}>
               <TouchableOpacity
@@ -348,7 +350,7 @@ export function RugbyMatchModal({
                   }
                 }}
               >
-                <Text style={styles.halfBtnText}>2°T</Text>
+                <Text style={styles.halfBtnText}>{t('rugby.secondPeriod', '2nd')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -356,7 +358,7 @@ export function RugbyMatchModal({
           {/* Player Selection */}
           <View style={styles.playerSection}>
             <Text style={styles.sectionTitle}>
-              Giocatore selezionato: {selectedPlayer?.full_name || 'Nessuno'}
+              {t('rugby.selectedPlayer', 'Selected player')}: {selectedPlayer?.full_name || t('common.none', 'None')}
             </Text>
             <TouchableOpacity
               style={styles.selectPlayerBtn}
@@ -364,33 +366,33 @@ export function RugbyMatchModal({
             >
               <Ionicons name="person" size={20} color="#FFF" />
               <Text style={styles.selectPlayerText}>
-                {selectedPlayer ? 'Cambia Giocatore' : 'Seleziona Giocatore'}
+                {selectedPlayer ? t('rugby.changePlayer', 'Change Player') : t('rugby.selectPlayer', 'Select Player')}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Point Actions */}
           <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>Registra Punti</Text>
+            <Text style={styles.sectionTitle}>{t('rugby.recordPoints', 'Record Points')}</Text>
             <View style={styles.actionsGrid}>
               <TouchableOpacity style={[styles.actionBtn, styles.actionTry]} onPress={() => addEvent('try')}>
                 <Text style={styles.actionEmoji}>🏉</Text>
-                <Text style={styles.actionText}>Meta</Text>
+                <Text style={styles.actionText}>{t('rugby.try', 'Try')}</Text>
                 <Text style={styles.actionPoints}>+5</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.actionConversion]} onPress={() => addEvent('conversion')}>
                 <Text style={styles.actionEmoji}>⚽</Text>
-                <Text style={styles.actionText}>Trasform.</Text>
+                <Text style={styles.actionText}>{t('rugby.conversionShort', 'Conv.')}</Text>
                 <Text style={styles.actionPoints}>+2</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.actionPenalty]} onPress={() => addEvent('penalty')}>
                 <Text style={styles.actionEmoji}>🎯</Text>
-                <Text style={styles.actionText}>Punizione</Text>
+                <Text style={styles.actionText}>{t('rugby.penalty', 'Penalty')}</Text>
                 <Text style={styles.actionPoints}>+3</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.actionDrop]} onPress={() => addEvent('drop_goal')}>
                 <Text style={styles.actionEmoji}>💫</Text>
-                <Text style={styles.actionText}>Drop</Text>
+                <Text style={styles.actionText}>{t('rugby.drop', 'Drop')}</Text>
                 <Text style={styles.actionPoints}>+3</Text>
               </TouchableOpacity>
             </View>
@@ -398,19 +400,19 @@ export function RugbyMatchModal({
 
           {/* Stats Actions */}
           <View style={styles.actionsSection}>
-            <Text style={styles.sectionTitle}>Registra Statistiche</Text>
+            <Text style={styles.sectionTitle}>{t('rugby.recordStats', 'Record Statistics')}</Text>
             <View style={styles.actionsGrid}>
               <TouchableOpacity style={[styles.actionBtn, styles.actionStat]} onPress={() => addEvent('tackle')}>
                 <Text style={styles.actionEmoji}>🤝</Text>
-                <Text style={styles.actionText}>Placcaggio</Text>
+                <Text style={styles.actionText}>{t('rugby.tackle', 'Tackle')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.actionYellow]} onPress={() => addEvent('yellow_card')}>
                 <Text style={styles.actionEmoji}>🟨</Text>
-                <Text style={styles.actionText}>Giallo</Text>
+                <Text style={styles.actionText}>{t('rugby.yellow', 'Yellow')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={[styles.actionBtn, styles.actionRed]} onPress={() => addEvent('red_card')}>
                 <Text style={styles.actionEmoji}>🟥</Text>
-                <Text style={styles.actionText}>Rosso</Text>
+                <Text style={styles.actionText}>{t('rugby.red', 'Red')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -418,17 +420,17 @@ export function RugbyMatchModal({
           {/* Undo Button */}
           <TouchableOpacity style={styles.undoBtn} onPress={undoLastEvent}>
             <Ionicons name="arrow-undo" size={20} color="#FF6B6B" />
-            <Text style={styles.undoBtnText}>Annulla ultimo</Text>
+            <Text style={styles.undoBtnText}>{t('rugby.undoLast', 'Undo last')}</Text>
           </TouchableOpacity>
 
           {/* Events List */}
           <View style={styles.eventsSection}>
-            <Text style={styles.sectionTitle}>Eventi ({events.length})</Text>
+            <Text style={styles.sectionTitle}>{t('rugby.events', 'Events')} ({events.length})</Text>
             {events.slice().reverse().map((event, index) => (
               <View key={event.id} style={styles.eventItem}>
                 <View style={[styles.eventTeamDot, event.team === 'home' ? styles.homeDot : styles.awayDot]} />
                 <Text style={styles.eventMinute}>{event.minute}'</Text>
-                <Text style={styles.eventType}>{EVENT_LABELS[event.type]}</Text>
+                <Text style={styles.eventType}>{getEventLabels(t)[event.type as keyof ReturnType<typeof getEventLabels>]}</Text>
                 <Text style={styles.eventPlayer}>{event.player_name || '-'}</Text>
                 {event.points > 0 && (
                   <Text style={styles.eventPoints}>+{event.points}</Text>

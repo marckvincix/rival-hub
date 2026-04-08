@@ -2086,10 +2086,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
 
             {/* Data di nascita */}
-            <Text style={styles.playerFormLabel}>Data di nascita</Text>
+            <Text style={styles.playerFormLabel}>{t('teams.birthDate', 'Date of birth')}</Text>
             <TouchableOpacity style={styles.playerFormInputWithIcon} onPress={openDatePicker}>
               <Text style={newPlayerData.birthDate ? styles.playerFormInput : styles.playerFormPlaceholder}>
-                {newPlayerData.birthDate || 'GG/MM/AAAA'}
+                {newPlayerData.birthDate || t('teams.birthDatePlaceholder', 'DD/MM/YYYY')}
               </Text>
               <Ionicons name="calendar-outline" size={22} color="#000" />
             </TouchableOpacity>
@@ -2102,10 +2102,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     <View style={styles.datePickerContainer}>
                       <View style={styles.datePickerHeader}>
                         <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                          <Text style={styles.datePickerCancel}>Annulla</Text>
+                          <Text style={styles.datePickerCancel}>{t('common.cancel')}</Text>
                         </TouchableOpacity>
                         <TouchableOpacity onPress={() => setShowDatePicker(false)}>
-                          <Text style={styles.datePickerDone}>Fine</Text>
+                          <Text style={styles.datePickerDone}>{t('common.done')}</Text>
                         </TouchableOpacity>
                       </View>
                       <DateTimePicker

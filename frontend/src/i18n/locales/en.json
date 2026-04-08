@@ -33,7 +33,10 @@
     "loadingStats": "Loading statistics...",
     "noData": "No data available",
     "camera": "Camera",
-    "photo": "Photo"
+    "photo": "Photo",
+    "saving": "Saving...",
+    "saved": "Saved",
+    "none": "None"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -180,7 +183,9 @@
     "selectTeam": "Select team",
     "selectPlayer": "Select player",
     "selectDouble": "Select pair",
-    "noPlayers": "No players"
+    "noPlayers": "No players",
+    "birthDate": "Date of birth",
+    "birthDatePlaceholder": "DD/MM/YYYY"
   },
   "matches": {
     "title": "Matches",
@@ -218,7 +223,8 @@
     "deleteRoundConfirm": "Delete all matches from this round?",
     "venue": "Venue",
     "venueName": "Name",
-    "venueAddress": "Address"
+    "venueAddress": "Address",
+    "endMatchConfirm": "End the match?"
   },
   "stats": {
     "title": "Statistics",
@@ -400,6 +406,29 @@
     "timeout": "Timeout",
     "substitution": "Substitution"
   },
+  "rugby": {
+    "match": "Rugby Match",
+    "try": "Try",
+    "conversion": "Conversion",
+    "conversionShort": "Conv.",
+    "penalty": "Penalty",
+    "dropGoal": "Drop goal",
+    "drop": "Drop",
+    "tackle": "Tackle",
+    "yellowCard": "Yellow card",
+    "redCard": "Red card",
+    "yellow": "Yellow",
+    "red": "Red",
+    "period": "Period",
+    "secondPeriod": "2nd",
+    "selectedPlayer": "Selected player",
+    "selectPlayer": "Select Player",
+    "changePlayer": "Change Player",
+    "recordPoints": "Record Points",
+    "recordStats": "Record Statistics",
+    "undoLast": "Undo last",
+    "events": "Events"
+  },
   "errors": {
     "generic": "Something went wrong. Please try again.",
     "network": "Network error. Please check your connection.",
@@ -426,7 +455,8 @@
     "selectRound": "Select a round",
     "permissionDenied": "Permission denied",
     "galleryPermission": "Gallery permission required",
-    "titleRequired": "Title is required"
+    "titleRequired": "Title is required",
+    "saveFailed": "Could not save the match"
   },
   "confirm": {
     "delete": "Are you sure you want to delete?",

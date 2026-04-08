@@ -33,7 +33,10 @@
     "loadingStats": "Caricamento statistiche...",
     "noData": "Nessun dato disponibile",
     "camera": "Fotocamera",
-    "photo": "Foto"
+    "photo": "Foto",
+    "saving": "Salvando...",
+    "saved": "Salvato",
+    "none": "Nessuno"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -180,7 +183,9 @@
     "selectTeam": "Seleziona la squadra",
     "selectPlayer": "Seleziona il giocatore",
     "selectDouble": "Seleziona la coppia",
-    "noPlayers": "Nessun giocatore"
+    "noPlayers": "Nessun giocatore",
+    "birthDate": "Data di nascita",
+    "birthDatePlaceholder": "GG/MM/AAAA"
   },
   "matches": {
     "title": "Partite",
@@ -218,7 +223,8 @@
     "deleteRoundConfirm": "Eliminare tutte le partite di questa giornata?",
     "venue": "Luogo",
     "venueName": "Nome",
-    "venueAddress": "Indirizzo"
+    "venueAddress": "Indirizzo",
+    "endMatchConfirm": "Terminare la partita?"
   },
   "stats": {
     "title": "Statistiche",
@@ -400,6 +406,29 @@
     "timeout": "Timeout",
     "substitution": "Cambio"
   },
+  "rugby": {
+    "match": "Partita di Rugby",
+    "try": "Meta",
+    "conversion": "Trasformazione",
+    "conversionShort": "Trasform.",
+    "penalty": "Punizione",
+    "dropGoal": "Drop goal",
+    "drop": "Drop",
+    "tackle": "Placcaggio",
+    "yellowCard": "Cartellino giallo",
+    "redCard": "Cartellino rosso",
+    "yellow": "Giallo",
+    "red": "Rosso",
+    "period": "Tempo",
+    "secondPeriod": "2°T",
+    "selectedPlayer": "Giocatore selezionato",
+    "selectPlayer": "Seleziona Giocatore",
+    "changePlayer": "Cambia Giocatore",
+    "recordPoints": "Registra Punti",
+    "recordStats": "Registra Statistiche",
+    "undoLast": "Annulla ultimo",
+    "events": "Eventi"
+  },
   "errors": {
     "generic": "Qualcosa è andato storto. Riprova.",
     "network": "Errore di rete. Controlla la connessione.",
@@ -426,7 +455,8 @@
     "selectRound": "Seleziona una giornata",
     "permissionDenied": "Permesso negato",
     "galleryPermission": "Permesso galleria richiesto",
-    "titleRequired": "Titolo obbligatorio"
+    "titleRequired": "Titolo obbligatorio",
+    "saveFailed": "Impossibile salvare la partita"
   },
   "confirm": {
     "delete": "Sei sicuro di voler eliminare?",
