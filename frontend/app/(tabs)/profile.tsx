@@ -14,21 +14,29 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, TermsModal } from '../../src/components';
+import { Button, TermsModal, LanguageSelector } from '../../src/components';
 import { favoritesApi, Favorite } from '../../src/utils/favoritesApi';
 import { useNotifications } from '../../src/hooks/useNotifications';
+import { useLanguage } from '../../src/contexts/LanguageContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, logout } = useAuthStore();
   const { expoPushToken } = useNotifications();
+  const { t } = useTranslation();
+  const { currentLanguage, languages } = useLanguage();
   
   const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [loadingFavorites, setLoadingFavorites] = useState(true);
   const [globalNotifications, setGlobalNotifications] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
+  const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+
+  // Get current language info
+  const currentLang = languages.find(l => l.code === currentLanguage);
 
   useEffect(() => {
     if (user) {
@@ -246,14 +254,14 @@ export default function ProfileScreen() {
 
         {/* Settings */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Impostazioni</Text>
+          <Text style={styles.sectionTitle}>{t('profile.settings')}</Text>
           
           <View style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <View style={styles.settingIcon}>
                 <Ionicons name="notifications-outline" size={20} color="#000" />
               </View>
-              <Text style={styles.settingText}>Notifiche Push</Text>
+              <Text style={styles.settingText}>{t('profile.pushNotifications')}</Text>
             </View>
             <Switch
               value={globalNotifications}
@@ -263,12 +271,26 @@ export default function ProfileScreen() {
             />
           </View>
 
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowLanguageSelector(true)}>
+            <View style={styles.settingLeft}>
+              <View style={styles.settingIcon}>
+                <Ionicons name="language-outline" size={20} color="#000" />
+              </View>
+              <Text style={styles.settingText}>{t('profile.language')}</Text>
+            </View>
+            <View style={styles.languageValue}>
+              <Text style={styles.languageFlag}>{currentLang?.flag}</Text>
+              <Text style={styles.languageName}>{currentLang?.nativeName}</Text>
+              <Ionicons name="chevron-forward" size={20} color="#000" />
+            </View>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <View style={styles.settingIcon}>
                 <Ionicons name="help-circle-outline" size={20} color="#000" />
               </View>
-              <Text style={styles.settingText}>Supporto</Text>
+              <Text style={styles.settingText}>{t('profile.helpSupport')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#000" />
           </TouchableOpacity>
@@ -278,7 +300,7 @@ export default function ProfileScreen() {
               <View style={styles.settingIcon}>
                 <Ionicons name="document-text-outline" size={20} color="#000" />
               </View>
-              <Text style={styles.settingText}>Termini e Privacy</Text>
+              <Text style={styles.settingText}>{t('profile.termsAndPrivacy')}</Text>
             </View>
             <Ionicons name="chevron-forward" size={20} color="#000" />
           </TouchableOpacity>
@@ -286,14 +308,14 @@ export default function ProfileScreen() {
 
         {/* Logout */}
         <View style={styles.section}>
-          <Button title="Esci" onPress={handleLogout} variant="outline" icon="log-out-outline" fullWidth />
+          <Button title={t('auth.logout')} onPress={handleLogout} variant="outline" icon="log-out-outline" fullWidth />
         </View>
 
         {/* App Info */}
         <View style={styles.appInfo}>
           <Ionicons name="football" size={24} color="#999" />
           <Text style={styles.appName}>Rival Hub</Text>
-          <Text style={styles.appVersion}>Versione 1.0.0</Text>
+          <Text style={styles.appVersion}>{t('common.version')} 1.0.0</Text>
         </View>
       </ScrollView>
 
@@ -301,6 +323,12 @@ export default function ProfileScreen() {
       <TermsModal
         visible={showTermsModal}
         onClose={() => setShowTermsModal(false)}
+      />
+
+      {/* Language Selector Modal */}
+      <LanguageSelector
+        visible={showLanguageSelector}
+        onClose={() => setShowLanguageSelector(false)}
       />
     </SafeAreaView>
   );
@@ -498,5 +526,17 @@ const styles = StyleSheet.create({
   },
   removeButton: {
     padding: 8,
+  },
+  languageValue: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  languageFlag: {
+    fontSize: 18,
+  },
+  languageName: {
+    fontSize: 14,
+    color: '#666',
   },
 });

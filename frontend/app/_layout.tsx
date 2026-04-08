@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { useAuthStore } from '../src/store/authStore';
-import { Loading } from '../src/components';
+import { Loading, LanguageSelectionScreen } from '../src/components';
 import { useNotifications } from '../src/hooks/useNotifications';
+import { LanguageProvider, useLanguage } from '../src/contexts/LanguageContext';
+import '../src/i18n'; // Initialize i18n
 
-export default function RootLayout() {
+function RootLayoutContent() {
   const { isLoading, checkAuth, user } = useAuthStore();
+  const { isLanguageReady, needsLanguageSelection } = useLanguage();
   
   // Register push notifications when user is authenticated
   const { expoPushToken } = useNotifications();
@@ -21,8 +25,22 @@ export default function RootLayout() {
     checkAuth();
   }, []);
 
+  // Show loading while language is being initialized
+  if (!isLanguageReady) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+      </View>
+    );
+  }
+
+  // Show language selection screen on first launch
+  if (needsLanguageSelection) {
+    return <LanguageSelectionScreen />;
+  }
+
   if (isLoading) {
-    return <Loading message="Caricamento..." />;
+    return <Loading message="Loading..." />;
   }
 
   return (
@@ -39,3 +57,20 @@ export default function RootLayout() {
     </>
   );
 }
+
+export default function RootLayout() {
+  return (
+    <LanguageProvider>
+      <RootLayoutContent />
+    </LanguageProvider>
+  );
+}
+
+const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+  },
+});

@@ -21,3 +21,5 @@ export { RugbyMatchModal } from './RugbyMatchModal';
 export { HighlightsTab } from './HighlightsTab';
 export { HighlightsUploadModal } from './HighlightsUploadModal';
 export { TermsModal } from './TermsModal';
+export { LanguageSelectionScreen } from './LanguageSelectionScreen';
+export { LanguageSelector } from './LanguageSelector';
