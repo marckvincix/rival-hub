@@ -9,14 +9,13 @@ import {
   Image,
   Switch,
   RefreshControl,
-  ActivityIndicator,
-  Modal
+  ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button } from '../../src/components';
+import { Button, TermsModal } from '../../src/components';
 import { favoritesApi, Favorite } from '../../src/utils/favoritesApi';
 import { useNotifications } from '../../src/hooks/useNotifications';
 
