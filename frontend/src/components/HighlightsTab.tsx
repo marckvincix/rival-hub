@@ -104,11 +104,23 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
     }
   };
 
-  const loadHighlights = async () => {
+  const loadHighlights = async (accessCode?: string) => {
     try {
       setLoading(true);
-      // For organizer, no code needed. For unlocked users, the backend allows access.
-      const response = await api.get(`/api/tournaments/${tournamentId}/highlights`);
+      // Get stored code if not provided
+      let codeToUse = accessCode;
+      if (!codeToUse && !isOrganizer) {
+        codeToUse = await AsyncStorage.getItem(STORAGE_KEY) === 'true' 
+          ? await AsyncStorage.getItem(`highlights_code_${tournamentId}`) || undefined
+          : undefined;
+      }
+      
+      // Build URL with code if needed
+      const url = codeToUse 
+        ? `/api/tournaments/${tournamentId}/highlights?code=${codeToUse}`
+        : `/api/tournaments/${tournamentId}/highlights`;
+      
+      const response = await api.get(url);
       setHighlights(response.data || []);
     } catch (error: any) {
       console.error('Error loading highlights:', error);
@@ -117,6 +129,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         setIsUnlocked(false);
         setShowCodeModal(true);
         await AsyncStorage.removeItem(STORAGE_KEY);
+        await AsyncStorage.removeItem(`highlights_code_${tournamentId}`);
       }
     } finally {
       setLoading(false);
@@ -137,12 +150,13 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         code: code.trim().toUpperCase()
       });
       
-      // Store unlock status persistently - never expires
+      // Store both unlock status AND the code itself for future API calls
       await AsyncStorage.setItem(STORAGE_KEY, 'true');
+      await AsyncStorage.setItem(`highlights_code_${tournamentId}`, code.trim().toUpperCase());
       
       setIsUnlocked(true);
       setShowCodeModal(false);
-      loadHighlights();
+      loadHighlights(code.trim().toUpperCase());
     } catch (error: any) {
       setCodeError(error.response?.data?.detail || 'Codice non valido. Riprova.');
     } finally {

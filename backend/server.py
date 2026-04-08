@@ -3588,8 +3588,11 @@ async def upload_highlight(
     }
 
 @api_router.get("/highlights/file/{highlight_id}")
-async def get_highlight_file(highlight_id: str):
-    """Get highlight file (public endpoint for viewing)"""
+async def get_highlight_file(
+    highlight_id: str,
+    request: Request
+):
+    """Get highlight file with Range request support for video streaming"""
     highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
     
     if not highlight:
@@ -3600,12 +3603,64 @@ async def get_highlight_file(highlight_id: str):
     if not file_path.exists():
         raise HTTPException(status_code=404, detail="File non trovato sul server")
     
-    media_type = "image/jpeg" if highlight["file_type"] == "photo" else "video/mp4"
+    # For images, return directly
+    if highlight["file_type"] == "photo":
+        return FileResponse(
+            path=str(file_path),
+            media_type="image/jpeg",
+            filename=highlight["file_name"]
+        )
     
+    # For videos, support Range requests for iOS streaming
+    file_size = file_path.stat().st_size
+    range_header = request.headers.get("range")
+    
+    if range_header:
+        # Parse range header
+        range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
+        if range_match:
+            start = int(range_match.group(1))
+            end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
+            
+            # Ensure end doesn't exceed file size
+            end = min(end, file_size - 1)
+            content_length = end - start + 1
+            
+            def iter_file():
+                with open(file_path, 'rb') as f:
+                    f.seek(start)
+                    remaining = content_length
+                    while remaining > 0:
+                        chunk_size = min(65536, remaining)
+                        data = f.read(chunk_size)
+                        if not data:
+                            break
+                        remaining -= len(data)
+                        yield data
+            
+            from starlette.responses import StreamingResponse
+            
+            return StreamingResponse(
+                iter_file(),
+                status_code=206,
+                media_type="video/mp4",
+                headers={
+                    "Content-Range": f"bytes {start}-{end}/{file_size}",
+                    "Accept-Ranges": "bytes",
+                    "Content-Length": str(content_length),
+                    "Content-Disposition": f'inline; filename="{highlight["file_name"]}"'
+                }
+            )
+    
+    # No range header - return full file
     return FileResponse(
         path=str(file_path),
-        media_type=media_type,
-        filename=highlight["file_name"]
+        media_type="video/mp4",
+        filename=highlight["file_name"],
+        headers={
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(file_size)
+        }
     )
 
 @api_router.delete("/highlights/{highlight_id}")
