@@ -27,17 +27,39 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal, HighlightsUploadModal } from '../../src/components';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
-const FORMATS = [
-  { value: 'league', label: 'Campionato' },
-  { value: 'knockout', label: 'Eliminazione' },
-  { value: 'groups_knockout', label: 'Gironi + Elim.' },
-];
+
+// Format labels will be handled dynamically with translations
 
 export default function TournamentsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
+
+  // Translation helper functions
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'draft': return t('tournaments.draft');
+      case 'active': return t('tournaments.active');
+      case 'completed': return t('tournaments.completed');
+      default: return status;
+    }
+  };
+
+  const getFormatLabel = (format: string) => {
+    switch (format) {
+      case 'league': return t('tournaments.formatLeague', 'League');
+      case 'knockout': return t('tournaments.formatKnockout', 'Knockout');
+      case 'groups_knockout': return t('tournaments.formatGroupsKnockout', 'Groups + Knockout');
+      default: return format;
+    }
+  };
+
+  const FORMATS = [
+    { value: 'league', label: t('tournaments.formatLeague', 'League') },
+    { value: 'knockout', label: t('tournaments.formatKnockout', 'Knockout') },
+    { value: 'groups_knockout', label: t('tournaments.formatGroupsKnockout', 'Groups + Knockout') },
+  ];
   
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
@@ -92,7 +114,7 @@ export default function TournamentsScreen() {
 
   const handleCreateTournament = async () => {
     if (!formData.name.trim()) {
-      Alert.alert('Errore', 'Il nome del torneo è richiesto');
+      Alert.alert(t('common.error'), t('errors.tournamentNameRequired', 'Tournament name is required'));
       return;
     }
     try {
@@ -104,21 +126,21 @@ export default function TournamentsScreen() {
       setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
       setSelectedTournament(response.data);
     } catch (error: any) {
-      Alert.alert('Errore', error.response?.data?.detail || 'Errore nella creazione');
+      Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.createFailed', 'Creation failed'));
     } finally {
       setFormLoading(false);
     }
   };
 
   const handleDeleteTournament = async (tournament: Tournament) => {
-    Alert.alert('Elimina Torneo', `Eliminare "${tournament.name}"?`, [
-      { text: 'Annulla', style: 'cancel' },
-      { text: 'Elimina', style: 'destructive', onPress: async () => {
+    Alert.alert(t('tournaments.deleteTournament'), `${t('confirm.deleteTournament', 'Delete')} "${tournament.name}"??`, [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('common.delete'), style: 'destructive', onPress: async () => {
         try {
           await api.delete(`/api/tournaments/${tournament.id}`);
           setTournaments(tournaments.filter(t => t.id !== tournament.id));
           if (selectedTournament?.id === tournament.id) setSelectedTournament(null);
-        } catch (error) { Alert.alert('Errore', 'Impossibile eliminare'); }
+        } catch (error) { Alert.alert(t('common.error'), t('errors.deleteFailed', 'Delete failed')); }
       }}
     ]);
   };
@@ -129,14 +151,10 @@ export default function TournamentsScreen() {
       const updated = { ...tournament, status: newStatus };
       setTournaments(tournaments.map(t => t.id === tournament.id ? updated : t));
       if (selectedTournament?.id === tournament.id) setSelectedTournament(updated as Tournament);
-    } catch (error) { Alert.alert('Errore', 'Impossibile aggiornare'); }
+    } catch (error) { Alert.alert(t('common.error'), t('errors.updateFailed', 'Update failed')); }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Terminato'; default: return 'Bozza'; }
-  };
-
-  if (loading) return <Loading message="Caricamento..." />;
+  if (loading) return <Loading message={t('common.loading')} />;
 
   // Handle sport selection
   const handleSportSelect = (sport: Sport) => {
@@ -214,7 +232,7 @@ export default function TournamentsScreen() {
                     style={[styles.filterPill, sportFilter === 'all' && styles.filterPillActive]}
                     onPress={() => setSportFilter('all')}
                   >
-                    <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>Tutti</Text>
+                    <Text style={[styles.filterPillText, sportFilter === 'all' && styles.filterPillTextActive]}>{t('home.allSports')}</Text>
                   </TouchableOpacity>
                 );
               }
@@ -242,9 +260,9 @@ export default function TournamentsScreen() {
         {filteredTournaments.length === 0 ? (
           <EmptyState
             icon="trophy-outline"
-            title={sportFilter === 'all' ? "Nessun torneo" : "Nessun torneo per questo sport"}
-            description={sportFilter === 'all' ? "Crea il tuo primo torneo" : "Prova un altro filtro o crea un nuovo torneo"}
-            actionLabel="Crea Torneo"
+            title={sportFilter === 'all' ? t('tournaments.noTournaments', 'No tournaments') : t('tournaments.noTournamentsForSport', 'No tournaments for this sport')}
+            description={sportFilter === 'all' ? t('home.createFirst') : t('tournaments.tryAnotherFilter', 'Try another filter or create a new tournament')}
+            actionLabel={t('tournaments.createTournament')}
             onAction={() => {
               setTournamentDate(null);
               setTournamentTime(null);
@@ -266,7 +284,7 @@ export default function TournamentsScreen() {
                   </View>
                   <View style={styles.cardInfo}>
                     <Text style={styles.cardTitle}>{tournament.name}</Text>
-                    <Text style={styles.cardMeta}>{tournament.category} • {tournament.location || 'Nessun luogo'}</Text>
+                    <Text style={styles.cardMeta}>{tournament.category} • {tournament.location || t('home.noLocation')}</Text>
                   </View>
                 </View>
                 <View style={styles.cardFooter}>
@@ -288,16 +306,16 @@ export default function TournamentsScreen() {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => { setShowCreateModal(false); setSelectedSport(null); }}>
-              <Text style={styles.modalCancel}>Annulla</Text>
+              <Text style={styles.modalCancel}>{t('common.cancel')}</Text>
             </TouchableOpacity>
             <Text style={styles.modalTitle}>
-              {selectedSport ? `${getSportConfig(selectedSport)?.emoji} ${getSportConfig(selectedSport)?.name}` : 'Nuovo Torneo'}
+              {selectedSport ? `${getSportConfig(selectedSport)?.emoji} ${getSportConfig(selectedSport)?.name}` : t('tournaments.newTournament', 'New Tournament')}
             </Text>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <Input label="Nome Torneo *" placeholder="es. Torneo Primavera 2025" value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
-            <Input label="Luogo" placeholder="es. Milano, Campo XYZ" value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
+            <Input label={t('tournaments.tournamentNameLabel', 'Tournament Name *')} placeholder={t('tournaments.tournamentNamePlaceholder', 'e.g. Spring Tournament 2025')} value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
+            <Input label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
             
             {/* Data Field */}
             <Text style={styles.inputLabel}>Data</Text>
@@ -376,7 +394,7 @@ export default function TournamentsScreen() {
             {/* Formato Gioco - Dynamic based on sport */}
             {selectedSport && getSportConfig(selectedSport)?.formats && (
               <>
-                <Text style={styles.inputLabel}>Formato</Text>
+                <Text style={styles.inputLabel}>{t('home.format')}</Text>
                 <View style={styles.gameFormatContainer}>
                   {getSportConfig(selectedSport)?.formats.map((gf) => (
                     <TouchableOpacity 
@@ -394,7 +412,7 @@ export default function TournamentsScreen() {
             {/* Game Structure - if sport has structures */}
             {selectedSport && getSportConfig(selectedSport)?.structures && (
               <>
-                <Text style={styles.inputLabel}>Struttura Gara</Text>
+                <Text style={styles.inputLabel}>{t('tournaments.matchStructure', 'Match Structure')}</Text>
                 <View style={styles.gameFormatContainer}>
                   {getSportConfig(selectedSport)?.structures?.map((gs) => (
                     <TouchableOpacity 
@@ -426,7 +444,7 @@ export default function TournamentsScreen() {
               </View>
             )}
 
-            <Text style={styles.inputLabel}>Categoria</Text>
+            <Text style={styles.inputLabel}>{t('home.category')}</Text>
             <View style={styles.chipContainer}>
               {CATEGORIES.map((cat) => (
                 <TouchableOpacity key={cat} style={[styles.chip, formData.category === cat && styles.chipSelected]} onPress={() => setFormData({ ...formData, category: cat })}>
@@ -687,7 +705,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 event.event_type === 'red_card' ? 'red' :
                 event.event_type === 'substitution_out' ? 'sub_out' :
                 event.event_type === 'substitution_in' ? 'sub_in' : event.event_type,
-          player: event.player_name || 'Giocatore',
+          player: event.player_name || t('teams.player', 'Player'),
           playerId: event.player_id
         };
       });
@@ -874,19 +892,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   };
 
   const handleAddTeam = async () => {
-    if (!newTeamName.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
+    if (!newTeamName.trim()) { Alert.alert(t('common.error'), t('errors.nameRequired', 'Name required')); return; }
     try {
       const response = await api.post(`/api/tournaments/${tournament.id}/teams`, { name: newTeamName });
       setTeams([...teams, response.data]);
       setShowAddTeamModal(false);
       setNewTeamName('');
-    } catch (error: any) { Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere'); }
+    } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
   };
 
   const handleAddMatch = async () => {
-    if (!newMatchData.home_team_id || !newMatchData.away_team_id) { Alert.alert('Errore', 'Seleziona entrambe le squadre'); return; }
-    if (newMatchData.home_team_id === newMatchData.away_team_id) { Alert.alert('Errore', 'Squadre diverse'); return; }
-    if (!newMatchData.round) { Alert.alert('Errore', 'Seleziona una giornata'); return; }
+    if (!newMatchData.home_team_id || !newMatchData.away_team_id) { Alert.alert(t('common.error'), t('errors.selectBothTeams', 'Select both teams')); return; }
+    if (newMatchData.home_team_id === newMatchData.away_team_id) { Alert.alert(t('common.error'), t('errors.differentTeams', 'Different teams required')); return; }
+    if (!newMatchData.round) { Alert.alert(t('common.error'), t('errors.selectRound', 'Select a round')); return; }
     try {
       const matchPayload = {
         home_team_id: newMatchData.home_team_id,
@@ -905,22 +923,22 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setMatchTime(null);
       setShowHomeDropdown(false);
       setShowAwayDropdown(false);
-    } catch (error: any) { Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere'); }
+    } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
   };
 
   const handleDeleteTeam = async (teamId: string) => {
-    try { await api.delete(`/api/teams/${teamId}`); setTeams(teams.filter(t => t.id !== teamId)); } catch (e) { Alert.alert('Errore'); }
+    try { await api.delete(`/api/teams/${teamId}`); setTeams(teams.filter(t => t.id !== teamId)); } catch (e) { Alert.alert(t('common.error')); }
   };
 
   const handleDeleteMatch = async (matchId: string) => {
-    try { await api.delete(`/api/matches/${matchId}`); setMatches(matches.filter(m => m.id !== matchId)); } catch (e) { Alert.alert('Errore'); }
+    try { await api.delete(`/api/matches/${matchId}`); setMatches(matches.filter(m => m.id !== matchId)); } catch (e) { Alert.alert(t('common.error')); }
   };
 
   const handleUpdateResult = async (match: any, homeGoals: number, awayGoals: number) => {
     try {
       await api.put(`/api/matches/${match.id}`, { home_goals: homeGoals, away_goals: awayGoals, status: 'completed' });
       setMatches(matches.map(m => m.id === match.id ? { ...m, home_goals: homeGoals, away_goals: awayGoals, status: 'completed' } : m));
-    } catch (e) { Alert.alert('Errore'); }
+    } catch (e) { Alert.alert(t('common.error')); }
   };
 
   // Auto-save function for live score updates (all sports)
@@ -962,13 +980,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     // Request permissions
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permesso negato', 'Serve il permesso per accedere alla galleria');
+      Alert.alert(t('errors.permissionDenied', 'Permission denied'), t('errors.galleryPermission', 'Gallery permission required'));
       return;
     }
 
     // Show action sheet to choose camera or gallery
     Alert.alert(
-      'Seleziona foto',
+      t('common.selectPhoto', 'Select photo'),
       'Scegli da dove caricare la foto',
       [
         {
@@ -976,7 +994,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           onPress: async () => {
             const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
             if (cameraStatus.status !== 'granted') {
-              Alert.alert('Permesso negato', 'Serve il permesso per usare la fotocamera');
+              Alert.alert(t('errors.permissionDenied', 'Permission denied'), 'Serve il permesso per usare la fotocamera');
               return;
             }
             const result = await ImagePicker.launchCameraAsync({
@@ -1004,7 +1022,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             }
           }
         },
-        { text: 'Annulla', style: 'cancel' }
+        { text: t('common.cancel'), style: 'cancel' }
       ]
     );
   };
@@ -1026,7 +1044,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   };
 
   const handleAddPlayer = async () => {
-    if (!newPlayerData.name.trim()) { Alert.alert('Errore', 'Nome richiesto'); return; }
+    if (!newPlayerData.name.trim()) { Alert.alert(t('common.error'), t('errors.nameRequired', 'Name required')); return; }
     if (!selectedTeamForPlayer) return;
     
     try {
@@ -1055,19 +1073,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       
       setShowAddPlayerModal(false);
       setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
-      Alert.alert('Successo', 'Giocatore aggiunto');
+      Alert.alert(t('common.success'), t('success.playerAdded', 'Player added'));
     } catch (error: any) {
-      Alert.alert('Errore', error.response?.data?.detail || 'Impossibile aggiungere giocatore');
+      Alert.alert(t('common.error'), error.response?.data?.detail || 'Impossibile aggiungere giocatore');
     }
   };
 
   const handleDeleteTeamConfirm = (teamId: string, teamName: string) => {
     Alert.alert(
-      'Elimina Squadra',
+      t('teams.deleteTeam'),
       `Sei sicuro di voler eliminare ${teamName}?`,
       [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Elimina', style: 'destructive', onPress: () => handleDeleteTeam(teamId) }
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: () => handleDeleteTeam(teamId) }
       ]
     );
   };
@@ -1321,14 +1339,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   
   // Get appropriate labels based on sport
   const getTeamLabel = (plural = false) => {
-    if (!isTennisSport) return plural ? 'Squadre' : 'Squadra';
-    if (isDoubles) return plural ? 'Coppie' : 'Coppia';
-    return plural ? 'Giocatori' : 'Giocatore';
+    if (!isTennisSport) return plural ? t('teams.title') : t('teams.team', 'Team');
+    if (isDoubles) return plural ? t('teams.doubles', 'Doubles') : t('teams.double', 'Double');
+    return plural ? t('teams.players') : t('teams.player', 'Player');
   };
   
   // Get unique rounds from matches for Highlights upload
   const getRounds = () => {
-    const roundsSet = new Set(matches.map(m => m.round || 'Giornata 1'));
+    const roundsSet = new Set(matches.map(m => m.round || `${t('matches.round')} 1`));
     return Array.from(roundsSet).sort((a, b) => {
       const numA = parseInt(a.replace(/\D/g, '')) || 0;
       const numB = parseInt(b.replace(/\D/g, '')) || 0;
@@ -1354,11 +1372,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   const handleDeletePlayer = async (teamId: string, playerId: string) => {
     Alert.alert(
-      'Elimina Giocatore',
+      t('teams.deletePlayer', 'Delete Player'),
       'Sei sicuro di voler eliminare questo giocatore?',
       [
-        { text: 'Annulla', style: 'cancel' },
-        { text: 'Elimina', style: 'destructive', onPress: async () => {
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: async () => {
           try {
             await api.delete(`/api/players/${playerId}`);
             setTeamPlayers(prev => ({
@@ -1366,17 +1384,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               [teamId]: (prev[teamId] || []).filter(p => p.id !== playerId)
             }));
           } catch (error: any) {
-            Alert.alert('Errore', 'Impossibile eliminare giocatore');
+            Alert.alert(t('common.error'), 'Impossibile eliminare giocatore');
           }
         }}
       ]
     );
   };
 
-  const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
+  const getTeamName = (teamId: string) => teams.find(team => team.id === teamId)?.name || t('teams.team', 'Team');
 
   const getStatusLabel = (status: string) => {
-    switch (status) { case 'active': return 'In corso'; case 'completed': return 'Terminato'; default: return 'Bozza'; }
+    switch (status) { case 'active': return t('matches.live'); case 'completed': return t('matches.finished'); default: return t('tournaments.draft'); }
   };
 
   // Load formation for a team
@@ -1448,7 +1466,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Save news (create or update)
   const handleSaveNews = async () => {
     if (!newsForm.title.trim()) {
-      Alert.alert('Errore', 'Il titolo è obbligatorio');
+      Alert.alert(t('common.error'), t('errors.titleRequired', 'Title is required'));
       return;
     }
     setSavingNews(true);
@@ -1461,7 +1479,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           photo: newsForm.photo || null,
           is_published: true
         });
-        Alert.alert('Successo', 'News aggiornata!');
+        Alert.alert(t('common.success'), t('success.newsUpdated', 'News updated!'));
       } else {
         // Create new news
         await api.post(`/api/tournaments/${tournament.id}/news`, {
@@ -1470,13 +1488,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           photo: newsForm.photo || null,
           is_published: true
         });
-        Alert.alert('Successo', 'News pubblicata!');
+        Alert.alert(t('common.success'), t('success.newsPublished', 'News published!'));
       }
       setShowNewsModal(false);
       loadNews();
     } catch (error) {
       console.error('Error saving news:', error);
-      Alert.alert('Errore', 'Impossibile salvare la news');
+      Alert.alert(t('common.error'), 'Impossibile salvare la news');
     } finally {
       setSavingNews(false);
     }
@@ -1488,17 +1506,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       'Elimina News',
       `Sei sicuro di voler eliminare "${title}"?`,
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Elimina',
+          text: t('common.delete'),
           style: 'destructive',
           onPress: async () => {
             try {
               await api.delete(`/api/news/${newsId}`);
               loadNews();
-              Alert.alert('Successo', 'News eliminata');
+              Alert.alert(t('common.success'), t('success.newsDeleted', 'News deleted'));
             } catch (error) {
-              Alert.alert('Errore', 'Impossibile eliminare la news');
+              Alert.alert(t('common.error'), 'Impossibile eliminare la news');
             }
           }
         }
@@ -1543,11 +1561,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Dynamic tab labels based on sport
   const tabs: { id: string; label: string; icon: string }[] = [
     { id: 'teams', label: getTeamLabel(true), icon: isTennisSport ? 'person' : 'people' },
-    { id: 'matches', label: 'Partite', icon: sportIcon },
-    { id: 'results', label: 'Risultati', icon: 'create' },
-    { id: 'news', label: 'News', icon: 'newspaper' },
-    { id: 'highlights', label: 'Highlights', icon: 'film' },
-    { id: 'settings', label: 'Impostazioni', icon: 'settings' }
+    { id: 'matches', label: t('matches.title'), icon: sportIcon },
+    { id: 'results', label: t('matches.results'), icon: 'create' },
+    { id: 'news', label: t('home.featureNews', 'News'), icon: 'newspaper' },
+    { id: 'highlights', label: t('highlights.title'), icon: 'film' },
+    { id: 'settings', label: t('profile.settings'), icon: 'settings' }
   ];
 
   return (
@@ -1583,10 +1601,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <View>
                 <TouchableOpacity style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
                   <Ionicons name="add" size={22} color="#FFF" />
-                  <Text style={styles.addTeamBtnText}>Aggiungi {getTeamLabel()}</Text>
+                  <Text style={styles.addTeamBtnText}>{t('common.add', 'Add')} {getTeamLabel()}</Text>
                 </TouchableOpacity>
                 <View style={{ height: 16 }} />
-                {teams.length === 0 ? <EmptyState icon="people-outline" title="Nessuna squadra" /> : (
+                {teams.length === 0 ? <EmptyState icon="people-outline" title={t('tournaments.noTeams')} /> : (
                   teams.map((team) => (
                     <View key={team.id} style={styles.teamCardNew}>
                       {/* Team Row with all elements */}
@@ -1685,9 +1703,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
                   setShowAddMatchModal(true);
                 }} icon="add" fullWidth disabled={teams.length < 2} />
-                {teams.length < 2 && <Text style={styles.warningText}>Aggiungi almeno 2 squadre</Text>}
+                {teams.length < 2 && <Text style={styles.warningText}>{t('common.add', 'Add')} almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
-                {matches.length === 0 ? <EmptyState icon={`${sportIcon}-outline` as any} title="Nessuna partita" /> : (
+                {matches.length === 0 ? <EmptyState icon={`${sportIcon}-outline` as any} title={t('matches.noMatchesScheduled')} /> : (
                   groupedMatches.map(([round, roundMatches]) => (
                     <View key={round} style={styles.matchDayGroup}>
                       <View style={styles.matchDayHeader}>
@@ -1722,7 +1740,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             onPress={() => handleOpenMatchStats(match)}
                           >
                             <Ionicons name="stats-chart" size={16} color="#666" />
-                            <Text style={styles.matchStatsBtnText}>Statistiche</Text>
+                            <Text style={styles.matchStatsBtnText}{t('stats.title')}</Text>
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -1739,7 +1757,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   const matchesInCorso = matches.filter(m => m.status !== 'completed');
                   
                   if (matchesInCorso.length === 0) {
-                    return <EmptyState icon={`${sportIcon}-outline` as any} title="Nessuna partita in corso" />;
+                    return <EmptyState icon={`${sportIcon}-outline` as any} title={t('matches.noLiveMatches', 'No live matches')} />;
                   }
                   
                   return (
@@ -1924,7 +1942,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </TouchableOpacity>
                   </View>
                 </View>
-                <Button title="Elimina Torneo" onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
+                <Button title=t('tournaments.deleteTournament') onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
               </View>
             )}
           </>
@@ -1938,8 +1956,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <TouchableOpacity onPress={() => setShowAddTeamModal(false)}><Text style={styles.modalCancel}>Annulla</Text></TouchableOpacity>
             <Text style={styles.modalTitle}>
               {isTennisSport 
-                ? (isDoubles ? 'Nuova Coppia' : 'Nuovo Giocatore')
-                : 'Nuova Squadra'
+                ? (isDoubles ? t('teams.newDouble', 'New Double') : t('teams.addPlayer'))
+                : t('teams.addTeam')
               }
             </Text>
             <View style={{ width: 60 }} />
@@ -1947,8 +1965,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           <View style={styles.modalContentSimple}>
             <Text style={styles.inputLabelSimple}>
               {isTennisSport 
-                ? (isDoubles ? 'Nome Coppia' : 'Nome Giocatore')
-                : 'Nome Squadra'
+                ? (isDoubles ? t('teams.doubleName', 'Double Name') : t('teams.playerName'))
+                : t('teams.teamName')
               }
             </Text>
             <View style={styles.inputBoxSimple}>
@@ -1980,7 +1998,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.modalTitle}>{tournament.name}</Text>
-              <Text style={styles.modalSubtitle}>Aggiungi Giocatore</Text>
+              <Text style={styles.modalSubtitle}>{t('common.add', 'Add')} Giocatore</Text>
             </View>
           </View>
           <ScrollView style={styles.playerFormContent} showsVerticalScrollIndicator={false}>
@@ -2031,7 +2049,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     onPress={() => setShowRoleDropdown(!showRoleDropdown)}
                   >
                     <Text style={newPlayerData.role ? styles.playerFormDropdownText : styles.playerFormDropdownPlaceholder}>
-                      {newPlayerData.role || 'Seleziona ruolo'}
+                      {newPlayerData.role || t('teams.selectRole', 'Select role')}
                     </Text>
                     <Ionicons name="chevron-down" size={20} color="#000" />
                   </TouchableOpacity>
@@ -2515,7 +2533,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </View>
           <ScrollView style={styles.newMatchContent} showsVerticalScrollIndicator={false}>
             {/* Squadra/Giocatore Casa */}
-            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? 'Coppia Casa' : 'Giocatore Casa') : 'Squadra Casa'}</Text>
+            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? t('teams.homeDouble', 'Home Double') : t('teams.homePlayer', 'Home Player')) : t('matches.homeTeam')}</Text>
             <TouchableOpacity 
               style={styles.newMatchDropdown} 
               onPress={() => { setShowHomeDropdown(!showHomeDropdown); setShowAwayDropdown(false); }}
@@ -2541,7 +2559,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
 
             {/* Squadra/Giocatore Trasferta */}
-            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? 'Coppia Ospite' : 'Giocatore Ospite') : 'Squadra Trasferta'}</Text>
+            <Text style={styles.newMatchLabel}>{isTennisSport ? (isDoubles ? t('teams.awayDouble', 'Away Double') : t('teams.awayPlayer', 'Away Player')) : t('matches.awayTeam')}</Text>
             <TouchableOpacity 
               style={styles.newMatchDropdown}
               onPress={() => { setShowAwayDropdown(!showAwayDropdown); setShowHomeDropdown(false); }}
@@ -2795,7 +2813,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.modalTitle}>{tournament.name}</Text>
-              <Text style={styles.modalSubtitle}>{tournament.category} - {tournament.status === 'active' ? 'In corso' : 'Bozza'}</Text>
+              <Text style={styles.modalSubtitle}>{tournament.category} - {tournament.status === 'active' ? t('matches.live') : t('tournaments.draft')}</Text>
             </View>
             <TouchableOpacity style={styles.eyeBtn}>
               <Ionicons name="eye" size={24} color="#000" />
@@ -2842,7 +2860,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   {/* Statistiche Section */}
                   <View style={styles.statsSection}>
                     <View style={styles.statsHeader}>
-                      <Text style={styles.statsHeaderText}>Statistiche</Text>
+                      <Text style={styles.statsHeaderText}{t('stats.title')}</Text>
                     </View>
                     
                     {/* Show message if no events */}
@@ -2909,9 +2927,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       try {
                         await handleUpdateResult(selectedMatch, selectedMatch.home_goals ?? 0, selectedMatch.away_goals ?? 0);
                         setSelectedMatch(null);
-                        Alert.alert('Successo', 'Partita completata');
+                        Alert.alert(t('common.success'), t('success.matchCompleted', 'Match completed'));
                       } catch (e) {
-                        Alert.alert('Errore', 'Impossibile salvare');
+                        Alert.alert(t('common.error'), 'Impossibile salvare');
                       }
                     }}
                   >
@@ -3279,7 +3297,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               ) : (
                 <View style={styles.newsPhotoPlaceholder}>
                   <Ionicons name="camera" size={40} color="#999" />
-                  <Text style={styles.newsPhotoText}>Aggiungi foto (opzionale)</Text>
+                  <Text style={styles.newsPhotoText}>{t('common.add', 'Add')} foto (opzionale)</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -3288,7 +3306,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <Text style={styles.newsInputLabel}>📝 Titolo *</Text>
             <TextInput
               style={styles.newsInput}
-              placeholder="Inserisci il titolo della news..."
+              placeholder={t('tournaments.newsTitle', 'Enter news title...')}
               value={newsForm.title}
               onChangeText={(text) => setNewsForm(prev => ({ ...prev, title: text }))}
               placeholderTextColor="#999"
@@ -3298,7 +3316,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <Text style={styles.newsInputLabel}>📄 Descrizione</Text>
             <TextInput
               style={[styles.newsInput, styles.newsTextArea]}
-              placeholder="Inserisci la descrizione della news..."
+              placeholder={t('tournaments.newsDescription', 'Enter news description...')}
               value={newsForm.content}
               onChangeText={(text) => setNewsForm(prev => ({ ...prev, content: text }))}
               placeholderTextColor="#999"
@@ -3413,8 +3431,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         match={selectedRugbyMatch}
         homePlayers={homeTeamPlayers}
         awayPlayers={awayTeamPlayers}
-        homeTeamName={teams.find(t => t.id === selectedRugbyMatch?.home_team_id)?.name || 'Casa'}
-        awayTeamName={teams.find(t => t.id === selectedRugbyMatch?.away_team_id)?.name || 'Ospite'}
+        homeTeamName={teams.find(t => t.id === selectedRugbyMatch?.home_team_id)?.name || t('matches.homeTeam', 'Home')}
+        awayTeamName={teams.find(t => t.id === selectedRugbyMatch?.away_team_id)?.name || t('matches.awayTeam', 'Away')}
         gameFormat={tournament?.game_format || '15v15'}
         onSave={(updatedMatch) => {
           // Only update local state, don't close modal
@@ -3617,7 +3635,7 @@ function TeamRatingsAccordion({
                     onPress={() => openRatingPicker(player.id, player.name)}
                   >
                     <Ionicons name={hasRating ? "pencil" : "add"} size={14} color="#FFF" />
-                    <Text style={styles.votoBtnText}>{hasRating ? 'Modifica' : 'Voto'}</Text>
+                    <Text style={styles.votoBtnText}>{hasRating ? t('common.edit') : 'Voto'}</Text>
                   </TouchableOpacity>
                   <Ionicons 
                     name={hasRating ? "checkbox" : "checkbox-outline"} 
@@ -3709,7 +3727,7 @@ function ResultInput({ match, homeTeam, awayTeam, onSave }: any) {
 
   const handleSave = async () => {
     const hg = parseInt(homeGoals); const ag = parseInt(awayGoals);
-    if (isNaN(hg) || isNaN(ag) || hg < 0 || ag < 0) { Alert.alert('Errore', 'Risultati validi'); return; }
+    if (isNaN(hg) || isNaN(ag) || hg < 0 || ag < 0) { Alert.alert(t('common.error'), 'Risultati validi'); return; }
     setLoading(true); await onSave(match, hg, ag); setLoading(false);
   };
 
@@ -3727,7 +3745,7 @@ function ResultInput({ match, homeTeam, awayTeam, onSave }: any) {
           <Text style={styles.resultTeamName}>{awayTeam}</Text>
         </View>
       </View>
-      <Button title="Salva" onPress={handleSave} loading={loading} size="small" />
+      <Button title=t('common.save') onPress={handleSave} loading={loading} size="small" />
     </View>
   );
 }

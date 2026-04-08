@@ -15,6 +15,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -45,6 +46,7 @@ interface HighlightsTabProps {
 }
 
 export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps) {
+  const { t } = useTranslation();
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [code, setCode] = useState('');
@@ -141,7 +143,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
 
   const handleVerifyCode = async () => {
     if (!code.trim()) {
-      setCodeError('Inserisci il codice');
+      setCodeError(t('highlights.enterCode'));
       return;
     }
 

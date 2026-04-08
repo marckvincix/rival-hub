@@ -17,6 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
 import { Video, ResizeMode, AVPlaybackStatus } from 'expo-av';
+import { useTranslation } from 'react-i18next';
 import api from '../utils/api';
 import { TermsModal } from './TermsModal';
 
@@ -68,6 +69,7 @@ export function HighlightsUploadModal({
   tournamentId,
   rounds,
 }: HighlightsUploadModalProps) {
+  const { t } = useTranslation();
   const [selectedRound, setSelectedRound] = useState('');
   const [showRoundDropdown, setShowRoundDropdown] = useState(false);
   const [roundsWithContent, setRoundsWithContent] = useState<RoundsWithContent>({});
@@ -117,7 +119,7 @@ export function HighlightsUploadModal({
 
   const handleRegenerateCode = async () => {
     Alert.alert(
-      'Rigenera Codice',
+      t('highlights.regenerateCode'),
       'Rigenerando il codice, chi aveva il vecchio codice non potrà più accedere. Continuare?',
       [
         { text: 'Annulla', style: 'cancel' },
@@ -128,9 +130,9 @@ export function HighlightsUploadModal({
             try {
               const res = await api.post(`/api/tournaments/${tournamentId}/highlights-code/regenerate`);
               setHighlightsCode(res.data.code);
-              Alert.alert('Successo', 'Codice rigenerato con successo');
+              Alert.alert(t('common.success'), 'Codice rigenerato con successo');
             } catch (error) {
-              Alert.alert('Errore', 'Impossibile rigenerare il codice');
+              Alert.alert(t('common.error'), 'Impossibile rigenerare il codice');
             }
           },
         },
@@ -177,11 +179,11 @@ export function HighlightsUploadModal({
 
   const handlePickPhoto = async () => {
     if (!selectedRound) {
-      Alert.alert('Errore', 'Seleziona prima una giornata');
+      Alert.alert(t('common.error'), t('highlights.selectRoundFirst'));
       return;
     }
     if (!termsAccepted) {
-      Alert.alert('Errore', 'Devi accettare i Termini e Condizioni');
+      Alert.alert(t('common.error'), t('highlights.termsRequired'));
       return;
     }
     if (!checkLimits('photo')) return;
@@ -202,11 +204,11 @@ export function HighlightsUploadModal({
 
   const handlePickVideo = async () => {
     if (!selectedRound) {
-      Alert.alert('Errore', 'Seleziona prima una giornata');
+      Alert.alert(t('common.error'), t('highlights.selectRoundFirst'));
       return;
     }
     if (!termsAccepted) {
-      Alert.alert('Errore', 'Devi accettare i Termini e Condizioni');
+      Alert.alert(t('common.error'), t('highlights.termsRequired'));
       return;
     }
     if (!checkLimits('video')) return;
@@ -228,7 +230,7 @@ export function HighlightsUploadModal({
     compress: boolean = false
   ) => {
     setUploading(true);
-    setUploadProgress(compress ? 'Compressione in corso...' : 'Caricamento in corso...');
+    setUploadProgress(compress ? t('highlights.compressionInProgress') : t('highlights.uploadInProgress'));
 
     try {
       const fileSizeMB = (asset.fileSize || 0) / (1024 * 1024);
@@ -237,7 +239,7 @@ export function HighlightsUploadModal({
       if (fileSizeMB > maxSize && !compress) {
         setUploading(false);
         Alert.alert(
-          'File troppo grande',
+          t('highlights.fileTooLarge'),
           `Il file supera ${maxSize}MB. Vuoi comprimerlo?`,
           [
             { text: 'Scegli altro', style: 'cancel' },
@@ -276,7 +278,7 @@ export function HighlightsUploadModal({
       if (response.data.needs_compression) {
         setUploading(false);
         Alert.alert(
-          'File troppo grande',
+          t('highlights.fileTooLarge'),
           `Il file supera ${response.data.max_size_mb}MB. Vuoi comprimerlo?`,
           [
             { text: 'Scegli altro', style: 'cancel' },
@@ -286,11 +288,11 @@ export function HighlightsUploadModal({
         return;
       }
 
-      Alert.alert('Successo', 'Contenuto caricato con successo!');
+      Alert.alert(t('common.success'), 'Contenuto caricato con successo!');
       loadData();
     } catch (error: any) {
-      const message = error.response?.data?.detail || 'Errore durante il caricamento';
-      Alert.alert('Errore', message);
+      const message = error.response?.data?.detail || t('highlights.uploadError');
+      Alert.alert(t('common.error'), message);
     } finally {
       setUploading(false);
       setUploadProgress('');
@@ -490,7 +492,7 @@ export function HighlightsUploadModal({
               <Ionicons name="image" size={24} color={counts.photos >= MAX_PHOTOS ? '#999' : '#000'} />
               <View style={styles.uploadButtonContent}>
                 <Text style={[styles.uploadButtonTitle, counts.photos >= MAX_PHOTOS && styles.uploadButtonTitleDisabled]}>
-                  {counts.photos >= MAX_PHOTOS ? 'Limite foto raggiunto' : 'Carica Foto'}
+                  {counts.photos >= MAX_PHOTOS ? 'Limite foto raggiunto' : t('highlights.uploadPhoto')}
                 </Text>
                 <Text style={styles.uploadButtonSubtitle}>JPG, PNG · Max 10MB</Text>
               </View>
@@ -508,7 +510,7 @@ export function HighlightsUploadModal({
               <Ionicons name="videocam" size={24} color={counts.videos >= MAX_VIDEOS ? '#999' : '#000'} />
               <View style={styles.uploadButtonContent}>
                 <Text style={[styles.uploadButtonTitle, counts.videos >= MAX_VIDEOS && styles.uploadButtonTitleDisabled]}>
-                  {counts.videos >= MAX_VIDEOS ? 'Limite video raggiunto' : 'Carica Video'}
+                  {counts.videos >= MAX_VIDEOS ? 'Limite video raggiunto' : t('highlights.uploadVideo')}
                 </Text>
                 <Text style={styles.uploadButtonSubtitle}>MP4, MOV · Max 30 sec · Max 100MB</Text>
               </View>
