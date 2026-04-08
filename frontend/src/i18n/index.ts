@@ -1,5 +1,5 @@
 import i18n from 'i18next';
-import { initReactI18next } from 'react-i18next';
+import { initReactI18next, useTranslation } from 'react-i18next';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { I18nManager, Platform } from 'react-native';
 
@@ -11,6 +11,9 @@ import de from './locales/de.json';
 import es from './locales/es.json';
 import pt from './locales/pt.json';
 import ar from './locales/ar.json';
+
+// Re-export useTranslation for easy import
+export { useTranslation };
 
 export const LANGUAGE_STORAGE_KEY = '@rival_hub_language';
 export const LANGUAGE_SELECTED_KEY = '@rival_hub_language_selected';
