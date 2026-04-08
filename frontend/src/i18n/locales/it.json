@@ -69,7 +69,11 @@
     "selectDate": "Seleziona Data",
     "autoSave": "Salvataggio automatico",
     "autoSaveActive": "Salvataggio automatico attivo",
-    "datePlaceholder": "GG/MM/AAAA"
+    "datePlaceholder": "GG/MM/AAAA",
+    "name": "Nome",
+    "info": "Info",
+    "share": "Condividi",
+    "more": "altre"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -188,7 +192,12 @@
     "roster": "Rosa",
     "starters": "Titolari",
     "bench": "Panchina",
-    "publicLink": "Link Pubblico"
+    "publicLink": "Link Pubblico",
+    "category": "Categoria",
+    "format": "Formato",
+    "startDate": "Data inizio",
+    "inProgress": "In corso",
+    "pending": "In attesa"
   },
   "teams": {
     "title": "Squadre",
@@ -498,6 +507,7 @@
     "ratings": "Voti",
     "quickRatings": "Voti rapidi",
     "scorers": "Marcatori",
+    "topScorers": "Marcatori",
     "yellowCardsLong": "Cartellini Gialli",
     "redCardsLong": "Cartellini Rossi",
     "standings": "Classifica",

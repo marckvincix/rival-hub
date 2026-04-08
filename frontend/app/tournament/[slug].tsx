@@ -21,6 +21,7 @@ import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player, Sport, getSportEmoji } from '../../src/types';
+import { useTranslation } from '../../src/i18n';
 
 type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info' | 'highlights';
 
@@ -28,6 +29,7 @@ export default function TournamentPublicPage() {
   const router = useRouter();
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { user } = useAuthStore();
+  const { t, i18n } = useTranslation();
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -132,7 +134,7 @@ export default function TournamentPublicPage() {
   };
 
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
-  const getStatusLabel = (status: string) => status === 'active' ? 'In corso' : status === 'completed' ? 'Terminato' : 'Bozza';
+  const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
   
@@ -288,15 +290,15 @@ export default function TournamentPublicPage() {
   };
 
   const tabs: { id: TabId; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-    { id: 'standings', label: 'Classifica', icon: 'podium-outline' },
+    { id: 'standings', label: t('stats.standings', 'Standings'), icon: 'podium-outline' },
     { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
     { id: 'matches', label: 'Partite', icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
     // Hide "Marcatori" for Tennis/Padel
-    ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: 'Marcatori', icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
+    ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: t('soccer.topScorers', 'Scorers'), icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
     { id: 'highlights', label: 'Highlights', icon: 'film-outline' },
     { id: 'news', label: 'News', icon: 'newspaper-outline' },
-    { id: 'info', label: 'Info', icon: 'information-circle-outline' },
+    { id: 'info', label: t('common.info', 'Info'), icon: 'information-circle-outline' },
   ];
 
   const matchesByRound = matches.reduce((acc, match) => {
@@ -827,22 +829,22 @@ export default function TournamentPublicPage() {
         {activeTab === 'info' && (
           <View style={styles.tabContent}>
             <View style={styles.infoCard}>
-              <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Nome</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
-              <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Categoria</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
+              <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('common.name', 'Name')}</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
+              <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.category', 'Category')}</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Formato</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
-              {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Data inizio</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString('it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
+              {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.startDate', 'Start date')}</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
               <View style={styles.infoRow}>
                 <View style={[styles.statusDot, { backgroundColor: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]} />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Stato</Text>
+                  <Text style={styles.infoLabel}>{t('tournaments.status')}</Text>
                   <Text style={[styles.infoValue, { color: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]}>
-                    {tournament.status === 'active' ? 'In corso' : tournament.status === 'completed' ? 'Terminato' : 'In attesa'}
+                    {tournament.status === 'active' ? t('tournaments.inProgress', 'In progress') : tournament.status === 'completed' ? t('tournaments.completed') : t('tournaments.pending', 'Pending')}
                   </Text>
                 </View>
               </View>
-              {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Luogo</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
+              {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.location')}</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
             </View>
-            <Text style={styles.teamsTitle}>Squadre ({teams.length})</Text>
+            <Text style={styles.teamsTitle}>{t('teams.title')} ({teams.length})</Text>
             <View style={styles.teamsList}>
               {teams.map((team) => (
                 <View key={team.id} style={styles.teamItem}>
@@ -853,7 +855,7 @@ export default function TournamentPublicPage() {
             </View>
             <TouchableOpacity style={styles.shareBar} onPress={handleShare}>
               <Ionicons name="share-social" size={20} color="#FFF" />
-              <Text style={styles.shareBarText}>Condividi</Text>
+              <Text style={styles.shareBarText}>{t('common.share', 'Share')}</Text>
             </TouchableOpacity>
           </View>
         )}

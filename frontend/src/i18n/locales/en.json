@@ -69,7 +69,11 @@
     "selectDate": "Select Date",
     "autoSave": "Auto-save",
     "autoSaveActive": "Auto-save active",
-    "datePlaceholder": "DD/MM/YYYY"
+    "datePlaceholder": "DD/MM/YYYY",
+    "name": "Name",
+    "info": "Info",
+    "share": "Share",
+    "more": "more"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -188,7 +192,12 @@
     "roster": "Roster",
     "starters": "Starters",
     "bench": "Bench",
-    "publicLink": "Public Link"
+    "publicLink": "Public Link",
+    "category": "Category",
+    "format": "Format",
+    "startDate": "Start date",
+    "inProgress": "In progress",
+    "pending": "Pending"
   },
   "teams": {
     "title": "Teams",
@@ -497,6 +506,7 @@
     "ratings": "Ratings",
     "quickRatings": "Quick ratings",
     "scorers": "Scorers",
+    "topScorers": "Scorers",
     "yellowCardsLong": "Yellow Cards",
     "redCardsLong": "Red Cards",
     "standings": "Standings",

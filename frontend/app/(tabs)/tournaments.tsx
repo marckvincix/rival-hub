@@ -453,7 +453,7 @@ export default function TournamentsScreen() {
               ))}
             </View>
 
-            <Text style={styles.inputLabel}>Formato</Text>
+            <Text style={styles.inputLabel}>{t('tournaments.format', 'Format')}</Text>
             <View style={styles.formatContainer}>
               {FORMATS.map((format) => (
                 <TouchableOpacity key={format.value} style={[styles.formatOption, formData.format === format.value && styles.formatSelected]} onPress={() => setFormData({ ...formData, format: format.value })}>
