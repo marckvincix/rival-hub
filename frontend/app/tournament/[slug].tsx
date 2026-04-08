@@ -291,10 +291,10 @@ export default function TournamentPublicPage() {
     { id: 'standings', label: 'Classifica', icon: 'podium-outline' },
     { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
     { id: 'matches', label: 'Partite', icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
-    { id: 'highlights', label: 'Highlights', icon: 'film-outline' },
     // Hide "Marcatori" for Tennis/Padel
     ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: 'Marcatori', icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
+    { id: 'highlights', label: 'Highlights', icon: 'film-outline' },
     { id: 'news', label: 'News', icon: 'newspaper-outline' },
     { id: 'info', label: 'Info', icon: 'information-circle-outline' },
   ];

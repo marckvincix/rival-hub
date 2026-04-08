@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -53,6 +53,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
   const [highlights, setHighlights] = useState<RoundSummary[]>([]);
+  const [checkedStorage, setCheckedStorage] = useState(false);
   
   // Lightbox state
   const [showLightbox, setShowLightbox] = useState(false);
@@ -62,38 +63,58 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
   const [showVideoPlayer, setShowVideoPlayer] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<Highlight | null>(null);
 
-  // Check if code is stored locally
+  // Storage key specific to each tournament
+  const STORAGE_KEY = `highlights_unlocked_${tournamentId}`;
+
+  // Check if already unlocked on mount
   useEffect(() => {
-    checkStoredCode();
+    checkStoredUnlock();
   }, [tournamentId]);
 
-  const checkStoredCode = async () => {
+  const checkStoredUnlock = async () => {
     try {
-      const storedCode = await AsyncStorage.getItem(`highlights_code_${tournamentId}`);
-      if (storedCode || isOrganizer) {
+      // Organizer always has access
+      if (isOrganizer) {
         setIsUnlocked(true);
-        loadHighlights(storedCode || undefined);
+        loadHighlights();
+        setCheckedStorage(true);
+        return;
+      }
+      
+      // Check if user has previously unlocked this tournament's highlights
+      const unlocked = await AsyncStorage.getItem(STORAGE_KEY);
+      
+      if (unlocked === 'true') {
+        // User has previously unlocked - grant direct access
+        setIsUnlocked(true);
+        loadHighlights();
       } else {
+        // User hasn't unlocked - show modal
         setLoading(false);
         setShowCodeModal(true);
       }
+      setCheckedStorage(true);
     } catch (error) {
+      console.error('Error checking stored unlock:', error);
       setLoading(false);
       setShowCodeModal(true);
+      setCheckedStorage(true);
     }
   };
 
-  const loadHighlights = async (accessCode?: string) => {
+  const loadHighlights = async () => {
     try {
       setLoading(true);
-      const params = accessCode ? `?code=${accessCode}` : '';
-      const response = await api.get(`/api/tournaments/${tournamentId}/highlights${params}`);
+      // For organizer, no code needed. For unlocked users, the backend allows access.
+      const response = await api.get(`/api/tournaments/${tournamentId}/highlights`);
       setHighlights(response.data || []);
     } catch (error: any) {
+      console.error('Error loading highlights:', error);
       if (error.response?.status === 401) {
+        // Access revoked - clear unlock status and show modal
         setIsUnlocked(false);
         setShowCodeModal(true);
-        await AsyncStorage.removeItem(`highlights_code_${tournamentId}`);
+        await AsyncStorage.removeItem(STORAGE_KEY);
       }
     } finally {
       setLoading(false);
@@ -114,12 +135,12 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         code: code.trim().toUpperCase()
       });
       
-      // Store code locally
-      await AsyncStorage.setItem(`highlights_code_${tournamentId}`, code.trim().toUpperCase());
+      // Store unlock status persistently - never expires
+      await AsyncStorage.setItem(STORAGE_KEY, 'true');
       
       setIsUnlocked(true);
       setShowCodeModal(false);
-      loadHighlights(code.trim().toUpperCase());
+      loadHighlights();
     } catch (error: any) {
       setCodeError(error.response?.data?.detail || 'Codice non valido. Riprova.');
     } finally {
@@ -141,6 +162,16 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
     const baseUrl = api.defaults.baseURL || '';
     return `${baseUrl}${highlight.file_url}`;
   };
+
+  // Wait until we've checked storage before rendering
+  if (!checkedStorage) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#000" />
+        <Text style={styles.loadingText}>Caricamento...</Text>
+      </View>
+    );
+  }
 
   // Locked view - show code input modal
   if (!isUnlocked && !isOrganizer) {
@@ -282,7 +313,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
                     style={styles.videoItem}
                     onPress={() => openVideo(video)}
                   >
-                    <View style={styles.videoThumbnail}>
+                    <View style={styles.videoThumbnailBox}>
                       <Ionicons name="play-circle" size={40} color="#FFF" />
                     </View>
                     <View style={styles.videoInfo}>
@@ -312,10 +343,12 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
       >
         <View style={styles.lightboxContainer}>
           <TouchableOpacity
-            style={styles.lightboxClose}
+            style={styles.closeButtonOverlay}
             onPress={() => setShowLightbox(false)}
           >
-            <Ionicons name="close" size={32} color="#FFF" />
+            <View style={styles.closeButtonCircle}>
+              <Ionicons name="close" size={24} color="#FFF" />
+            </View>
           </TouchableOpacity>
           
           {selectedImage && (
@@ -337,10 +370,12 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
       >
         <View style={styles.videoPlayerContainer}>
           <TouchableOpacity
-            style={styles.videoPlayerClose}
+            style={styles.closeButtonOverlay}
             onPress={() => setShowVideoPlayer(false)}
           >
-            <Ionicons name="close" size={32} color="#FFF" />
+            <View style={styles.closeButtonCircle}>
+              <Ionicons name="close" size={24} color="#FFF" />
+            </View>
           </TouchableOpacity>
           
           {selectedVideo && (
@@ -542,7 +577,7 @@ const styles = StyleSheet.create({
     padding: 12,
     gap: 12,
   },
-  videoThumbnail: {
+  videoThumbnailBox: {
     width: 60,
     height: 60,
     borderRadius: 8,
@@ -569,12 +604,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  lightboxClose: {
+  closeButtonOverlay: {
     position: 'absolute',
     top: 50,
     right: 20,
     zIndex: 10,
-    padding: 8,
+  },
+  closeButtonCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   lightboxImage: {
     width: SCREEN_WIDTH,
@@ -585,13 +627,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  videoPlayerClose: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    padding: 8,
   },
   videoPlayer: {
     width: SCREEN_WIDTH,

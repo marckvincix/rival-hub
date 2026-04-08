@@ -9,18 +9,24 @@ import {
   Alert,
   ActivityIndicator,
   Platform,
+  Image,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as Clipboard from 'expo-clipboard';
+import { Video, ResizeMode } from 'expo-av';
 import api from '../utils/api';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const IMAGE_SIZE = (SCREEN_WIDTH - 64) / 3;
 
 interface HighlightsUploadModalProps {
   visible: boolean;
   onClose: () => void;
   tournamentId: string;
-  rounds: string[];  // Available rounds (Giornata 1, Giornata 2, etc.)
+  rounds: string[];
 }
 
 interface RoundsWithContent {
@@ -28,6 +34,25 @@ interface RoundsWithContent {
     photo_count: number;
     video_count: number;
   };
+}
+
+interface Highlight {
+  id: string;
+  tournament_id: string;
+  round: string;
+  file_type: 'photo' | 'video';
+  file_url: string;
+  file_name: string;
+  file_size: number;
+  duration_seconds?: number;
+  created_at: string;
+}
+
+interface RoundSummary {
+  round: string;
+  photo_count: number;
+  video_count: number;
+  highlights: Highlight[];
 }
 
 const MAX_PHOTOS = 10;
@@ -51,6 +76,17 @@ export function HighlightsUploadModal({
   const [uploadProgress, setUploadProgress] = useState('');
   const [showCodeSection, setShowCodeSection] = useState(false);
   const [loading, setLoading] = useState(true);
+  
+  // Highlights list for organizer view
+  const [highlights, setHighlights] = useState<RoundSummary[]>([]);
+  
+  // Lightbox state
+  const [showLightbox, setShowLightbox] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<Highlight | null>(null);
+  
+  // Video player state
+  const [showVideoPlayer, setShowVideoPlayer] = useState(false);
+  const [selectedVideo, setSelectedVideo] = useState<Highlight | null>(null);
 
   useEffect(() => {
     if (visible) {
@@ -68,6 +104,10 @@ export function HighlightsUploadModal({
       // Load rounds with content
       const roundsRes = await api.get(`/api/tournaments/${tournamentId}/highlights/rounds-with-content`);
       setRoundsWithContent(roundsRes.data || {});
+      
+      // Load all highlights (organizer doesn't need code)
+      const highlightsRes = await api.get(`/api/tournaments/${tournamentId}/highlights`);
+      setHighlights(highlightsRes.data || []);
     } catch (error) {
       console.error('Error loading highlights data:', error);
     } finally {
@@ -191,7 +231,6 @@ export function HighlightsUploadModal({
     setUploadProgress(compress ? 'Compressione in corso...' : 'Caricamento in corso...');
 
     try {
-      // Check file size
       const fileSizeMB = (asset.fileSize || 0) / (1024 * 1024);
       const maxSize = fileType === 'photo' ? MAX_PHOTO_SIZE_MB : MAX_VIDEO_SIZE_MB;
 
@@ -211,7 +250,6 @@ export function HighlightsUploadModal({
         return;
       }
 
-      // Prepare form data
       const formData = new FormData();
       formData.append('round', selectedRound);
       formData.append('file_type', fileType);
@@ -259,7 +297,7 @@ export function HighlightsUploadModal({
       }
 
       Alert.alert('Successo', 'Contenuto caricato con successo!');
-      loadData(); // Refresh counts
+      loadData(); // Refresh counts and highlights list
     } catch (error: any) {
       const message = error.response?.data?.detail || 'Errore durante il caricamento';
       Alert.alert('Errore', message);
@@ -283,6 +321,21 @@ export function HighlightsUploadModal({
       photos: content?.photo_count || 0,
       videos: content?.video_count || 0,
     };
+  };
+  
+  const getFileUrl = (highlight: Highlight) => {
+    const baseUrl = api.defaults.baseURL || '';
+    return `${baseUrl}${highlight.file_url}`;
+  };
+  
+  const openPhoto = (highlight: Highlight) => {
+    setSelectedImage(highlight);
+    setShowLightbox(true);
+  };
+
+  const openVideo = (highlight: Highlight) => {
+    setSelectedVideo(highlight);
+    setShowVideoPlayer(true);
   };
 
   if (loading) {
@@ -308,7 +361,7 @@ export function HighlightsUploadModal({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Carica Highlights</Text>
+          <Text style={styles.headerTitle}>Gestisci Highlights</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -356,7 +409,9 @@ export function HighlightsUploadModal({
 
           {/* Round Selector */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Seleziona Giornata</Text>
+            <Text style={styles.sectionTitle}>Carica Nuovi Contenuti</Text>
+            
+            <Text style={styles.inputLabel}>Seleziona Giornata</Text>
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setShowRoundDropdown(!showRoundDropdown)}
@@ -415,9 +470,7 @@ export function HighlightsUploadModal({
           )}
 
           {/* Upload Buttons */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Carica Contenuti</Text>
-
+          <View style={styles.uploadSection}>
             <TouchableOpacity
               style={[
                 styles.uploadButton,
@@ -476,9 +529,134 @@ export function HighlightsUploadModal({
               <Text style={styles.progressText}>{uploadProgress}</Text>
             </View>
           )}
+          
+          {/* Existing Highlights - Organizer View */}
+          {highlights.length > 0 && (
+            <View style={styles.existingSection}>
+              <Text style={styles.sectionTitle}>Contenuti Caricati</Text>
+              
+              {highlights.map((roundData) => (
+                <View key={roundData.round} style={styles.roundSection}>
+                  <View style={styles.roundHeader}>
+                    <Text style={styles.roundTitle}>{roundData.round}</Text>
+                    <Text style={styles.roundStats}>
+                      {roundData.photo_count} foto · {roundData.video_count} video
+                    </Text>
+                  </View>
+
+                  {/* Photos Grid */}
+                  {roundData.highlights.filter(h => h.file_type === 'photo').length > 0 && (
+                    <View style={styles.photosGrid}>
+                      {roundData.highlights
+                        .filter(h => h.file_type === 'photo')
+                        .map((photo) => (
+                          <TouchableOpacity
+                            key={photo.id}
+                            style={styles.photoThumbnail}
+                            onPress={() => openPhoto(photo)}
+                          >
+                            <Image
+                              source={{ uri: getFileUrl(photo) }}
+                              style={styles.photoImage}
+                              resizeMode="cover"
+                            />
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  )}
+
+                  {/* Videos List */}
+                  {roundData.highlights.filter(h => h.file_type === 'video').length > 0 && (
+                    <View style={styles.videosList}>
+                      {roundData.highlights
+                        .filter(h => h.file_type === 'video')
+                        .map((video) => (
+                          <TouchableOpacity
+                            key={video.id}
+                            style={styles.videoItem}
+                            onPress={() => openVideo(video)}
+                          >
+                            <View style={styles.videoThumbnail}>
+                              <Ionicons name="play-circle" size={32} color="#FFF" />
+                            </View>
+                            <View style={styles.videoInfo}>
+                              <Text style={styles.videoName} numberOfLines={1}>
+                                {video.file_name}
+                              </Text>
+                              {video.duration_seconds && (
+                                <Text style={styles.videoDuration}>
+                                  {Math.floor(video.duration_seconds)}s
+                                </Text>
+                              )}
+                            </View>
+                            <Ionicons name="chevron-forward" size={20} color="#999" />
+                          </TouchableOpacity>
+                        ))}
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          )}
 
           <View style={{ height: 40 }} />
         </ScrollView>
+        
+        {/* Image Lightbox */}
+        <Modal
+          visible={showLightbox}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setShowLightbox(false)}
+        >
+          <View style={styles.lightboxContainer}>
+            <TouchableOpacity
+              style={styles.closeButtonOverlay}
+              onPress={() => setShowLightbox(false)}
+            >
+              <View style={styles.closeButtonCircle}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </View>
+            </TouchableOpacity>
+            
+            {selectedImage && (
+              <Image
+                source={{ uri: getFileUrl(selectedImage) }}
+                style={styles.lightboxImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+        </Modal>
+
+        {/* Video Player Modal */}
+        <Modal
+          visible={showVideoPlayer}
+          animationType="fade"
+          transparent
+          onRequestClose={() => setShowVideoPlayer(false)}
+        >
+          <View style={styles.videoPlayerContainer}>
+            <TouchableOpacity
+              style={styles.closeButtonOverlay}
+              onPress={() => setShowVideoPlayer(false)}
+            >
+              <View style={styles.closeButtonCircle}>
+                <Ionicons name="close" size={24} color="#FFF" />
+              </View>
+            </TouchableOpacity>
+            
+            {selectedVideo && (
+              <Video
+                source={{ uri: getFileUrl(selectedVideo) }}
+                style={styles.videoPlayer}
+                useNativeControls
+                resizeMode={ResizeMode.CONTAIN}
+                shouldPlay
+              />
+            )}
+          </View>
+        </Modal>
       </SafeAreaView>
     </Modal>
   );
@@ -601,13 +779,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   section: {
-    marginBottom: 20,
+    marginBottom: 16,
   },
   sectionTitle: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
     color: '#000',
     marginBottom: 12,
+  },
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#666',
+    marginBottom: 8,
   },
   dropdown: {
     flexDirection: 'row',
@@ -654,7 +838,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 24,
-    marginBottom: 20,
+    marginBottom: 16,
   },
   countItem: {
     flexDirection: 'row',
@@ -664,6 +848,9 @@ const styles = StyleSheet.create({
   countText: {
     fontSize: 13,
     color: '#666',
+  },
+  uploadSection: {
+    marginBottom: 16,
   },
   uploadButton: {
     flexDirection: 'row',
@@ -697,7 +884,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: 12,
-    marginTop: 8,
+    marginBottom: 16,
   },
   checkbox: {
     width: 24,
@@ -729,11 +916,117 @@ const styles = StyleSheet.create({
     backgroundColor: '#F0F0F0',
     borderRadius: 12,
     padding: 16,
-    marginTop: 16,
     gap: 12,
   },
   progressText: {
     fontSize: 14,
     color: '#333',
+  },
+  existingSection: {
+    marginTop: 24,
+    paddingTop: 24,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  roundSection: {
+    marginBottom: 20,
+  },
+  roundHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  roundTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#000',
+  },
+  roundStats: {
+    fontSize: 12,
+    color: '#666',
+  },
+  photosGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 4,
+    marginBottom: 12,
+  },
+  photoThumbnail: {
+    width: IMAGE_SIZE,
+    height: IMAGE_SIZE,
+    borderRadius: 8,
+    overflow: 'hidden',
+    backgroundColor: '#F0F0F0',
+  },
+  photoImage: {
+    width: '100%',
+    height: '100%',
+  },
+  videosList: {
+    gap: 8,
+  },
+  videoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
+    padding: 12,
+    gap: 12,
+  },
+  videoThumbnail: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    backgroundColor: '#333',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoInfo: {
+    flex: 1,
+  },
+  videoName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
+  },
+  videoDuration: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 2,
+  },
+  lightboxContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeButtonOverlay: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+  },
+  closeButtonCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  lightboxImage: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT - 100,
+  },
+  videoPlayerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  videoPlayer: {
+    width: SCREEN_WIDTH,
+    height: SCREEN_HEIGHT - 100,
   },
 });
