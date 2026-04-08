@@ -3369,11 +3369,19 @@ async def get_highlights(
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
     
+    # Generate highlights_code if it doesn't exist (for old tournaments)
+    stored_code = tournament.get("highlights_code", "")
+    if not stored_code:
+        stored_code = generate_highlights_code()
+        await db.tournaments.update_one(
+            {"id": tournament_id},
+            {"$set": {"highlights_code": stored_code}}
+        )
+    
     # Check access: organizer always has access, others need valid code
     is_organizer = current_user and tournament["organizer_id"] == current_user.user_id
     
     if not is_organizer:
-        stored_code = tournament.get("highlights_code", "")
         if not code or code.upper() != stored_code.upper():
             raise HTTPException(status_code=401, detail="Accesso non autorizzato")
     

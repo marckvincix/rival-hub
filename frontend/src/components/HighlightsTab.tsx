@@ -110,9 +110,10 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
       // Get stored code if not provided
       let codeToUse = accessCode;
       if (!codeToUse && !isOrganizer) {
-        codeToUse = await AsyncStorage.getItem(STORAGE_KEY) === 'true' 
-          ? await AsyncStorage.getItem(`highlights_code_${tournamentId}`) || undefined
-          : undefined;
+        const isUnlockedStored = await AsyncStorage.getItem(STORAGE_KEY);
+        const storedCode = await AsyncStorage.getItem(`highlights_code_${tournamentId}`);
+        console.log('loadHighlights - isUnlockedStored:', isUnlockedStored, 'storedCode:', storedCode);
+        codeToUse = isUnlockedStored === 'true' ? storedCode || undefined : undefined;
       }
       
       // Build URL with code if needed
@@ -120,10 +121,12 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         ? `/api/tournaments/${tournamentId}/highlights?code=${codeToUse}`
         : `/api/tournaments/${tournamentId}/highlights`;
       
+      console.log('loadHighlights - calling URL:', url);
       const response = await api.get(url);
+      console.log('loadHighlights - response:', response.data?.length || 0, 'highlights');
       setHighlights(response.data || []);
     } catch (error: any) {
-      console.error('Error loading highlights:', error);
+      console.error('loadHighlights Error:', error.response?.status, error.response?.data);
       if (error.response?.status === 401) {
         // Access revoked - clear unlock status and show modal
         setIsUnlocked(false);
