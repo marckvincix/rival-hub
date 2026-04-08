@@ -379,7 +379,7 @@ export function HighlightsUploadModal({
           <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <Ionicons name="close" size={24} color="#000" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Gestisci Highlights</Text>
+          <Text style={styles.headerTitle}>{t('highlights.manageHighlights', 'Manage Highlights')}</Text>
           <View style={{ width: 40 }} />
         </View>
 
@@ -390,7 +390,7 @@ export function HighlightsUploadModal({
           >
             <View style={styles.codeSectionHeader}>
               <Ionicons name="key" size={20} color="#000" />
-              <Text style={styles.codeSectionTitle}>Codice Accesso Highlights</Text>
+              <Text style={styles.codeSectionTitle}>{t('highlights.accessCode', 'Highlights Access Code')}</Text>
               <Ionicons
                 name={showCodeSection ? 'chevron-up' : 'chevron-down'}
                 size={20}
@@ -401,39 +401,39 @@ export function HighlightsUploadModal({
 
           {showCodeSection && (
             <View style={styles.codeContent}>
-              <Text style={styles.codeLabel}>Codice attuale:</Text>
+              <Text style={styles.codeLabel}>{t('highlights.currentCode', 'Current code:')}</Text>
               <View style={styles.codeDisplay}>
                 <Text style={styles.codeText}>{highlightsCode}</Text>
               </View>
               <View style={styles.codeActions}>
                 <TouchableOpacity style={styles.codeButton} onPress={handleCopyCode}>
                   <Ionicons name="copy" size={18} color="#FFF" />
-                  <Text style={styles.codeButtonText}>Copia codice</Text>
+                  <Text style={styles.codeButtonText}>{t('highlights.copyCode', 'Copy code')}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[styles.codeButton, styles.codeButtonOutline]}
                   onPress={handleRegenerateCode}
                 >
                   <Ionicons name="refresh" size={18} color="#000" />
-                  <Text style={styles.codeButtonTextOutline}>Rigenera</Text>
+                  <Text style={styles.codeButtonTextOutline}>{t('highlights.regenerate', 'Regenerate')}</Text>
                 </TouchableOpacity>
               </View>
               <Text style={styles.codeHint}>
-                Condividi questo codice con chi vuoi dare accesso agli Highlights
+                {t('highlights.shareCodeHint', 'Share this code with anyone you want to give Highlights access')}
               </Text>
             </View>
           )}
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Carica Nuovi Contenuti</Text>
+            <Text style={styles.sectionTitle}>{t('highlights.uploadNewContent', 'Upload New Content')}</Text>
             
-            <Text style={styles.inputLabel}>Seleziona Giornata</Text>
+            <Text style={styles.inputLabel}>{t('highlights.selectRound', 'Select Round')}</Text>
             <TouchableOpacity
               style={styles.dropdown}
               onPress={() => setShowRoundDropdown(!showRoundDropdown)}
             >
               <Text style={selectedRound ? styles.dropdownText : styles.dropdownPlaceholder}>
-                {selectedRound ? getRoundLabel(selectedRound) : 'Seleziona una giornata'}
+                {selectedRound ? getRoundLabel(selectedRound) : t('highlights.selectARound', 'Select a round')}
               </Text>
               <Ionicons
                 name={showRoundDropdown ? 'chevron-up' : 'chevron-down'}
@@ -471,11 +471,11 @@ export function HighlightsUploadModal({
             <View style={styles.countsRow}>
               <View style={styles.countItem}>
                 <Ionicons name="image" size={16} color="#666" />
-                <Text style={styles.countText}>{counts.photos}/{MAX_PHOTOS} foto</Text>
+                <Text style={styles.countText}>{counts.photos}/{MAX_PHOTOS} {t('highlights.photos', 'photos')}</Text>
               </View>
               <View style={styles.countItem}>
                 <Ionicons name="videocam" size={16} color="#666" />
-                <Text style={styles.countText}>{counts.videos}/{MAX_VIDEOS} video</Text>
+                <Text style={styles.countText}>{counts.videos}/{MAX_VIDEOS} {t('highlights.videos', 'videos')}</Text>
               </View>
             </View>
           ) : null}
@@ -545,7 +545,7 @@ export function HighlightsUploadModal({
           
           {highlights.length > 0 ? (
             <View style={styles.existingSection}>
-              <Text style={styles.sectionTitle}>Contenuti Caricati</Text>
+              <Text style={styles.sectionTitle}>{t('highlights.uploadedContent', 'Uploaded Content')}</Text>
               
               {highlights.map((roundData) => (
                 <View key={roundData.round} style={styles.roundSection}>
@@ -610,7 +610,7 @@ export function HighlightsUploadModal({
         
         <View style={styles.bottomBar}>
           <TouchableOpacity style={styles.finishButton} onPress={onClose}>
-            <Text style={styles.finishButtonText}>Fine caricamento</Text>
+            <Text style={styles.finishButtonText}>{t('highlights.doneUploading', 'Done uploading')}</Text>
           </TouchableOpacity>
         </View>
         

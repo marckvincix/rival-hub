@@ -1969,7 +1969,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   </View>
                 </View>
                 <View style={styles.settingsCard}>
-                  <Text style={styles.settingsLabel}>Link Pubblico</Text>
+                  <Text style={styles.settingsLabel}>{t('tournaments.publicLink', 'Public Link')}</Text>
                   <View style={styles.linkContainer}>
                     <Text style={styles.linkText}>/tournament/{tournament.slug}</Text>
                     <TouchableOpacity onPress={() => router.push(`/tournament/${tournament.slug}`)}>

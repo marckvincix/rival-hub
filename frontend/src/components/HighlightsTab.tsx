@@ -304,9 +304,9 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
     return (
       <View style={styles.emptyContainer}>
         <Ionicons name="film-outline" size={64} color="#CCC" />
-        <Text style={styles.emptyTitle}>Nessun Highlight</Text>
+        <Text style={styles.emptyTitle}>{t('highlights.noHighlights')}</Text>
         <Text style={styles.emptyDescription}>
-          Non ci sono ancora foto o video per questo torneo
+          {t('highlights.noContent', 'There are no photos or videos for this tournament yet')}
         </Text>
       </View>
     );
@@ -319,7 +319,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
           <View style={styles.roundHeader}>
             <Text style={styles.roundTitle}>{roundData.round}</Text>
             <Text style={styles.roundStats}>
-              {roundData.photo_count} foto · {roundData.video_count} video
+              {roundData.photo_count} {t('highlights.photos', 'photos')} · {roundData.video_count} {t('highlights.videos', 'videos')}
             </Text>
           </View>
 
@@ -418,14 +418,14 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
           {videoLoading && (
             <View style={styles.videoLoadingOverlay}>
               <ActivityIndicator size="large" color="#FFF" />
-              <Text style={styles.videoLoadingText}>Caricamento video...</Text>
+              <Text style={styles.videoLoadingText}>{t('highlights.loadingVideo', 'Loading video...')}</Text>
             </View>
           )}
           
           {videoError && (
             <View style={styles.videoErrorOverlay}>
               <Ionicons name="alert-circle" size={48} color="#FFF" />
-              <Text style={styles.videoErrorText}>Errore durante il caricamento del video</Text>
+              <Text style={styles.videoErrorText}>{t('highlights.videoError', 'Error loading video')}</Text>
               <TouchableOpacity style={styles.retryButton} onPress={() => {
                 setVideoLoading(true);
                 setVideoError(false);
