@@ -3613,6 +3613,7 @@ function TeamRatingsAccordion({
   ratings?: Record<string, number>;
   onRatingChange?: (playerId: string, rating: number) => void;
 }) {
+  const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showRatingPicker, setShowRatingPicker] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
