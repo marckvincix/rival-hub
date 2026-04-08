@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../src/store/authStore';
 import api from '../src/utils/api';
 import { Tournament, getSportEmoji } from '../src/types';
@@ -98,6 +99,7 @@ const AGE_CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'U20', 'Open', 
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuthStore();
+  const { t, i18n } = useTranslation();
   
   // Search states
   const [searchQuery, setSearchQuery] = useState('');
@@ -269,14 +271,20 @@ export default function LandingPage() {
   };
 
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const locale = i18n.language === 'it' ? 'it-IT' : 
+                   i18n.language === 'fr' ? 'fr-FR' :
+                   i18n.language === 'de' ? 'de-DE' :
+                   i18n.language === 'es' ? 'es-ES' :
+                   i18n.language === 'pt' ? 'pt-PT' :
+                   i18n.language === 'ar' ? 'ar-SA' : 'en-US';
+    return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   const features = [
-    { icon: 'trophy-outline' as const, title: 'Gestione Tornei', desc: 'Crea e gestisci tornei di qualsiasi sport' },
-    { icon: 'people-outline' as const, title: 'Squadre', desc: 'Organizza rose e statistiche' },
-    { icon: 'stats-chart-outline' as const, title: 'Classifiche', desc: 'Classifiche e risultati in tempo reale' },
-    { icon: 'newspaper-outline' as const, title: 'News', desc: 'Pubblica aggiornamenti' },
+    { icon: 'trophy-outline' as const, title: t('home.featureTournaments', 'Tournament Management'), desc: t('home.featureTournamentsDesc', 'Create and manage tournaments of any sport') },
+    { icon: 'people-outline' as const, title: t('home.featureTeams', 'Teams'), desc: t('home.featureTeamsDesc', 'Organize rosters and statistics') },
+    { icon: 'stats-chart-outline' as const, title: t('home.featureStandings', 'Standings'), desc: t('home.featureStandingsDesc', 'Real-time standings and results') },
+    { icon: 'newspaper-outline' as const, title: t('home.featureNews', 'News'), desc: t('home.featureNewsDesc', 'Publish updates') },
   ];
 
   return (
@@ -291,15 +299,15 @@ export default function LandingPage() {
             style={styles.loginButton}
             onPress={() => router.push('/(auth)/login')}
           >
-            <Text style={styles.loginButtonText}>Accedi</Text>
+            <Text style={styles.loginButtonText}>{t('auth.login')}</Text>
           </TouchableOpacity>
         </View>
 
         {/* Hero Section - New Design */}
         <View style={styles.hero}>
-          <Text style={styles.heroTitle}>Crea e gestisci i tuoi tornei</Text>
+          <Text style={styles.heroTitle}>{t('home.title')}</Text>
           <Text style={styles.heroSubtitle}>
-            La piattaforma per creare, seguire{'\n'}ed organizzare tornei sportivi
+            {t('home.subtitle')}
           </Text>
           <View style={styles.heroImageContainer}>
             <Image source={HeroIllustration} style={styles.heroImage} resizeMode="contain" />
@@ -307,14 +315,14 @@ export default function LandingPage() {
               style={styles.heroButton}
               onPress={() => router.push('/(auth)/register')}
             >
-              <Text style={styles.heroButtonText}>Inizia ora</Text>
+              <Text style={styles.heroButtonText}>{t('home.startNow')}</Text>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* Search Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Cerca Torneo</Text>
+          <Text style={styles.sectionTitle}>{t('home.searchTournament')}</Text>
           
           {/* Search by Name */}
           <View style={styles.searchContainer}>
@@ -323,7 +331,7 @@ export default function LandingPage() {
             </View>
             <TextInput
               style={styles.searchInput}
-              placeholder="Nome del torneo..."
+              placeholder={t('home.tournamentName')}
               value={searchQuery}
               onChangeText={setSearchQuery}
               placeholderTextColor="#999"
@@ -337,7 +345,7 @@ export default function LandingPage() {
             </View>
             <TextInput
               style={styles.searchInput}
-              placeholder="Città o luogo..."
+              placeholder={t('home.cityOrPlace')}
               value={locationQuery}
               onChangeText={setLocationQuery}
               placeholderTextColor="#999"
@@ -358,7 +366,7 @@ export default function LandingPage() {
               >
                 <Ionicons name="calendar-outline" size={16} color={selectedDate ? '#FFF' : '#000'} />
                 <Text style={[styles.filterChipText, selectedDate && styles.filterChipTextActive]}>
-                  {selectedDate ? formatDate(selectedDate) : 'Data'}
+                  {selectedDate ? formatDate(selectedDate) : t('home.date')}
                 </Text>
                 {selectedDate && (
                   <TouchableOpacity onPress={() => setSelectedDate(null)} style={styles.filterClearBtn}>
@@ -377,7 +385,7 @@ export default function LandingPage() {
                     {selectedSport ? SPORT_CATEGORIES[selectedSport]?.emoji : '🏆'}
                   </Text>
                   <Text style={[styles.filterChipText, selectedSport && styles.filterChipTextActive]}>
-                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.label : 'Sport'}
+                    {selectedSport ? SPORT_CATEGORIES[selectedSport]?.label : t('home.sport')}
                   </Text>
                   {selectedSport && (
                     <TouchableOpacity onPress={() => { setSelectedSport(null); setSelectedFormat(null); setSelectedCategory(null); }} style={styles.filterClearBtn}>
@@ -395,7 +403,7 @@ export default function LandingPage() {
                 >
                   <Ionicons name="grid-outline" size={16} color={selectedFormat ? '#FFF' : '#000'} />
                   <Text style={[styles.filterChipText, selectedFormat && styles.filterChipTextActive]}>
-                    {selectedFormat ? availableFormats.find(f => f.key === selectedFormat)?.label : 'Formato'}
+                    {selectedFormat ? availableFormats.find(f => f.key === selectedFormat)?.label : t('home.format', 'Format')}
                   </Text>
                   {selectedFormat && (
                     <TouchableOpacity onPress={() => setSelectedFormat(null)} style={styles.filterClearBtn}>
@@ -413,7 +421,7 @@ export default function LandingPage() {
                 >
                   <Ionicons name="flag-outline" size={16} color={selectedCategory ? '#FFF' : '#000'} />
                   <Text style={[styles.filterChipText, selectedCategory && styles.filterChipTextActive]}>
-                    {selectedCategory || 'Categoria'}
+                    {selectedCategory || t('home.category', 'Category')}
                   </Text>
                   {selectedCategory && (
                     <TouchableOpacity onPress={() => setSelectedCategory(null)} style={styles.filterClearBtn}>
@@ -427,7 +435,7 @@ export default function LandingPage() {
               {hasActiveFilters && (
                 <TouchableOpacity style={styles.resetButton} onPress={resetFilters}>
                   <Ionicons name="refresh" size={16} color="#000" />
-                  <Text style={styles.resetButtonText}>Reset</Text>
+                  <Text style={styles.resetButtonText}>{t('common.refresh', 'Reset')}</Text>
                 </TouchableOpacity>
               )}
             </ScrollView>
@@ -435,7 +443,7 @@ export default function LandingPage() {
             {/* Active filters count badge */}
             {activeFilterCount > 0 && (
               <View style={styles.activeFiltersBadge}>
-                <Text style={styles.activeFiltersBadgeText}>{activeFilterCount} filtri attivi</Text>
+                <Text style={styles.activeFiltersBadgeText}>{activeFilterCount} {t('home.activeFilters', 'active filters')}</Text>
               </View>
             )}
           </View>
@@ -444,15 +452,15 @@ export default function LandingPage() {
         {/* Public Tournaments */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Tornei Pubblici</Text>
-            <Text style={styles.resultsCount}>{filteredTournaments.length} risultati</Text>
+            <Text style={styles.sectionTitle}>{t('tournaments.publicTournaments')}</Text>
+            <Text style={styles.resultsCount}>{filteredTournaments.length} {t('home.results', 'results')}</Text>
           </View>
           
           {filteredTournaments.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="search-outline" size={48} color="#CCC" />
-              <Text style={styles.emptyStateText}>Nessun torneo trovato</Text>
-              <Text style={styles.emptyStateSubtext}>Prova a modificare i filtri di ricerca</Text>
+              <Text style={styles.emptyStateText}>{t('home.noTournaments')}</Text>
+              <Text style={styles.emptyStateSubtext}>{t('home.tryChangingFilters', 'Try changing search filters')}</Text>
             </View>
           ) : (
             filteredTournaments.map((tournament) => (
@@ -467,7 +475,7 @@ export default function LandingPage() {
                 <View style={styles.tournamentInfo}>
                   <Text style={styles.tournamentName}>{tournament.name}</Text>
                   <Text style={styles.tournamentMeta}>
-                    {tournament.category} • {tournament.location || 'Nessun luogo'}
+                    {tournament.category} • {tournament.location || t('home.noLocation', 'No location')}
                   </Text>
                 </View>
                 <View style={[
@@ -478,7 +486,7 @@ export default function LandingPage() {
                     styles.statusText,
                     tournament.status === 'active' && styles.statusTextActive
                   ]}>
-                    {tournament.status === 'active' ? 'In corso' : tournament.status === 'completed' ? 'Terminato' : 'Bozza'}
+                    {tournament.status === 'active' ? t('matches.live') : tournament.status === 'completed' ? t('tournaments.completed') : t('tournaments.draft')}
                   </Text>
                 </View>
               </TouchableOpacity>
@@ -488,7 +496,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Funzionalità</Text>
+          <Text style={styles.sectionTitle}>{t('home.features', 'Features')}</Text>
           <View style={styles.featuresGrid}>
             {features.map((feature, index) => (
               <View key={index} style={styles.featureCard}>
@@ -518,7 +526,7 @@ export default function LandingPage() {
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Seleziona Data</Text>
+                  <Text style={styles.modalTitle}>{t('home.selectDate', 'Select Date')}</Text>
                   <TouchableOpacity onPress={() => setShowDatePicker(false)}>
                     <Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
@@ -536,7 +544,7 @@ export default function LandingPage() {
                   style={styles.modalButton}
                   onPress={() => setShowDatePicker(false)}
                 >
-                  <Text style={styles.modalButtonText}>Conferma</Text>
+                  <Text style={styles.modalButtonText}>{t('common.confirm')}</Text>
                 </TouchableOpacity>
               </View>
             </View>
@@ -559,7 +567,7 @@ export default function LandingPage() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Seleziona Sport</Text>
+              <Text style={styles.modalTitle}>{t('home.selectSport', 'Select Sport')}</Text>
               <TouchableOpacity onPress={() => setShowSportPicker(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
@@ -591,7 +599,7 @@ export default function LandingPage() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Seleziona Formato</Text>
+              <Text style={styles.modalTitle}>{t('home.selectFormat', 'Select Format')}</Text>
               <TouchableOpacity onPress={() => setShowFormatPicker(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>
@@ -622,7 +630,7 @@ export default function LandingPage() {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Seleziona Categoria</Text>
+              <Text style={styles.modalTitle}>{t('home.selectCategory', 'Select Category')}</Text>
               <TouchableOpacity onPress={() => setShowCategoryPicker(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>

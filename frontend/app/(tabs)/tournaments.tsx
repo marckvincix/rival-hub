@@ -17,6 +17,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
 import { Button, EmptyState, Loading, Input, FormationModal, SportSelector } from '../../src/components';
 import api from '../../src/utils/api';
@@ -36,6 +37,7 @@ export default function TournamentsScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
+  const { t, i18n } = useTranslation();
   
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loading, setLoading] = useState(true);
