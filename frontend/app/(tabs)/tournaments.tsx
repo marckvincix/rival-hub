@@ -991,7 +991,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       'Scegli da dove caricare la foto',
       [
         {
-          text: 'Fotocamera',
+          text: t('common.camera', 'Camera'),
           onPress: async () => {
             const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
             if (cameraStatus.status !== 'granted') {
@@ -1647,7 +1647,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       {expandedTeamId === team.id && (
                         <View style={styles.playersAccordion}>
                           {(teamPlayers[team.id] || []).length === 0 ? (
-                            <Text style={styles.noPlayersText}>Nessun giocatore</Text>
+                            <Text style={styles.noPlayersText}>{t('teams.noPlayers', 'No players')}</Text>
                           ) : (
                             (teamPlayers[team.id] || []).map((player) => (
                               <View key={player.id} style={styles.playerRow}>
@@ -1698,7 +1698,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {activeTab === 'matches' && (
               <View>
-                <Button title="Aggiungi Partita" onPress={() => {
+                <Button title={t('matches.addMatch', 'Add Match')} onPress={() => {
                   setMatchDate(null);
                   setMatchTime(null);
                   setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
@@ -1712,9 +1712,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       <View style={styles.matchDayHeader}>
                         <Text style={styles.matchDayTitle}>{round}</Text>
                         <TouchableOpacity onPress={() => {
-                          Alert.alert('Elimina Giornata', `Eliminare tutte le partite di ${round}?`, [
-                            { text: 'No' },
-                            { text: 'Sì', onPress: async () => {
+                          Alert.alert(t('matches.deleteRound', 'Delete Round'), t('matches.deleteRoundConfirm', `Delete all matches from ${round}?`), [
+                            { text: t('common.no') },
+                            { text: t('common.yes'), onPress: async () => {
                               for (const m of roundMatches) {
                                 await handleDeleteMatch(m.id);
                               }
@@ -1763,7 +1763,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   
                   return (
                     <>
-                      <Text style={styles.resultsTitle}>Seleziona partita da gestire</Text>
+                      <Text style={styles.resultsTitle}>{t('matches.selectMatch', 'Select match to manage')}</Text>
                       {matchesInCorso.map((match) => (
                         <TouchableOpacity 
                           key={match.id} 
@@ -1807,12 +1807,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   onPress={() => handleOpenNewsModal()}
                 >
                   <Ionicons name="add" size={20} color="#FFF" />
-                  <Text style={styles.addNewsButtonText}>Nuova News</Text>
+                  <Text style={styles.addNewsButtonText}>{t('news.newNews', 'New News')}</Text>
                 </TouchableOpacity>
 
                 {/* News List */}
                 {tournamentNews.length === 0 ? (
-                  <EmptyState icon="newspaper-outline" title="Nessuna news" />
+                  <EmptyState icon="newspaper-outline" title={t('tournaments.noNews', 'No news')} />
                 ) : (
                   tournamentNews.map((news) => (
                     <View key={news.id} style={styles.newsCard}>
@@ -1856,21 +1856,21 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   onPress={() => setShowHighlightsModal(true)}
                 >
                   <Ionicons name="film" size={20} color="#FFF" />
-                  <Text style={styles.addNewsButtonText}>Carica Highlights</Text>
+                  <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
                 </TouchableOpacity>
                 
                 {highlightsLoading ? (
                   <View style={styles.highlightsLoadingContainer}>
                     <ActivityIndicator size="large" color="#000" />
-                    <Text style={styles.highlightsLoadingText}>Caricamento...</Text>
+                    <Text style={styles.highlightsLoadingText}>{t('common.loading')}</Text>
                   </View>
                 ) : tournamentHighlights.length === 0 ? (
                   <View style={styles.highlightsInfoCard}>
                     <Ionicons name="information-circle" size={24} color="#666" />
                     <View style={{ flex: 1, marginLeft: 12 }}>
-                      <Text style={styles.highlightsInfoTitle}>Nessun Highlight</Text>
+                      <Text style={styles.highlightsInfoTitle}>{t('highlights.noHighlights')}</Text>
                       <Text style={styles.highlightsInfoText}>
-                        Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chi vuoi.
+                        {t('highlights.uploadInfo', 'Upload photos and videos of matches. Content will only be accessible by entering the code you can share with anyone.')}
                       </Text>
                     </View>
                   </View>
@@ -1954,7 +1954,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <Modal visible={showAddTeamModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddTeamModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowAddTeamModal(false)}><Text style={styles.modalCancel}>Annulla</Text></TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowAddTeamModal(false)}><Text style={styles.modalCancel}>{t('common.cancel')}</Text></TouchableOpacity>
             <Text style={styles.modalTitle}>
               {isTennisSport 
                 ? (isDoubles ? t('teams.newDouble', 'New Double') : t('teams.addPlayer'))
@@ -1984,7 +1984,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </View>
             <TouchableOpacity style={styles.addBtnBlack} onPress={handleAddTeam}>
               <Ionicons name="add" size={20} color="#FFF" />
-              <Text style={styles.addBtnBlackText}>Aggiungi</Text>
+              <Text style={styles.addBtnBlackText}>{t('common.add')}</Text>
             </TouchableOpacity>
           </View>
         </SafeAreaView>
@@ -1999,7 +1999,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.modalTitle}>{tournament.name}</Text>
-              <Text style={styles.modalSubtitle}>{t('common.add', 'Add')} Giocatore</Text>
+              <Text style={styles.modalSubtitle}>{t('teams.addPlayer')}</Text>
             </View>
           </View>
           <ScrollView style={styles.playerFormContent} showsVerticalScrollIndicator={false}>
@@ -2015,11 +2015,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
 
             {/* Nome giocatore */}
-            <Text style={styles.playerFormLabel}>Nome giocatore</Text>
+            <Text style={styles.playerFormLabel}>{t('teams.playerName')}</Text>
             <View style={styles.playerFormInputBox}>
               <TextInput
                 style={styles.playerFormInput}
-                placeholder="es. Mario Rossi"
+                placeholder={t('teams.playerNamePlaceholder', 'e.g. John Smith')}
                 placeholderTextColor="#999"
                 value={newPlayerData.name}
                 onChangeText={(text) => setNewPlayerData({ ...newPlayerData, name: text })}
@@ -2029,7 +2029,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {/* Numero + Ruolo side by side (Ruolo nascosto per Tennis/Padel) */}
             <View style={styles.playerFormRow}>
               <View style={sportHasRoles ? styles.playerFormColSmall : { flex: 1 }}>
-                <Text style={styles.playerFormLabel}>Numero</Text>
+                <Text style={styles.playerFormLabel}>{t('teams.playerNumber')}</Text>
                 <View style={styles.playerFormInputBox}>
                   <TextInput
                     style={styles.playerFormInput}
@@ -2044,7 +2044,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
               {sportHasRoles && (
                 <View style={styles.playerFormColLarge}>
-                  <Text style={styles.playerFormLabel}>Ruolo</Text>
+                  <Text style={styles.playerFormLabel}>{t('teams.position')}</Text>
                   <TouchableOpacity 
                     style={styles.playerFormDropdown}
                     onPress={() => setShowRoleDropdown(!showRoleDropdown)}
@@ -2073,14 +2073,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </View>
 
             {/* Foto */}
-            <Text style={styles.playerFormLabel}>Foto</Text>
+            <Text style={styles.playerFormLabel}>{t('common.photo', 'Photo')}</Text>
             <TouchableOpacity style={styles.playerFormPhotoBox} onPress={pickImage}>
               {newPlayerData.photo ? (
                 <Image source={{ uri: newPlayerData.photo }} style={styles.playerPhotoPreview} />
               ) : (
                 <>
                   <Ionicons name="cloud-upload-outline" size={24} color="#999" />
-                  <Text style={styles.playerFormPhotoText}>Carica immagine</Text>
+                  <Text style={styles.playerFormPhotoText}>{t('common.selectPhoto', 'Upload image')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -2133,7 +2133,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {/* Aggiungi Button */}
             <TouchableOpacity style={[styles.addBtnBlack, { marginTop: 32, marginBottom: 40 }]} onPress={handleAddPlayer}>
-              <Text style={styles.addBtnBlackText}>Aggiungi</Text>
+              <Text style={styles.addBtnBlackText}>{t('common.add')}</Text>
               <Ionicons name="add" size={20} color="#FFF" />
             </TouchableOpacity>
           </ScrollView>
@@ -2540,7 +2540,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               onPress={() => { setShowHomeDropdown(!showHomeDropdown); setShowAwayDropdown(false); }}
             >
               <Text style={newMatchData.home_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
-                {newMatchData.home_team_id ? teams.find(t => t.id === newMatchData.home_team_id)?.name : (isTennisSport ? (isDoubles ? 'Seleziona la coppia' : 'Seleziona il giocatore') : 'Seleziona la squadra')}
+                {newMatchData.home_team_id ? teams.find(t => t.id === newMatchData.home_team_id)?.name : (isTennisSport ? (isDoubles ? t('teams.selectDouble', 'Select pair') : t('teams.selectPlayer', 'Select player')) : t('teams.selectTeam', 'Select team'))}
               </Text>
               <Ionicons name="chevron-down" size={22} color="#000" />
             </TouchableOpacity>
@@ -2566,7 +2566,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               onPress={() => { setShowAwayDropdown(!showAwayDropdown); setShowHomeDropdown(false); }}
             >
               <Text style={newMatchData.away_team_id ? styles.newMatchDropdownText : styles.newMatchDropdownPlaceholder}>
-                {newMatchData.away_team_id ? teams.find(t => t.id === newMatchData.away_team_id)?.name : (isTennisSport ? (isDoubles ? 'Seleziona la coppia' : 'Seleziona il giocatore') : 'Seleziona la squadra')}
+                {newMatchData.away_team_id ? teams.find(t => t.id === newMatchData.away_team_id)?.name : (isTennisSport ? (isDoubles ? t('teams.selectDouble', 'Select pair') : t('teams.selectPlayer', 'Select player')) : t('teams.selectTeam', 'Select team'))}
               </Text>
               <Ionicons name="chevron-down" size={22} color="#000" />
             </TouchableOpacity>
@@ -2775,11 +2775,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
 
             {/* Luogo */}
-            <Text style={styles.newMatchLabel}>Luogo</Text>
+            <Text style={styles.newMatchLabel}>{t('matches.venue', 'Venue')}</Text>
             <View style={styles.newMatchInputWithIcon}>
               <TextInput
                 style={styles.inputFieldText}
-                placeholder="Nome"
+                placeholder={t('matches.venueName', 'Name')}
                 placeholderTextColor="#999"
                 value={newMatchData.venue_name}
                 onChangeText={(text) => setNewMatchData({ ...newMatchData, venue_name: text })}
@@ -2789,7 +2789,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <View style={[styles.newMatchInputWithIcon, { marginTop: 12 }]}>
               <TextInput
                 style={styles.inputFieldText}
-                placeholder="Indirizzo"
+                placeholder={t('matches.venueAddress', 'Address')}
                 placeholderTextColor="#999"
                 value={newMatchData.venue_address}
                 onChangeText={(text) => setNewMatchData({ ...newMatchData, venue_address: text })}

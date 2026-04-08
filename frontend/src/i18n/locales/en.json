@@ -29,9 +29,11 @@
     "details": "Details",
     "total": "Total",
     "minutes": "minutes",
-    "selectPhoto": "Select photo",
+    "selectPhoto": "Upload image",
     "loadingStats": "Loading statistics...",
-    "noData": "No data available"
+    "noData": "No data available",
+    "camera": "Camera",
+    "photo": "Photo"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -160,6 +162,7 @@
     "player": "Player",
     "addPlayer": "Add Player",
     "playerName": "Player Name",
+    "playerNamePlaceholder": "e.g. John Smith",
     "playerNumber": "Number",
     "position": "Position",
     "captain": "Captain",
@@ -173,7 +176,11 @@
     "homePlayer": "Home Player",
     "awayPlayer": "Away Player",
     "deletePlayer": "Delete Player",
-    "selectRole": "Select role"
+    "selectRole": "Select role",
+    "selectTeam": "Select team",
+    "selectPlayer": "Select player",
+    "selectDouble": "Select pair",
+    "noPlayers": "No players"
   },
   "matches": {
     "title": "Matches",
@@ -205,7 +212,13 @@
     "addMatch": "Add Match",
     "recordResult": "Record Result",
     "matchStats": "Match Statistics",
-    "noLiveMatches": "No live matches"
+    "noLiveMatches": "No live matches",
+    "selectMatch": "Select match to manage",
+    "deleteRound": "Delete Round",
+    "deleteRoundConfirm": "Delete all matches from this round?",
+    "venue": "Venue",
+    "venueName": "Name",
+    "venueAddress": "Address"
   },
   "stats": {
     "title": "Statistics",

@@ -29,9 +29,11 @@
     "details": "Dettagli",
     "total": "Totale",
     "minutes": "minuti",
-    "selectPhoto": "Seleziona foto",
+    "selectPhoto": "Carica immagine",
     "loadingStats": "Caricamento statistiche...",
-    "noData": "Nessun dato disponibile"
+    "noData": "Nessun dato disponibile",
+    "camera": "Fotocamera",
+    "photo": "Foto"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -160,6 +162,7 @@
     "player": "Giocatore",
     "addPlayer": "Aggiungi Giocatore",
     "playerName": "Nome Giocatore",
+    "playerNamePlaceholder": "es. Mario Rossi",
     "playerNumber": "Numero",
     "position": "Posizione",
     "captain": "Capitano",
@@ -173,7 +176,11 @@
     "homePlayer": "Giocatore Casa",
     "awayPlayer": "Giocatore Ospite",
     "deletePlayer": "Elimina Giocatore",
-    "selectRole": "Seleziona ruolo"
+    "selectRole": "Seleziona ruolo",
+    "selectTeam": "Seleziona la squadra",
+    "selectPlayer": "Seleziona il giocatore",
+    "selectDouble": "Seleziona la coppia",
+    "noPlayers": "Nessun giocatore"
   },
   "matches": {
     "title": "Partite",
@@ -205,7 +212,13 @@
     "addMatch": "Aggiungi Partita",
     "recordResult": "Registra Risultato",
     "matchStats": "Statistiche Partita",
-    "noLiveMatches": "Nessuna partita in corso"
+    "noLiveMatches": "Nessuna partita in corso",
+    "selectMatch": "Seleziona partita da gestire",
+    "deleteRound": "Elimina Giornata",
+    "deleteRoundConfirm": "Eliminare tutte le partite di questa giornata?",
+    "venue": "Luogo",
+    "venueName": "Nome",
+    "venueAddress": "Indirizzo"
   },
   "stats": {
     "title": "Statistiche",
