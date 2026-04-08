@@ -36,7 +36,10 @@
     "photo": "Foto",
     "saving": "Salvando...",
     "saved": "Salvato",
-    "none": "Nessuno"
+    "none": "Nessuno",
+    "selectDate": "Seleziona Data",
+    "autoSave": "Salvataggio automatico",
+    "autoSaveActive": "Salvataggio automatico attivo"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -55,10 +58,13 @@
     "email": "Email",
     "emailPlaceholder": "tuaemail@esempio.com",
     "password": "Password",
-    "passwordPlaceholder": "La tua password",
+    "passwordPlaceholder": "Minimo 6 caratteri",
+    "confirmPassword": "Conferma Password",
+    "confirmPasswordPlaceholder": "Ripeti la password",
     "forgotPassword": "Password dimenticata?",
     "noAccount": "Non hai un account?",
     "hasAccount": "Hai già un account?",
+    "alreadyHaveAccount": "Hai già un account?",
     "loginError": "Accesso fallito. Controlla le credenziali.",
     "registerError": "Registrazione fallita. Riprova.",
     "logoutConfirm": "Sei sicuro di voler uscire?"
@@ -185,7 +191,8 @@
     "selectDouble": "Seleziona la coppia",
     "noPlayers": "Nessun giocatore",
     "birthDate": "Data di nascita",
-    "birthDatePlaceholder": "GG/MM/AAAA"
+    "birthDatePlaceholder": "GG/MM/AAAA",
+    "noPlayersInRoster": "Nessun giocatore in rosa"
   },
   "matches": {
     "title": "Partite",
@@ -248,7 +255,8 @@
     "redCards": "Cartellini Rossi",
     "cleanSheets": "Porte Inviolate",
     "saves": "Parate",
-    "minutesPlayed": "Minuti giocati"
+    "minutesPlayed": "Minuti giocati",
+    "noStatsAvailable": "Nessuna statistica disponibile"
   },
   "highlights": {
     "title": "Highlights",
@@ -290,6 +298,18 @@
     "compressQuestion": "Il file supera {{size}}MB. Vuoi comprimerlo?",
     "chooseAnother": "Scegli altro",
     "compress": "Comprimi"
+  },
+  "news": {
+    "title": "News",
+    "newNews": "Nuova News",
+    "editNews": "Modifica News",
+    "deleteNews": "Elimina News",
+    "newsTitle": "Titolo",
+    "newsDescription": "Descrizione"
+  },
+  "events": {
+    "title": "Eventi",
+    "noEvents": "Nessun evento ancora registrato"
   },
   "profile": {
     "title": "Profilo",
@@ -456,7 +476,11 @@
     "permissionDenied": "Permesso negato",
     "galleryPermission": "Permesso galleria richiesto",
     "titleRequired": "Titolo obbligatorio",
-    "saveFailed": "Impossibile salvare la partita"
+    "saveFailed": "Impossibile salvare la partita",
+    "nameRequired": "Nome richiesto",
+    "emailRequired": "Email richiesta",
+    "passwordRequired": "Password richiesta",
+    "registrationFailed": "Registrazione fallita"
   },
   "confirm": {
     "delete": "Sei sicuro di voler eliminare?",

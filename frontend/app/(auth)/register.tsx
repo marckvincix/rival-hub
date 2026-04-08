@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Input } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
+import { useTranslation } from '../../src/i18n';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -23,6 +24,7 @@ const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 export default function RegisterScreen() {
   const router = useRouter();
   const { register } = useAuthStore();
+  const { t } = useTranslation();
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -33,12 +35,12 @@ export default function RegisterScreen() {
 
   const validate = () => {
     const newErrors: {name?: string; email?: string; password?: string; confirmPassword?: string} = {};
-    if (!name.trim()) newErrors.name = 'Nome richiesto';
-    if (!email.trim()) newErrors.email = 'Email richiesta';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email non valida';
-    if (!password) newErrors.password = 'Password richiesta';
-    else if (password.length < 6) newErrors.password = 'Minimo 6 caratteri';
-    if (password !== confirmPassword) newErrors.confirmPassword = 'Le password non coincidono';
+    if (!name.trim()) newErrors.name = t('errors.nameRequired', 'Name required');
+    if (!email.trim()) newErrors.email = t('errors.emailRequired', 'Email required');
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = t('errors.invalidEmail');
+    if (!password) newErrors.password = t('errors.passwordRequired', 'Password required');
+    else if (password.length < 6) newErrors.password = t('errors.passwordTooShort');
+    if (password !== confirmPassword) newErrors.confirmPassword = t('errors.passwordMismatch');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -50,7 +52,7 @@ export default function RegisterScreen() {
       await register(email, password, name);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Errore', error.message || 'Errore di registrazione');
+      Alert.alert(t('common.error'), error.message || t('errors.registrationFailed', 'Registration failed'));
     } finally {
       setLoading(false);
     }
@@ -140,8 +142,8 @@ export default function RegisterScreen() {
             />
             
             <Input
-              label="Password"
-              placeholder="Minimo 6 caratteri"
+              label={t('auth.password', 'Password')}
+              placeholder={t('auth.passwordPlaceholder', 'Min 6 characters')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -149,8 +151,8 @@ export default function RegisterScreen() {
             />
             
             <Input
-              label="Conferma Password"
-              placeholder="Ripeti la password"
+              label={t('auth.confirmPassword', 'Confirm Password')}
+              placeholder={t('auth.confirmPasswordPlaceholder', 'Repeat password')}
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry
@@ -158,7 +160,7 @@ export default function RegisterScreen() {
             />
 
             <Button
-              title="Registrati"
+              title={t('auth.register', 'Register')}
               onPress={handleRegister}
               loading={loading}
               fullWidth
@@ -168,9 +170,9 @@ export default function RegisterScreen() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Hai già un account?</Text>
+            <Text style={styles.footerText}>{t('auth.alreadyHaveAccount', 'Already have an account?')}</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
-              <Text style={styles.footerLink}>Accedi</Text>
+              <Text style={styles.footerLink}>{t('auth.login', 'Login')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

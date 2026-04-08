@@ -345,11 +345,11 @@ export default function TournamentsScreen() {
                   <View style={styles.pickerModalContent}>
                     <View style={styles.pickerModalHeader}>
                       <TouchableOpacity onPress={() => setShowTournamentDatePicker(false)}>
-                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                        <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
                       </TouchableOpacity>
-                      <Text style={styles.pickerTitle}>Seleziona Data</Text>
+                      <Text style={styles.pickerTitle}>{t('common.selectDate', 'Select Date')}</Text>
                       <TouchableOpacity onPress={() => setShowTournamentDatePicker(false)}>
-                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                        <Text style={styles.pickerConfirmText}>{t('common.confirm')}</Text>
                       </TouchableOpacity>
                     </View>
                     <DateTimePicker
@@ -463,7 +463,7 @@ export default function TournamentsScreen() {
             </View>
 
             <View style={{ marginTop: 24 }}>
-              <Button title="Crea Torneo" onPress={handleCreateTournament} loading={formLoading} fullWidth size="large" />
+              <Button title={t('tournaments.createTournament')} onPress={handleCreateTournament} loading={formLoading} fullWidth size="large" />
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -1504,7 +1504,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Delete news
   const handleDeleteNews = (newsId: string, title: string) => {
     Alert.alert(
-      'Elimina News',
+      t('news.deleteNews', 'Delete News'),
       `Sei sicuro di voler eliminare "${title}"?`,
       [
         { text: t('common.cancel'), style: 'cancel' },
@@ -1925,7 +1925,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {activeTab === 'settings' && (
               <View>
                 <View style={styles.settingsCard}>
-                  <Text style={styles.settingsLabel}>Stato Torneo</Text>
+                  <Text style={styles.settingsLabel}>{t('tournaments.status')}</Text>
                   <View style={styles.statusOptions}>
                     {['draft', 'active', 'completed'].map((status) => (
                       <TouchableOpacity key={status} style={[styles.statusOption, tournament.status === status && styles.statusOptionActive]} onPress={() => onUpdateStatus(tournament, status)}>
@@ -2176,7 +2176,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {loadingPlayerStats && (
                   <View style={styles.statsLoading}>
                     <ActivityIndicator size="small" color="#000" />
-                    <Text style={styles.statsLoadingText}>Caricamento statistiche...</Text>
+                    <Text style={styles.statsLoadingText}>{t('common.loadingStats')}</Text>
                   </View>
                 )}
 
@@ -2397,7 +2397,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <>
                 {/* Header */}
                 <View style={styles.matchStatsHeader}>
-                  <Text style={styles.matchStatsTitle}>📊 Statistiche Partita</Text>
+                  <Text style={styles.matchStatsTitle}>📊 {t('matches.matchStats')}</Text>
                   <TouchableOpacity onPress={() => setShowMatchStatsModal(false)}>
                     <Ionicons name="close" size={24} color="#000" />
                   </TouchableOpacity>
@@ -2418,7 +2418,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {loadingMatchStats && (
                   <View style={styles.statsLoading}>
                     <ActivityIndicator size="small" color="#000" />
-                    <Text style={styles.statsLoadingText}>Caricamento statistiche...</Text>
+                    <Text style={styles.statsLoadingText}>{t('common.loadingStats')}</Text>
                   </View>
                 )}
 
@@ -2428,7 +2428,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     {matchStatsEvents.length === 0 ? (
                       <View style={styles.noMatchStatsContainer}>
                         <Ionicons name="document-outline" size={48} color="#CCC" />
-                        <Text style={styles.noMatchStatsText}>Nessuna statistica disponibile</Text>
+                        <Text style={styles.noMatchStatsText}>{t('stats.noStatsAvailable', 'No statistics available')}</Text>
                       </View>
                     ) : (
                       <>
@@ -2528,8 +2528,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <Modal visible={showAddMatchModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddMatchModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.modalHeader}>
-            <TouchableOpacity onPress={() => setShowAddMatchModal(false)}><Text style={styles.modalCancel}>Annulla</Text></TouchableOpacity>
-            <Text style={styles.modalTitle}>Nuova Partita</Text>
+            <TouchableOpacity onPress={() => setShowAddMatchModal(false)}><Text style={styles.modalCancel}>{t('common.cancel')}</Text></TouchableOpacity>
+            <Text style={styles.modalTitle}>{t('matches.newMatch')}</Text>
             <View style={{ width: 60 }} />
           </View>
           <ScrollView style={styles.newMatchContent} showsVerticalScrollIndicator={false}>
@@ -2664,11 +2664,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   <View style={styles.pickerModalContent}>
                     <View style={styles.pickerModalHeader}>
                       <TouchableOpacity onPress={() => setShowMatchDatePicker(false)}>
-                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                        <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
                       </TouchableOpacity>
-                      <Text style={styles.pickerTitle}>Seleziona Data</Text>
+                      <Text style={styles.pickerTitle}>{t('common.selectDate', 'Select Date')}</Text>
                       <TouchableOpacity onPress={() => setShowMatchDatePicker(false)}>
-                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                        <Text style={styles.pickerConfirmText}>{t('common.confirm')}</Text>
                       </TouchableOpacity>
                     </View>
                     <DateTimePicker
@@ -2726,11 +2726,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   <View style={styles.pickerModalContent}>
                     <View style={styles.pickerModalHeader}>
                       <TouchableOpacity onPress={() => setShowMatchTimePicker(false)}>
-                        <Text style={styles.pickerCancelText}>Annulla</Text>
+                        <Text style={styles.pickerCancelText}>{t('common.cancel')}</Text>
                       </TouchableOpacity>
-                      <Text style={styles.pickerTitle}>Seleziona Orario</Text>
+                      <Text style={styles.pickerTitle}>{t('tournaments.selectTime', 'Select Time')}</Text>
                       <TouchableOpacity onPress={() => setShowMatchTimePicker(false)}>
-                        <Text style={styles.pickerConfirmText}>Conferma</Text>
+                        <Text style={styles.pickerConfirmText}>{t('common.confirm')}</Text>
                       </TouchableOpacity>
                     </View>
                     <DateTimePicker
@@ -2799,7 +2799,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
             {/* Crea Button */}
             <View style={{ marginTop: 32, marginBottom: 40 }}>
-              <Button title="Crea Partita" onPress={handleAddMatch} fullWidth size="large" />
+              <Button title={t('matches.createMatch')} onPress={handleAddMatch} fullWidth size="large" />
             </View>
           </ScrollView>
         </SafeAreaView>
@@ -2867,7 +2867,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     {/* Show message if no events */}
                     {matchEvents.length === 0 && (
                       <View style={styles.noEventsContainer}>
-                        <Text style={styles.noEventsMessage}>Nessun evento ancora registrato</Text>
+                        <Text style={styles.noEventsMessage}>{t('events.noEvents', 'No events recorded yet')}</Text>
                       </View>
                     )}
                     
@@ -2918,7 +2918,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   {/* Auto-save indicator */}
                   <View style={styles.autoSaveIndicator}>
                     <Ionicons name="cloud-done" size={16} color="#10B981" />
-                    <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+                    <Text style={styles.autoSaveText}>{t('common.autoSave', 'Auto-save')}</Text>
                   </View>
                 </View>
                 <View style={styles.resultButtonsRow}>
@@ -2935,7 +2935,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     }}
                   >
                     <Ionicons name="checkmark" size={22} color="#FFF" />
-                    <Text style={styles.finePartitaBtnText}>Fine partita</Text>
+                    <Text style={styles.finePartitaBtnText}>{t('matches.endMatch')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity 
                     style={styles.extraBtn}
@@ -3204,7 +3204,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   <View style={styles.extraFooterButtons}>
                     <View style={[styles.autoSaveIndicator, { flex: 1, justifyContent: 'center', paddingVertical: 16 }]}>
                       <Ionicons name="cloud-done" size={20} color="#10B981" />
-                      <Text style={[styles.autoSaveText, { fontSize: 14 }]}>Salvataggio automatico attivo</Text>
+                      <Text style={[styles.autoSaveText, { fontSize: 14 }]}>{t('common.autoSaveActive', 'Auto-save active')}</Text>
                     </View>
                   </View>
                 </>
@@ -3278,9 +3278,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         <SafeAreaView style={styles.newsModalContainer}>
           <View style={styles.newsModalHeader}>
             <TouchableOpacity onPress={() => setShowNewsModal(false)}>
-              <Text style={styles.newsModalCancel}>Annulla</Text>
+              <Text style={styles.newsModalCancel}>{t('common.cancel')}</Text>
             </TouchableOpacity>
-            <Text style={styles.newsModalTitle}>{editingNews ? 'Modifica News' : 'Nuova News'}</Text>
+            <Text style={styles.newsModalTitle}>{editingNews ? t('news.editNews', 'Edit News') : t('news.newNews', 'New News')}</Text>
             <TouchableOpacity onPress={handleSaveNews} disabled={savingNews}>
               {savingNews ? (
                 <ActivityIndicator size="small" color="#000" />
@@ -3558,7 +3558,7 @@ function EventDropdown({
       )}
       {isOpen && players.length === 0 && (
         <View style={styles.eventDropdownList}>
-          <Text style={styles.eventDropdownItemTextEmpty}>Nessun giocatore</Text>
+          <Text style={styles.eventDropdownItemTextEmpty}>{t('teams.noPlayers')}</Text>
         </View>
       )}
     </View>
@@ -3620,7 +3620,7 @@ function TeamRatingsAccordion({
         <View style={styles.playersList}>
           {players.length === 0 ? (
             <View style={styles.noPlayersRatingRow}>
-              <Text style={styles.noPlayersRatingText}>Nessun giocatore in rosa</Text>
+              <Text style={styles.noPlayersRatingText}>{t('teams.noPlayersInRoster', 'No players in roster')}</Text>
             </View>
           ) : (
             players.map((player) => {

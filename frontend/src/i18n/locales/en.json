@@ -36,7 +36,10 @@
     "photo": "Photo",
     "saving": "Saving...",
     "saved": "Saved",
-    "none": "None"
+    "none": "None",
+    "selectDate": "Select Date",
+    "autoSave": "Auto-save",
+    "autoSaveActive": "Auto-save active"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -55,10 +58,13 @@
     "email": "Email",
     "emailPlaceholder": "youremail@example.com",
     "password": "Password",
-    "passwordPlaceholder": "Your password",
+    "passwordPlaceholder": "Min 6 characters",
+    "confirmPassword": "Confirm Password",
+    "confirmPasswordPlaceholder": "Repeat password",
     "forgotPassword": "Forgot password?",
     "noAccount": "Don't have an account?",
     "hasAccount": "Already have an account?",
+    "alreadyHaveAccount": "Already have an account?",
     "loginError": "Login failed. Please check your credentials.",
     "registerError": "Registration failed. Please try again.",
     "logoutConfirm": "Are you sure you want to logout?"
@@ -185,7 +191,8 @@
     "selectDouble": "Select pair",
     "noPlayers": "No players",
     "birthDate": "Date of birth",
-    "birthDatePlaceholder": "DD/MM/YYYY"
+    "birthDatePlaceholder": "DD/MM/YYYY",
+    "noPlayersInRoster": "No players in roster"
   },
   "matches": {
     "title": "Matches",
@@ -248,7 +255,8 @@
     "redCards": "Red Cards",
     "cleanSheets": "Clean Sheets",
     "saves": "Saves",
-    "minutesPlayed": "Minutes played"
+    "minutesPlayed": "Minutes played",
+    "noStatsAvailable": "No statistics available"
   },
   "highlights": {
     "title": "Highlights",
@@ -290,6 +298,18 @@
     "compressQuestion": "The file exceeds {{size}}MB. Do you want to compress it?",
     "chooseAnother": "Choose another",
     "compress": "Compress"
+  },
+  "news": {
+    "title": "News",
+    "newNews": "New News",
+    "editNews": "Edit News",
+    "deleteNews": "Delete News",
+    "newsTitle": "Title",
+    "newsDescription": "Description"
+  },
+  "events": {
+    "title": "Events",
+    "noEvents": "No events recorded yet"
   },
   "profile": {
     "title": "Profile",
@@ -456,7 +476,11 @@
     "permissionDenied": "Permission denied",
     "galleryPermission": "Gallery permission required",
     "titleRequired": "Title is required",
-    "saveFailed": "Could not save the match"
+    "saveFailed": "Could not save the match",
+    "nameRequired": "Name required",
+    "emailRequired": "Email required",
+    "passwordRequired": "Password required",
+    "registrationFailed": "Registration failed"
   },
   "confirm": {
     "delete": "Are you sure you want to delete?",
