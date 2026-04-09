@@ -203,10 +203,10 @@ export default function TournamentPublicPage() {
   const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => {
-    if (f === 'league') return t('tournaments.formatLeague');
-    if (f === 'knockout') return t('tournaments.formatKnockout');
-    if (f === 'groups_knockout') return t('tournaments.formatGroupsKnockout');
-    return t('tournaments.formatChampionship');
+    if (f === 'league') return t('tournaments.formatLeague', 'League');
+    if (f === 'knockout') return t('tournaments.formatKnockout', 'Knockout');
+    if (f === 'groups_knockout') return t('tournaments.formatGroupsKnockout', 'Groups + Knockout');
+    return t('tournaments.formatChampionship', 'Championship');
   };
   
   // Check if tournament is basketball
