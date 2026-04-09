@@ -524,6 +524,7 @@
     "setCompleted": "Set Completato",
     "game": "Game",
     "point": "Punto",
+    "currentGameScore": "Punteggio Game Corrente",
     "serve": "Servizio",
     "ace": "Ace",
     "doubleFault": "Doppio Fallo",

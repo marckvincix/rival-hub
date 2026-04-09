@@ -524,6 +524,7 @@
     "setCompleted": "Set Completed",
     "game": "Game",
     "point": "Point",
+    "currentGameScore": "Current Game Score",
     "serve": "Serve",
     "ace": "Ace",
     "doubleFault": "Double Fault",

@@ -592,16 +592,16 @@ export function TennisMatchModal({
           {/* Current Game Score */}
           {currentSet && !currentSet.completed && !currentSet.tiebreak && (
             <View style={styles.currentGameSection}>
-              <Text style={styles.sectionTitle}>Punteggio Game Corrente</Text>
+              <Text style={styles.sectionTitle}>{t('tennis.currentGameScore', 'Current Game Score')}</Text>
               <View style={styles.currentGameDisplay}>
                 <Text style={styles.currentGameText}>{getCurrentPointDisplay()}</Text>
               </View>
               <View style={styles.pointButtonsRow}>
                 <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('home')}>
-                  <Text style={styles.pointButtonText}>+ Punto {homeTeam?.name || 'G1'}</Text>
+                  <Text style={styles.pointButtonText}>+ {t('tennis.point', 'Point')} {homeTeam?.name || 'G1'}</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.pointButton} onPress={() => addPoint('away')}>
-                  <Text style={styles.pointButtonText}>+ Punto {awayTeam?.name || 'G2'}</Text>
+                  <Text style={styles.pointButtonText}>+ {t('tennis.point', 'Point')} {awayTeam?.name || 'G2'}</Text>
                 </TouchableOpacity>
               </View>
             </View>
