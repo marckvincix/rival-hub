@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, ImageBackground } from 'react-native';
+import { useTranslation } from '../i18n';
 
 interface Player {
   player_id?: string;
@@ -23,6 +24,7 @@ export function VolleyballCourtView({
   awayTeamName,
   module = '4-2'
 }: VolleyballCourtViewProps) {
+  const { t } = useTranslation();
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -132,24 +134,24 @@ export function VolleyballCourtView({
 
       {/* Home team label */}
       <View style={styles.teamLabel}>
-        <Text style={styles.teamLabelText}>{homeTeamName || 'Casa'}</Text>
+        <Text style={styles.teamLabelText}>{homeTeamName || t('court.home')}</Text>
       </View>
 
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#000' }]} />
-          <Text style={styles.legendText}>Casa</Text>
+          <Text style={styles.legendText}>{t('court.home')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#555' }]} />
-          <Text style={styles.legendText}>Ospite</Text>
+          <Text style={styles.legendText}>{t('court.away')}</Text>
         </View>
       </View>
 
       {/* Module indicator */}
       <View style={styles.moduleBadge}>
-        <Text style={styles.moduleText}>🏐 Modulo {module}</Text>
+        <Text style={styles.moduleText}>🏐 {t('volleyball.formation')} {module}</Text>
       </View>
     </View>
   );

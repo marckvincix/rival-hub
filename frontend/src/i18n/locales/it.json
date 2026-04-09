@@ -527,7 +527,21 @@
     "dig": "Difesa",
     "rotation": "Rotazione",
     "timeout": "Timeout",
-    "substitution": "Cambio"
+    "substitution": "Cambio",
+    "playerStats": "Statistiche Giocatori",
+    "block": "Muro",
+    "points": "Pt",
+    "setter": "Palleggiatore",
+    "opposite": "Opposto",
+    "outsideHitter": "Schiacciatore",
+    "middleBlocker": "Centrale",
+    "libero": "Libero",
+    "formation": "Modulo",
+    "module": "Modulo"
+  },
+  "court": {
+    "home": "Casa",
+    "away": "Ospite"
   },
   "formation": {
     "title": "Formazione",

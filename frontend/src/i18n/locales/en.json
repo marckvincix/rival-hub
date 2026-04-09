@@ -529,7 +529,21 @@
     "dig": "Dig",
     "rotation": "Rotation",
     "timeout": "Timeout",
-    "substitution": "Substitution"
+    "substitution": "Substitution",
+    "playerStats": "Player Stats",
+    "block": "Block",
+    "points": "Pts",
+    "setter": "Setter",
+    "opposite": "Opposite",
+    "outsideHitter": "Outside Hitter",
+    "middleBlocker": "Middle Blocker",
+    "libero": "Libero",
+    "formation": "Formation",
+    "module": "Formation"
+  },
+  "court": {
+    "home": "Home",
+    "away": "Away"
   },
   "formation": {
     "title": "Lineup",

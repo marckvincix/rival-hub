@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 interface Player {
   id: string;
@@ -60,6 +61,7 @@ export function VolleyballMatchModal({
   tournamentName,
   onSave,
 }: VolleyballMatchModalProps) {
+  const { t } = useTranslation();
   const [currentSet, setCurrentSet] = useState(0);
   const [setScores, setSetScores] = useState<SetScore[]>([
     { setNumber: 1, homeScore: 0, awayScore: 0, completed: false },
@@ -382,7 +384,7 @@ export function VolleyballMatchModal({
 
           {/* Player Stats Section */}
           <View style={styles.statsSection}>
-            <Text style={styles.statsSectionTitle}>📊 Statistiche Giocatori</Text>
+            <Text style={styles.statsSectionTitle}>📊 {t('volleyball.playerStats')}</Text>
             
             {/* Home Team Stats */}
             <View style={styles.teamStatsContainer}>
@@ -406,7 +408,7 @@ export function VolleyballMatchModal({
                       onDecrement={() => updatePlayerStat(player.id, 'aces', true, -1)}
                     />
                     <StatButton
-                      label="Muro"
+                      label={t('volleyball.block')}
                       value={homeStats[player.id]?.blocks || 0}
                       onIncrement={() => updatePlayerStat(player.id, 'blocks', true, 1)}
                       onDecrement={() => updatePlayerStat(player.id, 'blocks', true, -1)}
@@ -438,7 +440,7 @@ export function VolleyballMatchModal({
                       onDecrement={() => updatePlayerStat(player.id, 'aces', false, -1)}
                     />
                     <StatButton
-                      label="Muro"
+                      label={t('volleyball.block')}
                       value={awayStats[player.id]?.blocks || 0}
                       onIncrement={() => updatePlayerStat(player.id, 'blocks', false, 1)}
                       onDecrement={() => updatePlayerStat(player.id, 'blocks', false, -1)}
