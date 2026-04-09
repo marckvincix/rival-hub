@@ -176,11 +176,7 @@ type VolleyballPositionType = 'palleggiatore' | 'opposto' | 'schiacciatore' | 'c
 // Rugby position types
 type RugbyPositionType = 'pilone_sinistro' | 'tallonatore' | 'pilone_destro' | 'seconda_linea' | 'flanker' | 'numero_8' | 'mediano_mischia' | 'mediano_apertura' | 'centro' | 'ala' | 'estremo';
 
-// These labels will be translated dynamically inside the component using useTranslation
-  centro: '🏃 Centro',
-  ala: '🦅 Ala',
-  estremo: '🛡️ Estremo',
-};
+// Position labels are now defined inside the component using useTranslation
 
 export function FormationModal({
   visible,
