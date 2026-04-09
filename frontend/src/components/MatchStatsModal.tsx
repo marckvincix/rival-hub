@@ -178,7 +178,7 @@ export function MatchStatsModal({
         <View style={styles.content}>
           {/* Header */}
           <View style={styles.header}>
-            <Text style={styles.title}>📊 Statistiche Partita</Text>
+            <Text style={styles.title}>📊 {t('stats.matchStats', 'Match Statistics')}</Text>
             <TouchableOpacity onPress={onClose}>
               <Ionicons name="close" size={24} color="#000" />
             </TouchableOpacity>
@@ -267,12 +267,12 @@ export function MatchStatsModal({
                   {/* Team Stats Comparison - Tennis/Padel */}
                   {isRacketSport && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>📊 Statistiche {isPadel ? 'Padel' : 'Tennis'}</Text>
+                      <Text style={styles.sectionTitle}>📊 {t('stats.title', 'Statistics')} {isPadel ? 'Padel' : 'Tennis'}</Text>
                     
                     {/* Stats Header */}
                     <View style={styles.statsCompareHeader}>
                       <Text style={styles.statsCompareTeam}>{getTeamName(matchData.home_team_id)}</Text>
-                      <Text style={styles.statsCompareLabel}>Stat</Text>
+                      <Text style={styles.statsCompareLabel}>{t('stats.stat', 'Stat')}</Text>
                       <Text style={styles.statsCompareTeam}>{getTeamName(matchData.away_team_id)}</Text>
                     </View>
                     
@@ -286,7 +286,7 @@ export function MatchStatsModal({
                     {/* Double Faults */}
                     <View style={styles.statsCompareRow}>
                       <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.home_stats?.doubleFaults || 0}</Text>
-                      <Text style={styles.statsCompareStatName}>❌ Doppi Falli</Text>
+                      <Text style={styles.statsCompareStatName}>❌ {t('tennis.doubleFaultsShort', 'DF')}</Text>
                       <Text style={[styles.statsCompareValue, { color: '#EF4444' }]}>{matchData.away_stats?.doubleFaults || 0}</Text>
                     </View>
                     
@@ -300,7 +300,7 @@ export function MatchStatsModal({
                     {/* Unforced Errors */}
                     <View style={styles.statsCompareRow}>
                       <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.home_stats?.unforcedErrors || 0}</Text>
-                      <Text style={styles.statsCompareStatName}>⚠️ Errori NF</Text>
+                      <Text style={styles.statsCompareStatName}>⚠️ {t('tennis.unforcedErrorsShort', 'UE')}</Text>
                       <Text style={[styles.statsCompareValue, { color: '#F59E0B' }]}>{matchData.away_stats?.unforcedErrors || 0}</Text>
                     </View>
                     
@@ -318,12 +318,12 @@ export function MatchStatsModal({
                   {/* Team Stats Comparison - Volleyball */}
                   {isVolleyball && (matchData.home_stats || matchData.away_stats) && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>📊 Statistiche Pallavolo</Text>
+                      <Text style={styles.sectionTitle}>📊 {t('volleyball.statsTitle', 'Volleyball Statistics')}</Text>
                       
                       {/* Stats Header */}
                       <View style={styles.statsCompareHeader}>
                         <Text style={styles.statsCompareTeam}>{getTeamName(matchData.home_team_id)}</Text>
-                        <Text style={styles.statsCompareLabel}>Stat</Text>
+                        <Text style={styles.statsCompareLabel}>{t('stats.stat', 'Stat')}</Text>
                         <Text style={styles.statsCompareTeam}>{getTeamName(matchData.away_team_id)}</Text>
                       </View>
                       
@@ -462,7 +462,7 @@ export function MatchStatsModal({
                     <View style={styles.noStatsContainer}>
                       <Ionicons name="document-outline" size={48} color="#CCC" />
                       <Text style={styles.noStatsText}>
-                        Nessuna statistica disponibile
+                        {t('stats.noStatsAvailable', 'No statistics available')}
                       </Text>
                     </View>
                   )}
@@ -471,7 +471,7 @@ export function MatchStatsModal({
                 <View style={styles.noStatsContainer}>
                   <Ionicons name="document-outline" size={48} color="#CCC" />
                   <Text style={styles.noStatsText}>
-                    Nessuna statistica disponibile
+                    {t('stats.noStatsAvailable', 'No statistics available')}
                   </Text>
                 </View>
               ) : (
@@ -479,7 +479,7 @@ export function MatchStatsModal({
                   {/* Basketball: Points */}
                   {isBasketball && (points3.length > 0 || points2.length > 0 || points1.length > 0) && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🏀 Punti Segnati</Text>
+                      <Text style={styles.sectionTitle}>🏀 {t('basketball.pointsScored', 'Points Scored')}</Text>
                       {points3.map((event, idx) => (
                         <View key={`3pt-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
@@ -533,11 +533,11 @@ export function MatchStatsModal({
                   {/* Basketball: Other stats */}
                   {isBasketball && (rebounds.length > 0 || steals.length > 0 || blocks.length > 0) && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>📊 Altre Statistiche</Text>
+                      <Text style={styles.sectionTitle}>📊 {t('basketball.otherStats', 'Other Stats')}</Text>
                       {rebounds.map((event, idx) => (
                         <View key={`reb-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
-                            🔄 {event.player_name} (Rimbalzo)
+                            🔄 {event.player_name} ({t('basketball.reboundsShort', 'REB')})
                           </Text>
                           <Text style={styles.eventTeam}>
                             ({getEventTeamName(event.team_id)})
@@ -547,7 +547,7 @@ export function MatchStatsModal({
                       {steals.map((event, idx) => (
                         <View key={`stl-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
-                            🖐️ {event.player_name} (Palla Rubata)
+                            🖐️ {event.player_name} ({t('basketball.stealsShort', 'STL')})
                           </Text>
                           <Text style={styles.eventTeam}>
                             ({getEventTeamName(event.team_id)})
@@ -557,7 +557,7 @@ export function MatchStatsModal({
                       {blocks.map((event, idx) => (
                         <View key={`blk-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
-                            ✋ {event.player_name} (Stoppata)
+                            ✋ {event.player_name} ({t('basketball.blocksShort', 'BLK')})
                           </Text>
                           <Text style={styles.eventTeam}>
                             ({getEventTeamName(event.team_id)})

@@ -73,7 +73,10 @@
     "name": "Nome",
     "info": "Info",
     "share": "Condividi",
-    "more": "altre"
+    "more": "altre",
+    "dateNotAvailable": "Data non disponibile",
+    "player": "Giocatore",
+    "undoLast": "Annulla ultimo"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -563,6 +566,7 @@
     "timeout": "Timeout",
     "substitution": "Cambio",
     "playerStats": "Statistiche Giocatori",
+    "statsTitle": "Statistiche Pallavolo",
     "points": "Punti",
     "pointsShort": "Pt",
     "attacks": "Attacchi",

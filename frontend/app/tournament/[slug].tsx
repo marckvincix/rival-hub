@@ -363,12 +363,12 @@ export default function TournamentPublicPage() {
   const tabs: { id: TabId; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'standings', label: t('stats.standings', 'Standings'), icon: 'podium-outline' },
     { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
-    { id: 'matches', label: t('tournaments.matches'), icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
+    { id: 'matches', label: t('tournaments.matches', 'Matches'), icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
     // Hide "Marcatori" for Tennis/Padel
     ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: t('soccer.topScorers', 'Scorers'), icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
-    { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
-    { id: 'highlights', label: 'Highlights', icon: 'film-outline' },
-    { id: 'news', label: 'News', icon: 'newspaper-outline' },
+    { id: 'stats', label: t('stats.title', 'Stats'), icon: 'stats-chart-outline' },
+    { id: 'highlights', label: t('highlights.title', 'Highlights'), icon: 'film-outline' },
+    { id: 'news', label: t('news.title', 'News'), icon: 'newspaper-outline' },
     { id: 'info', label: t('common.info', 'Info'), icon: 'information-circle-outline' },
   ];
 
@@ -461,7 +461,7 @@ export default function TournamentPublicPage() {
         {/* Teams Tab */}
         {activeTab === 'teams' && (
           <View style={styles.tabContent}>
-            {teams.length === 0 ? <EmptyState icon="people-outline" title="Nessuna squadra" /> : (
+            {teams.length === 0 ? <EmptyState icon="people-outline" title={t('teams.noTeams', 'No teams')} /> : (
               teams.map((team) => (
                 <View key={team.id} style={styles.publicTeamCard}>
                   <TouchableOpacity 
@@ -486,7 +486,7 @@ export default function TournamentPublicPage() {
                   {expandedTeamId === team.id && (
                     <View style={styles.publicPlayersAccordion}>
                       {!teamPlayers[team.id] || teamPlayers[team.id].length === 0 ? (
-                        <Text style={styles.noPlayersText}>Nessun giocatore</Text>
+                        <Text style={styles.noPlayersText}>{t('teams.noPlayers', 'No players')}</Text>
                       ) : (
                         teamPlayers[team.id].map((player: any) => (
                           <TouchableOpacity 
@@ -867,7 +867,7 @@ export default function TournamentPublicPage() {
         {/* News Tab */}
         {activeTab === 'news' && (
           <View style={styles.tabContent}>
-            {news.length === 0 ? <EmptyState icon="newspaper-outline" title={t('tennis.noNews')} /> : (
+            {news.length === 0 ? <EmptyState icon="newspaper-outline" title={t('tennis.noNews', 'No news available')} /> : (
               news.map((item) => (
                 <View key={item.id} style={styles.publicNewsCard}>
                   {item.photo && (
@@ -879,7 +879,7 @@ export default function TournamentPublicPage() {
                       <Text style={styles.publicNewsDescription}>{item.content}</Text>
                     )}
                     <Text style={styles.publicNewsDate}>
-                      📅 {item.published_at ? new Date(item.published_at).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Data non disponibile'}
+                      📅 {item.published_at ? new Date(item.published_at).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : t('common.dateNotAvailable', 'Date not available')}
                     </Text>
                   </View>
                 </View>
@@ -902,20 +902,20 @@ export default function TournamentPublicPage() {
             <View style={styles.infoCard}>
               <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('common.name', 'Name')}</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.category', 'Category')}</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
-              <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.format')}</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
+              <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.format', 'Format')}</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
               {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.startDate', 'Start date')}</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
               <View style={styles.infoRow}>
                 <View style={[styles.statusDot, { backgroundColor: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]} />
                 <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>{t('tournaments.status')}</Text>
+                  <Text style={styles.infoLabel}>{t('tournaments.status', 'Status')}</Text>
                   <Text style={[styles.infoValue, { color: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]}>
-                    {tournament.status === 'active' ? t('tournaments.inProgress', 'In progress') : tournament.status === 'completed' ? t('tournaments.completed') : t('tournaments.pending', 'Pending')}
+                    {tournament.status === 'active' ? t('tournaments.inProgress', 'In progress') : tournament.status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.pending', 'Pending')}
                   </Text>
                 </View>
               </View>
-              {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.location')}</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
+              {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.location', 'Location')}</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
             </View>
-            <Text style={styles.teamsTitle}>{t('teams.title')} ({teams.length})</Text>
+            <Text style={styles.teamsTitle}>{t('teams.title', 'Teams')} ({teams.length})</Text>
             <View style={styles.teamsList}>
               {teams.map((team) => (
                 <View key={team.id} style={styles.teamItem}>
@@ -1528,32 +1528,32 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎾</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.matches_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>{t('tennis.wins')}</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.wins', 'Wins')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>❌</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.matches_lost || 0}</Text>
-                            <Text style={styles.playerStatLabel}>{t('tennis.losses')}</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.losses', 'Losses')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎯</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.aces || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Ace</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.ace', 'Ace')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>💔</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.double_faults || 0}</Text>
-                            <Text style={styles.playerStatLabel}>{t('tennis.doubleFaults')}</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.doubleFaults', 'Double Faults')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>📊</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.sets_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>{t('tennis.setsWon')}</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.setsWon', 'Sets Won')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎮</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.games_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>{t('tennis.gamesWon')}</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.gamesWon', 'Games Won')}</Text>
                           </View>
                         </>
                       ) : (
@@ -1562,12 +1562,12 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>⚽</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.goals || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Gol</Text>
+                            <Text style={styles.playerStatLabel}>{t('soccer.goals', 'Goals')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🅰️</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.assists || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Assist</Text>
+                            <Text style={styles.playerStatLabel}>{t('soccer.assists', 'Assists')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🟨</Text>
@@ -1601,7 +1601,7 @@ export default function TournamentPublicPage() {
                     )}
                   </>
                 ) : (
-                  <Text style={styles.noStatsText}>Nessuna statistica disponibile</Text>
+                  <Text style={styles.noStatsText}>{t('stats.noStatsAvailable', 'No statistics available')}</Text>
                 )}
               </>
             )}

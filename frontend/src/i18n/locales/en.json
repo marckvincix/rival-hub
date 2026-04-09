@@ -73,7 +73,10 @@
     "name": "Name",
     "info": "Info",
     "share": "Share",
-    "more": "more"
+    "more": "more",
+    "dateNotAvailable": "Date not available",
+    "player": "Player",
+    "undoLast": "Undo last"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -563,6 +566,7 @@
     "timeout": "Timeout",
     "substitution": "Substitution",
     "playerStats": "Player Stats",
+    "statsTitle": "Volleyball Statistics",
     "points": "Points",
     "pointsShort": "Pts",
     "attacks": "Attacks",
