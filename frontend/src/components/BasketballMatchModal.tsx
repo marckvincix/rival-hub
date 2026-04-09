@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -81,6 +82,7 @@ export function BasketballMatchModal({
   gameStructure,
   onSave,
 }: BasketballMatchModalProps) {
+  const { t } = useTranslation();
   const periods = PERIODS_CONFIG[gameStructure as keyof typeof PERIODS_CONFIG] || PERIODS_CONFIG['4_quarters'];
   
   // State
@@ -511,7 +513,7 @@ export function BasketballMatchModal({
             <View style={styles.teamScore}>
               <Text style={styles.teamName} numberOfLines={1}>{homeTeam?.name}</Text>
               <Text style={styles.totalScore}>{homeTotal}</Text>
-              <Text style={styles.teamFouls}>Falli: {homeTeamFouls[currentPeriod] || 0}</Text>
+              <Text style={styles.teamFouls}>{t('basketball.foulsLabel')}: {homeTeamFouls[currentPeriod] || 0}</Text>
             </View>
             <View style={styles.vsContainer}>
               <Text style={styles.vsText}>VS</Text>
@@ -522,7 +524,7 @@ export function BasketballMatchModal({
             <View style={styles.teamScore}>
               <Text style={styles.teamName} numberOfLines={1}>{awayTeam?.name}</Text>
               <Text style={styles.totalScore}>{awayTotal}</Text>
-              <Text style={styles.teamFouls}>Falli: {awayTeamFouls[currentPeriod] || 0}</Text>
+              <Text style={styles.teamFouls}>{t('basketball.foulsLabel')}: {awayTeamFouls[currentPeriod] || 0}</Text>
             </View>
           </View>
 
@@ -626,7 +628,7 @@ export function BasketballMatchModal({
 
           {/* Points Registration */}
           <View style={styles.pointsSection}>
-            <Text style={styles.sectionTitle}>Registra Punti</Text>
+            <Text style={styles.sectionTitle}>{t('basketball.scorePoints')}</Text>
             <View style={styles.pointsButtons}>
               <TouchableOpacity style={styles.pointButton1} onPress={() => addPoints(1)}>
                 <Text style={styles.pointButtonText}>+1</Text>
@@ -645,7 +647,7 @@ export function BasketballMatchModal({
 
           {/* Other Stats */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Altre Statistiche</Text>
+            <Text style={styles.sectionTitle}>{t('basketball.otherStats')}</Text>
             <View style={styles.statsButtons}>
               {BASKETBALL_STATS.map((stat) => (
                 <TouchableOpacity
@@ -666,7 +668,7 @@ export function BasketballMatchModal({
           <TouchableOpacity style={styles.undoButton} onPress={undoLastEvent} disabled={events.length === 0}>
             <Ionicons name="arrow-undo" size={20} color={events.length > 0 ? '#000' : '#999'} />
             <Text style={[styles.undoButtonText, events.length === 0 && styles.undoButtonTextDisabled]}>
-              Annulla Ultimo ({events.length})
+              {t('basketball.undoLast')} ({events.length})
             </Text>
           </TouchableOpacity>
 
@@ -674,7 +676,7 @@ export function BasketballMatchModal({
           {match?.status !== 'completed' && (
             <TouchableOpacity style={styles.endMatchButton} onPress={handleEndMatch}>
               <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-              <Text style={styles.endMatchButtonText}>Fine Partita</Text>
+              <Text style={styles.endMatchButtonText}>{t('basketball.endMatch')}</Text>
             </TouchableOpacity>
           )}
         </ScrollView>

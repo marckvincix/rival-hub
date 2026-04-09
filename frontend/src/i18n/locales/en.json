@@ -470,10 +470,16 @@
   "basketball": {
     "points": "Points",
     "rebounds": "Rebounds",
+    "reboundsShort": "REB",
     "assists": "Assists",
+    "assistsShort": "AST",
     "steals": "Steals",
+    "stealsShort": "STL",
     "blocks": "Blocks",
+    "blocksShort": "BLK",
     "fouls": "Fouls",
+    "foulShort": "FOUL",
+    "foulsLabel": "Fouls",
     "freeThrow": "Free Throw",
     "twoPointer": "2-Point",
     "threePointer": "3-Point",
@@ -486,7 +492,11 @@
     "guard": "Guard",
     "smallForward": "Small Forward",
     "powerForward": "Power Forward",
-    "center": "Center"
+    "center": "Center",
+    "scorePoints": "Score Points",
+    "otherStats": "Other Stats",
+    "undoLast": "Undo Last",
+    "endMatch": "End Match"
   },
   "tennis": {
     "set": "Set",
