@@ -505,7 +505,8 @@
     "endMatch": "Fine Partita",
     "confirmEndMatch": "Confermi di voler terminare la partita?",
     "matchEnded": "Partita Terminata",
-    "resultsSaved": "I risultati sono stati salvati"
+    "resultsSaved": "I risultati sono stati salvati",
+    "noPointScorers": "Nessun marcatore punti"
   },
   "tennis": {
     "set": "Set",
@@ -675,7 +676,8 @@
     "penalties": "Rigori",
     "goal": "Gol",
     "ownGoal": "Autogol",
-    "substitution": "Sostituzione"
+    "substitution": "Sostituzione",
+    "noScorers": "Nessun marcatore"
   },
   "roles": {
     "soccer": {

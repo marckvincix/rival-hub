@@ -505,7 +505,8 @@
     "endMatch": "End Match",
     "confirmEndMatch": "Confirm ending the match?",
     "matchEnded": "Match Ended",
-    "resultsSaved": "Results have been saved"
+    "resultsSaved": "Results have been saved",
+    "noPointScorers": "No point scorers"
   },
   "tennis": {
     "set": "Set",
@@ -675,7 +676,8 @@
     "penalties": "Penalties",
     "goal": "Goal",
     "ownGoal": "Own Goal",
-    "substitution": "Substitution"
+    "substitution": "Substitution",
+    "noScorers": "No scorers"
   },
   "roles": {
     "soccer": {

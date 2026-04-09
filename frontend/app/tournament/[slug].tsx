@@ -790,7 +790,7 @@ export default function TournamentPublicPage() {
         {/* Scorers Tab */}
         {activeTab === 'scorers' && (
           <View style={styles.tabContent}>
-            {scorers.length === 0 ? <EmptyState icon="trophy-outline" title={isBasketball ? "Nessun marcatore punti" : "Nessun marcatore"} /> : (
+            {scorers.length === 0 ? <EmptyState icon="trophy-outline" title={isBasketball ? t('basketball.noPointScorers', 'No point scorers') : t('soccer.noScorers', 'No scorers')} /> : (
               scorers.slice(0, 20).map((scorer: any) => (
                 <View key={scorer.player_id} style={styles.scorerCard}>
                   <View style={styles.scorerPosition}><Text style={styles.positionText}>{scorer.position}</Text></View>
