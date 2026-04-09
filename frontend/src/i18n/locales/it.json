@@ -565,6 +565,22 @@
     "module": "Modulo",
     "endMatch": "Fine Partita"
   },
+  "rugby": {
+    "try": "Meta",
+    "conversion": "Trasformazione",
+    "penalty": "Calcio di punizione",
+    "dropGoal": "Drop",
+    "prop": "Pilone",
+    "hooker": "Tallonatore",
+    "lock": "Seconda Linea",
+    "flanker": "Flanker",
+    "number8": "Numero 8",
+    "scrumHalf": "Mediano di Mischia",
+    "flyHalf": "Mediano di Apertura",
+    "centre": "Centro",
+    "winger": "Ala",
+    "fullback": "Estremo"
+  },
   "teams": {
     "title": "Squadre",
     "team": "Squadra",

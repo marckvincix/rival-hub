@@ -176,38 +176,7 @@ type VolleyballPositionType = 'palleggiatore' | 'opposto' | 'schiacciatore' | 'c
 // Rugby position types
 type RugbyPositionType = 'pilone_sinistro' | 'tallonatore' | 'pilone_destro' | 'seconda_linea' | 'flanker' | 'numero_8' | 'mediano_mischia' | 'mediano_apertura' | 'centro' | 'ala' | 'estremo';
 
-const POSITION_LABELS: Record<SoccerPositionType, string> = {
-  goalkeeper: '🧤 Portiere',
-  defender: '🛡️ Difensori',
-  midfielder: '⚙️ Centrocampisti',
-  forward: '⚡ Attaccanti',
-};
-
-const BASKETBALL_POSITION_LABELS: Record<BasketballPositionType, string> = {
-  playmaker: '🎯 Playmaker',
-  guardia: '🏀 Guardia',
-  ala_piccola: '🦅 Ala Piccola',
-  ala_grande: '💪 Ala Grande',
-  centro: '🗼 Centro',
-};
-
-const VOLLEYBALL_POSITION_LABELS: Record<VolleyballPositionType, string> = {
-  palleggiatore: '🎯 Palleggiatore',
-  opposto: '💪 Opposto',
-  schiacciatore: '⚡ Schiacciatore',
-  centrale: '🏐 Centrale',
-  libero: '🛡️ Libero',
-};
-
-const RUGBY_POSITION_LABELS: Record<RugbyPositionType, string> = {
-  pilone_sinistro: '💪 Pilone Sinistro',
-  tallonatore: '🎯 Tallonatore',
-  pilone_destro: '💪 Pilone Destro',
-  seconda_linea: '🏉 Seconda Linea',
-  flanker: '⚡ Flanker',
-  numero_8: '8️⃣ Numero 8',
-  mediano_mischia: '🔄 Mediano Mischia',
-  mediano_apertura: '🎯 Mediano Apertura',
+// These labels will be translated dynamically inside the component using useTranslation
   centro: '🏃 Centro',
   ala: '🦅 Ala',
   estremo: '🛡️ Estremo',
@@ -239,19 +208,57 @@ export function FormationModal({
   const [saving, setSaving] = useState(false);
   const [showDropdown, setShowDropdown] = useState<string | null>(null);
 
+  // Translated position labels
+  const POSITION_LABELS: Record<string, string> = {
+    goalkeeper: `🧤 ${t('formation.goalkeeper')}`,
+    defender: `🛡️ ${t('formation.defenders')}`,
+    midfielder: `⚙️ ${t('formation.midfielders')}`,
+    forward: `⚡ ${t('formation.forwards')}`,
+  };
+
+  const BASKETBALL_POSITION_LABELS: Record<string, string> = {
+    playmaker: `🎯 ${t('basketball.playmaker')}`,
+    guardia: `🏀 ${t('basketball.guard')}`,
+    ala_piccola: `🦅 ${t('basketball.smallForward')}`,
+    ala_grande: `💪 ${t('basketball.powerForward')}`,
+    centro: `🗼 ${t('basketball.center')}`,
+  };
+
+  const VOLLEYBALL_POSITION_LABELS: Record<string, string> = {
+    palleggiatore: `🎯 ${t('volleyball.setter')}`,
+    opposto: `💪 ${t('volleyball.opposite')}`,
+    schiacciatore: `⚡ ${t('volleyball.outsideHitter')}`,
+    centrale: `🏐 ${t('volleyball.middleBlocker')}`,
+    libero: `🛡️ ${t('volleyball.libero')}`,
+  };
+
+  const RUGBY_POSITION_LABELS: Record<string, string> = {
+    pilone_sinistro: `💪 ${t('rugby.prop')}`,
+    tallonatore: `🎯 ${t('rugby.hooker')}`,
+    pilone_destro: `💪 ${t('rugby.prop')}`,
+    seconda_linea: `🏉 ${t('rugby.lock')}`,
+    flanker: `⚡ ${t('rugby.flanker')}`,
+    numero_8: `8️⃣ ${t('rugby.number8')}`,
+    mediano_mischia: `🔄 ${t('rugby.scrumHalf')}`,
+    mediano_apertura: `🎯 ${t('rugby.flyHalf')}`,
+    centro: `🏃 ${t('rugby.centre')}`,
+    ala: `⚡ ${t('rugby.winger')}`,
+    estremo: `🛡️ ${t('rugby.fullback')}`,
+  };
+
   // Tennis/Padel configuration - no modules, just players
   const TENNIS_FORMATS: Record<string, { slots: number; labels: string[] }> = {
-    'singolo': { slots: 1, labels: ['Giocatore'] },
-    'singles': { slots: 1, labels: ['Giocatore'] },
-    'doppio': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
-    'doubles': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
+    'singolo': { slots: 1, labels: [t('formation.player')] },
+    'singles': { slots: 1, labels: [t('formation.player')] },
+    'doppio': { slots: 2, labels: [t('formation.player1'), t('formation.player2')] },
+    'doubles': { slots: 2, labels: [t('formation.player1'), t('formation.player2')] },
   };
   
   const PADEL_FORMATS: Record<string, { slots: number; labels: string[] }> = {
-    'doppio': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
-    'doubles': { slots: 2, labels: ['Giocatore 1', 'Giocatore 2'] },
-    'singolo': { slots: 1, labels: ['Giocatore'] },
-    'singles': { slots: 1, labels: ['Giocatore'] },
+    'doppio': { slots: 2, labels: [t('formation.player1'), t('formation.player2')] },
+    'doubles': { slots: 2, labels: [t('formation.player1'), t('formation.player2')] },
+    'singolo': { slots: 1, labels: [t('formation.player')] },
+    'singles': { slots: 1, labels: [t('formation.player')] },
   };
 
   // Get available modules for the game format (depends on sport)

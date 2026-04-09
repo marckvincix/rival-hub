@@ -565,6 +565,22 @@
     "module": "Formation",
     "endMatch": "End Match"
   },
+  "rugby": {
+    "try": "Try",
+    "conversion": "Conversion",
+    "penalty": "Penalty",
+    "dropGoal": "Drop Goal",
+    "prop": "Prop",
+    "hooker": "Hooker",
+    "lock": "Lock",
+    "flanker": "Flanker",
+    "number8": "Number 8",
+    "scrumHalf": "Scrum Half",
+    "flyHalf": "Fly-Half",
+    "centre": "Centre",
+    "winger": "Winger",
+    "fullback": "Fullback"
+  },
   "teams": {
     "title": "Teams",
     "team": "Team",
@@ -673,7 +689,10 @@
       "scrumHalf": "Scrum Half",
       "winger": "Winger",
       "centre": "Centre",
-      "fullback": "Fullback"
+      "fullback": "Fullback",
+      "lock": "Lock",
+      "number8": "Number 8",
+      "flyHalf": "Fly-Half"
     },
     "baseball": {
       "pitcher": "Pitcher",
