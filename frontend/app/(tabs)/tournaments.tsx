@@ -1082,7 +1082,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
   const handleDeleteTeamConfirm = (teamId: string, teamName: string) => {
     Alert.alert(
-      t('teams.deleteTeam'),
+      t('teams.deleteTeam', 'Delete Team'),
       `Sei sicuro di voler eliminare ${teamName}?`,
       [
         { text: t('common.cancel'), style: 'cancel' },
@@ -2059,7 +2059,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <Text style={styles.modalTitle}>
               {isTennisSport 
                 ? (isDoubles ? t('teams.newDouble', 'New Double') : t('teams.addPlayer'))
-                : t('teams.addTeam')
+                : t('teams.addTeam', 'Add Team')
               }
             </Text>
             <View style={{ width: 60 }} />
@@ -2067,16 +2067,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           <View style={styles.modalContentSimple}>
             <Text style={styles.inputLabelSimple}>
               {isTennisSport 
-                ? (isDoubles ? t('teams.doubleName', 'Double Name') : t('teams.playerName'))
-                : t('teams.teamName')
+                ? (isDoubles ? t('teams.doubleName', 'Double Name') : t('teams.playerName', 'Player Name'))
+                : t('teams.teamName', 'Team Name')
               }
             </Text>
             <View style={styles.inputBoxSimple}>
               <TextInput
                 style={styles.inputTextSimple}
                 placeholder={isTennisSport 
-                  ? (isDoubles ? 'es. Sinner/Berrettini' : 'es. Jannik Sinner')
-                  : 'es. SSC Napoli'
+                  ? (isDoubles ? t('teams.doubleNamePlaceholder', 'e.g. Sinner/Berrettini') : t('teams.playerNamePlaceholder', 'e.g. Jannik Sinner'))
+                  : t('teams.teamNamePlaceholder', 'e.g. SSC Napoli')
                 }
                 placeholderTextColor="#999"
                 value={newTeamName}
@@ -2100,7 +2100,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.modalTitle}>{tournament.name}</Text>
-              <Text style={styles.modalSubtitle}>{t('teams.addPlayer')}</Text>
+              <Text style={styles.modalSubtitle}>{t('teams.addPlayer', 'Add Player')}</Text>
             </View>
           </View>
           <ScrollView style={styles.playerFormContent} showsVerticalScrollIndicator={false}>
@@ -2116,7 +2116,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
 
             {/* Nome giocatore */}
-            <Text style={styles.playerFormLabel}>{t('teams.playerName')}</Text>
+            <Text style={styles.playerFormLabel}>{t('teams.playerName', 'Player Name')}</Text>
             <View style={styles.playerFormInputBox}>
               <TextInput
                 style={styles.playerFormInput}
@@ -2130,7 +2130,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {/* Numero + Ruolo side by side (Ruolo nascosto per Tennis/Padel) */}
             <View style={styles.playerFormRow}>
               <View style={sportHasRoles ? styles.playerFormColSmall : { flex: 1 }}>
-                <Text style={styles.playerFormLabel}>{t('teams.playerNumber')}</Text>
+                <Text style={styles.playerFormLabel}>{t('teams.playerNumber', 'Number')}</Text>
                 <View style={styles.playerFormInputBox}>
                   <TextInput
                     style={styles.playerFormInput}
@@ -2145,7 +2145,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
               {sportHasRoles && (
                 <View style={styles.playerFormColLarge}>
-                  <Text style={styles.playerFormLabel}>{t('teams.position')}</Text>
+                  <Text style={styles.playerFormLabel}>{t('teams.position', 'Position')}</Text>
                   <TouchableOpacity 
                     style={styles.playerFormDropdown}
                     onPress={() => setShowRoleDropdown(!showRoleDropdown)}

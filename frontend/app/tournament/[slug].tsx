@@ -199,7 +199,7 @@ export default function TournamentPublicPage() {
     try { await Share.share({ message: `Segui "${tournament.name}" su Rival Hub!` }); } catch (e) {}
   };
 
-  const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team');
+  const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team', 'Team');
   const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => {
@@ -430,7 +430,7 @@ export default function TournamentPublicPage() {
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>#</Text>
-                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? t('teams.pair') : t('teams.player')) : t('teams.team')}</Text>
+                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? t('teams.pair', 'Pair') : t('teams.player', 'Player')) : t('teams.team', 'Team')}</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>G</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>V</Text>
                   {!isBasketball && !isRacketSport && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
