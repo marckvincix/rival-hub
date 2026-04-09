@@ -28,6 +28,17 @@
     "handball": "Handball",
     "handball7": "Handball 7v7"
   },
+  "formats": {
+    "basket5v5": "Basketball 5v5",
+    "basket3v3": "Basketball 3v3",
+    "volleyball6v6": "Volleyball 6v6",
+    "beachVolley": "Beach Volley",
+    "rugby15": "Rugby XV",
+    "rugby7": "Rugby 7",
+    "hockey6v6": "Hockey 6v6",
+    "hockey5v5": "Hockey 5v5",
+    "handball7v7": "Handball 7v7"
+  },
   "common": {
     "loading": "Loading...",
     "save": "Save",

@@ -40,55 +40,55 @@ const SPORT_CATEGORIES: Record<string, { label: string; emoji: string; formats: 
     label: 'Basket',
     emoji: '🏀',
     formats: [
-      { key: '5v5', label: 'Basket 5v5' },
-      { key: '3v3', label: 'Basket 3v3' },
+      { key: '5v5', labelKey: 'formats.basket5v5' },
+      { key: '3v3', labelKey: 'formats.basket3v3' },
     ]
   },
   'padel': {
     label: 'Padel',
     emoji: '🎾',
     formats: [
-      { key: 'doubles', label: 'Doppio' },
-      { key: 'singles', label: 'Singolo' },
+      { key: 'doubles', labelKey: 'tennis.doubles' },
+      { key: 'singles', labelKey: 'tennis.singles' },
     ]
   },
   'tennis': {
     label: 'Tennis',
     emoji: '🎾',
     formats: [
-      { key: 'doubles', label: 'Doppio' },
-      { key: 'singles', label: 'Singolo' },
+      { key: 'doubles', labelKey: 'tennis.doubles' },
+      { key: 'singles', labelKey: 'tennis.singles' },
     ]
   },
   'pallavolo': {
     label: 'Pallavolo',
     emoji: '🏐',
     formats: [
-      { key: '6v6', label: 'Pallavolo 6v6' },
-      { key: '4v4', label: 'Beach Volley' },
+      { key: '6v6', labelKey: 'formats.volleyball6v6' },
+      { key: '4v4', labelKey: 'formats.beachVolley' },
     ]
   },
   'rugby': {
     label: 'Rugby',
     emoji: '🏉',
     formats: [
-      { key: '15v15', label: 'Rugby XV' },
-      { key: '7v7', label: 'Rugby 7' },
+      { key: '15v15', labelKey: 'formats.rugby15' },
+      { key: '7v7', labelKey: 'formats.rugby7' },
     ]
   },
   'hockey': {
     label: 'Hockey',
     emoji: '🏒',
     formats: [
-      { key: '6v6', label: 'Hockey 6v6' },
-      { key: '5v5', label: 'Hockey 5v5' },
+      { key: '6v6', labelKey: 'formats.hockey6v6' },
+      { key: '5v5', labelKey: 'formats.hockey5v5' },
     ]
   },
   'pallamano': {
     label: 'Pallamano',
     emoji: '🤾',
     formats: [
-      { key: '7v7', label: 'Pallamano 7v7' },
+      { key: '7v7', labelKey: 'formats.handball7v7' },
     ]
   },
 };
@@ -481,7 +481,7 @@ export default function LandingPage() {
                 >
                   <Ionicons name="grid-outline" size={16} color={selectedFormat ? '#FFF' : '#000'} />
                   <Text style={[styles.filterChipText, selectedFormat && styles.filterChipTextActive]}>
-                    {selectedFormat ? availableFormats.find(f => f.key === selectedFormat)?.label : t('home.format', 'Format')}
+                    {selectedFormat ? t(availableFormats.find(f => f.key === selectedFormat)?.labelKey || 'home.format', selectedFormat) : t('home.format', 'Format')}
                   </Text>
                   {selectedFormat && (
                     <TouchableOpacity onPress={() => setSelectedFormat(null)} style={styles.filterClearBtn}>
@@ -693,7 +693,7 @@ export default function LandingPage() {
                   }}
                 >
                   <Text style={[styles.modalListItemText, selectedFormat === format.key && styles.modalListItemTextActive]}>
-                    {format.label}
+                    {t(format.labelKey, format.key)}
                   </Text>
                   {selectedFormat === format.key && <Ionicons name="checkmark" size={20} color="#FFF" />}
                 </TouchableOpacity>
