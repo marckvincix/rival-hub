@@ -245,7 +245,7 @@ export function VolleyballMatchModal({
   // Handle close match
   const handleCloseMatch = () => {
     Alert.alert(
-      'Fine Partita',
+      t('volleyball.endMatch'),
       'Vuoi terminare la partita?',
       [
         { text: 'Annulla', style: 'cancel' },
@@ -454,7 +454,7 @@ export function VolleyballMatchModal({
           {/* End Match Button */}
           <TouchableOpacity style={styles.endMatchButton} onPress={handleCloseMatch}>
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.endMatchText}>Fine Partita</Text>
+            <Text style={styles.endMatchText}>{t('volleyball.endMatch')}</Text>
           </TouchableOpacity>
 
           <View style={{ height: 40 }} />

@@ -199,7 +199,7 @@ export default function TournamentPublicPage() {
     try { await Share.share({ message: `Segui "${tournament.name}" su Rival Hub!` }); } catch (e) {}
   };
 
-  const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || 'Squadra';
+  const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team');
   const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
   const getCategoryLabel = (cat: string) => cat;
   const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
@@ -425,7 +425,7 @@ export default function TournamentPublicPage() {
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>#</Text>
-                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? 'Coppia' : 'Giocatore') : 'Squadra'}</Text>
+                  <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? t('teams.pair') : t('teams.player')) : t('teams.team')}</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>G</Text>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>V</Text>
                   {!isBasketball && !isRacketSport && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
@@ -835,7 +835,7 @@ export default function TournamentPublicPage() {
                       </>
                     ) : isBasketball ? (
                       <>
-                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.total_points || 0}</Text><Text style={styles.statBoxLabel}>Punti</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.total_points || 0}</Text><Text style={styles.statBoxLabel}>{t('volleyball.points')}</Text></View>
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.rebounds || 0}</Text><Text style={styles.statBoxLabel}>Rimb.</Text></View>
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.assists || 0}</Text><Text style={styles.statBoxLabel}>Assist</Text></View>
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.steals || 0}</Text><Text style={styles.statBoxLabel}>Rubate</Text></View>
@@ -1489,32 +1489,32 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🏐</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.points || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Punti</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.points')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎯</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.aces || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Ace</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.aces')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🧱</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.blocks || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Muri</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.blocks')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>💥</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.kills || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Attacchi</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.attacks')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🛡️</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.digs || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Difese</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.digs')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>👟</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                            <Text style={styles.playerStatLabel}>{t('volleyball.appearances')}</Text>
                           </View>
                         </>
                       ) : isTennis || isPadel ? (
