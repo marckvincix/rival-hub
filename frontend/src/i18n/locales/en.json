@@ -319,7 +319,9 @@
   "highlights": {
     "title": "Highlights",
     "photos": "Photos",
+    "photo": "Photo",
     "videos": "Videos",
+    "video": "Video",
     "upload": "Upload",
     "uploadPhotos": "Upload Photos",
     "uploadVideos": "Upload Videos",

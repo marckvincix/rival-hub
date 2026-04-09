@@ -552,7 +552,7 @@ export function HighlightsUploadModal({
                   <View style={styles.roundHeader}>
                     <Text style={styles.roundTitle}>{roundData.round}</Text>
                     <Text style={styles.roundStats}>
-                      {roundData.photo_count} foto · {roundData.video_count} video
+                      {roundData.photo_count} {t('highlights.photo', 'Photo')} · {roundData.video_count} {t('highlights.video', 'Video')}
                     </Text>
                   </View>
 
