@@ -197,6 +197,8 @@
     "format": "Format",
     "startDate": "Start date",
     "inProgress": "In progress",
+    "completed": "Completed",
+    "draft": "Draft",
     "starters": "Starters",
     "viewField": "View Field",
     "formation": "Formation",

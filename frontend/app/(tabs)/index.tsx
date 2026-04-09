@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { 
   View, 
   Text, 
@@ -15,6 +15,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import { Loading } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Match } from '../../src/types';
+import { useTranslation } from '../../src/i18n';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
@@ -134,16 +135,18 @@ export default function DashboardScreen() {
     loadData();
   };
 
+  const { t } = useTranslation();
+
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'In corso';
-      case 'completed': return 'Terminato';
-      default: return 'Bozza';
+      case 'active': return t('tournaments.inProgress');
+      case 'completed': return t('tournaments.completed', 'Completed');
+      default: return t('tournaments.draft', 'Draft');
     }
   };
 
   if (loading) {
-    return <Loading message="Caricamento..." />;
+    return <Loading message={t('common.loading')} />;
   }
 
   const firstName = user?.name?.split(' ')[0] || 'Utente';
@@ -207,7 +210,7 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.statValue}>{stats.totalTournaments}</Text>
               <View style={styles.statLabelContainer}>
-                <Text style={styles.statLabel}>Tornei</Text>
+                <Text style={styles.statLabel}>{t('tournaments.title')}</Text>
               </View>
             </View>
             <View style={styles.statCard}>
@@ -216,7 +219,7 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.statValue}>{stats.activeTournaments}</Text>
               <View style={styles.statLabelContainer}>
-                <Text style={styles.statLabel}>In corso</Text>
+                <Text style={styles.statLabel}>{t('tournaments.inProgress')}</Text>
               </View>
             </View>
           </View>

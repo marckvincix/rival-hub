@@ -5,8 +5,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/authStore';
 import { useEffect } from 'react';
+import { useTranslation } from '../../src/i18n';
 
 function CustomTabBar() {
+  const { t } = useTranslation();
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
@@ -36,7 +38,7 @@ function CustomTabBar() {
           onPress={() => router.push('/(tabs)/tournaments')}
         >
           <Ionicons name="trophy-outline" size={24} color="#000" />
-          <Text style={styles.tabLabel}>Tornei</Text>
+          <Text style={styles.tabLabel}>{t('tournaments.title')}</Text>
         </TouchableOpacity>
 
         {/* Profilo Tab */}
@@ -45,7 +47,7 @@ function CustomTabBar() {
           onPress={() => router.push('/(tabs)/profile')}
         >
           <Ionicons name="person-outline" size={24} color="#000" />
-          <Text style={styles.tabLabel}>Profilo</Text>
+          <Text style={styles.tabLabel}>{t('profile.title')}</Text>
         </TouchableOpacity>
       </View>
     </View>

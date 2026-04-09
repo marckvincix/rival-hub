@@ -30,6 +30,72 @@ export default function TournamentPublicPage() {
   const { slug } = useLocalSearchParams<{ slug: string }>();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
+
+  // Translate player role from Italian to current language
+  const translateRole = (role: string) => {
+    if (!role) return '-';
+    const sport = tournament?.sport || 'calcio';
+    
+    const roleMapping: Record<string, Record<string, string>> = {
+      'calcio': {
+        'Portiere': 'roles.soccer.goalkeeper',
+        'Difensore': 'roles.soccer.defender',
+        'Centrocampista': 'roles.soccer.midfielder',
+        'Attaccante': 'roles.soccer.forward',
+        'Goalkeeper': 'roles.soccer.goalkeeper',
+        'Defender': 'roles.soccer.defender',
+        'Midfielder': 'roles.soccer.midfielder',
+        'Forward': 'roles.soccer.forward',
+      },
+      'basket': {
+        'Playmaker': 'roles.basketball.pointGuard',
+        'Guardia': 'roles.basketball.guard',
+        'Ala Piccola': 'roles.basketball.smallForward',
+        'Ala Grande': 'roles.basketball.powerForward',
+        'Centro': 'roles.basketball.center',
+        'Point Guard': 'roles.basketball.pointGuard',
+        'Guard': 'roles.basketball.guard',
+        'Small Forward': 'roles.basketball.smallForward',
+        'Power Forward': 'roles.basketball.powerForward',
+        'Center': 'roles.basketball.center',
+      },
+      'pallavolo': {
+        'Palleggiatore': 'roles.volleyball.setter',
+        'Schiacciatore': 'roles.volleyball.outsideHitter',
+        'Opposto': 'roles.volleyball.opposite',
+        'Libero': 'roles.volleyball.libero',
+        'Centrale': 'roles.volleyball.middleBlocker',
+        'Setter': 'roles.volleyball.setter',
+        'Outside Hitter': 'roles.volleyball.outsideHitter',
+        'Opposite': 'roles.volleyball.opposite',
+        'Middle Blocker': 'roles.volleyball.middleBlocker',
+      },
+      'rugby': {
+        'Pilone': 'roles.rugby.prop',
+        'Tallonatore': 'roles.rugby.hooker',
+        'Flanker': 'roles.rugby.flanker',
+        'Mediano di mischia': 'roles.rugby.scrumHalf',
+        'Ala': 'roles.rugby.winger',
+        'Centro': 'roles.rugby.centre',
+        'Estremo': 'roles.rugby.fullback',
+        'Prop': 'roles.rugby.prop',
+        'Hooker': 'roles.rugby.hooker',
+        'Scrum Half': 'roles.rugby.scrumHalf',
+        'Winger': 'roles.rugby.winger',
+        'Centre': 'roles.rugby.centre',
+        'Fullback': 'roles.rugby.fullback',
+      }
+    };
+    
+    const sportMapping = roleMapping[sport] || roleMapping['calcio'];
+    const translationKey = sportMapping[role];
+    
+    if (translationKey) {
+      return t(translationKey, role);
+    }
+    
+    return role;
+  };
   
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -430,7 +496,7 @@ export default function TournamentPublicPage() {
                             </View>
                             <View style={styles.publicPlayerInfo}>
                               <Text style={styles.publicPlayerName}>{player.full_name}</Text>
-                              <Text style={styles.publicPlayerRole}>{player.role}</Text>
+                              <Text style={styles.publicPlayerRole}>{translateRole(player.role)}</Text>
                             </View>
                             <Ionicons name="stats-chart" size={18} color="#666" />
                           </TouchableOpacity>

@@ -197,6 +197,8 @@
     "format": "Formato",
     "startDate": "Data inizio",
     "inProgress": "In corso",
+    "completed": "Terminato",
+    "draft": "Bozza",
     "starters": "Titolari",
     "viewField": "Vedi Campo",
     "formation": "Modulo",

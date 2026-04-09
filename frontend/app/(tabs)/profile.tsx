@@ -149,7 +149,7 @@ export default function ProfileScreen() {
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>Profilo</Text>
+          <Text style={styles.title}>{t('profile.title')}</Text>
         </View>
 
         {/* User Info */}
@@ -185,7 +185,7 @@ export default function ProfileScreen() {
               {/* Tournament Favorites */}
               {favorites.filter(f => f.type === 'tournament').length > 0 && (
                 <View style={styles.favoritesGroup}>
-                  <Text style={styles.favoritesGroupTitle}>Tornei</Text>
+                  <Text style={styles.favoritesGroupTitle}>{t('tournaments.title')}</Text>
                   {favorites.filter(f => f.type === 'tournament').map(fav => (
                     <View key={fav.id} style={styles.favoriteItem}>
                       <TouchableOpacity 

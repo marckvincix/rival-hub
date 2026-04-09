@@ -1364,6 +1364,73 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   };
 
   const PLAYER_ROLES = getPlayerRoles();
+
+  // Translate player role from Italian to current language
+  const translateRole = (role: string) => {
+    if (!role) return '-';
+    const sport = tournament?.sport || 'calcio';
+    
+    // Mapping from Italian role names to translation keys
+    const roleMapping: Record<string, Record<string, string>> = {
+      'calcio': {
+        'Portiere': 'roles.soccer.goalkeeper',
+        'Difensore': 'roles.soccer.defender',
+        'Centrocampista': 'roles.soccer.midfielder',
+        'Attaccante': 'roles.soccer.forward',
+        'Goalkeeper': 'roles.soccer.goalkeeper',
+        'Defender': 'roles.soccer.defender',
+        'Midfielder': 'roles.soccer.midfielder',
+        'Forward': 'roles.soccer.forward',
+      },
+      'basket': {
+        'Playmaker': 'roles.basketball.pointGuard',
+        'Guardia': 'roles.basketball.guard',
+        'Ala Piccola': 'roles.basketball.smallForward',
+        'Ala Grande': 'roles.basketball.powerForward',
+        'Centro': 'roles.basketball.center',
+        'Point Guard': 'roles.basketball.pointGuard',
+        'Guard': 'roles.basketball.guard',
+        'Small Forward': 'roles.basketball.smallForward',
+        'Power Forward': 'roles.basketball.powerForward',
+        'Center': 'roles.basketball.center',
+      },
+      'pallavolo': {
+        'Palleggiatore': 'roles.volleyball.setter',
+        'Schiacciatore': 'roles.volleyball.outsideHitter',
+        'Opposto': 'roles.volleyball.opposite',
+        'Libero': 'roles.volleyball.libero',
+        'Centrale': 'roles.volleyball.middleBlocker',
+        'Setter': 'roles.volleyball.setter',
+        'Outside Hitter': 'roles.volleyball.outsideHitter',
+        'Opposite': 'roles.volleyball.opposite',
+        'Middle Blocker': 'roles.volleyball.middleBlocker',
+      },
+      'rugby': {
+        'Pilone': 'roles.rugby.prop',
+        'Tallonatore': 'roles.rugby.hooker',
+        'Flanker': 'roles.rugby.flanker',
+        'Mediano di mischia': 'roles.rugby.scrumHalf',
+        'Ala': 'roles.rugby.winger',
+        'Centro': 'roles.rugby.centre',
+        'Estremo': 'roles.rugby.fullback',
+        'Prop': 'roles.rugby.prop',
+        'Hooker': 'roles.rugby.hooker',
+        'Scrum Half': 'roles.rugby.scrumHalf',
+        'Winger': 'roles.rugby.winger',
+        'Centre': 'roles.rugby.centre',
+        'Fullback': 'roles.rugby.fullback',
+      }
+    };
+    
+    const sportMapping = roleMapping[sport] || roleMapping['calcio'];
+    const translationKey = sportMapping[role];
+    
+    if (translationKey) {
+      return t(translationKey, role);
+    }
+    
+    return role;
+  };
   
   // Check if sport has roles (tennis/padel don't)
   const sportHasRoles = tournament ? (tournament.sport !== 'tennis' && tournament.sport !== 'padel') : true;
@@ -1698,7 +1765,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                 {/* Player Info */}
                                 <View style={styles.playerInfo}>
                                   <Text style={styles.playerNameBold}>{player.name}</Text>
-                                  <Text style={styles.playerRoleText}>{player.role || '-'}</Text>
+                                  <Text style={styles.playerRoleText}>{translateRole(player.role)}</Text>
                                 </View>
                                 {/* Right Section: Stats + Delete + Number */}
                                 <View style={styles.playerRightSection}>
@@ -3222,6 +3289,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       players={homeTeamPlayers}
                       ratings={playerRatings}
                       onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({...prev, [playerId]: rating}))}
+                      sport={tournament?.sport || 'calcio'}
                     />
 
                     {/* Away Team Ratings */}
@@ -3231,6 +3299,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       players={awayTeamPlayers}
                       ratings={playerRatings}
                       onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({...prev, [playerId]: rating}))}
+                      sport={tournament?.sport || 'calcio'}
                     />
                   </View>
 
@@ -3605,19 +3674,82 @@ function TeamRatingsAccordion({
   teamLetter, 
   players = [],
   ratings = {},
-  onRatingChange
+  onRatingChange,
+  sport = 'calcio'
 }: { 
   teamName: string; 
   teamLetter: string; 
   players?: any[];
   ratings?: Record<string, number>;
   onRatingChange?: (playerId: string, rating: number) => void;
+  sport?: string;
 }) {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(true);
   const [showRatingPicker, setShowRatingPicker] = useState(false);
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const [selectedPlayerName, setSelectedPlayerName] = useState('');
+
+  // Translate player role
+  const translateRole = (role: string) => {
+    if (!role) return '-';
+    const roleMapping: Record<string, Record<string, string>> = {
+      'calcio': {
+        'Portiere': 'roles.soccer.goalkeeper',
+        'Difensore': 'roles.soccer.defender',
+        'Centrocampista': 'roles.soccer.midfielder',
+        'Attaccante': 'roles.soccer.forward',
+        'Goalkeeper': 'roles.soccer.goalkeeper',
+        'Defender': 'roles.soccer.defender',
+        'Midfielder': 'roles.soccer.midfielder',
+        'Forward': 'roles.soccer.forward',
+      },
+      'basket': {
+        'Playmaker': 'roles.basketball.pointGuard',
+        'Guardia': 'roles.basketball.guard',
+        'Ala Piccola': 'roles.basketball.smallForward',
+        'Ala Grande': 'roles.basketball.powerForward',
+        'Centro': 'roles.basketball.center',
+        'Point Guard': 'roles.basketball.pointGuard',
+        'Guard': 'roles.basketball.guard',
+        'Small Forward': 'roles.basketball.smallForward',
+        'Power Forward': 'roles.basketball.powerForward',
+        'Center': 'roles.basketball.center',
+      },
+      'pallavolo': {
+        'Palleggiatore': 'roles.volleyball.setter',
+        'Schiacciatore': 'roles.volleyball.outsideHitter',
+        'Opposto': 'roles.volleyball.opposite',
+        'Libero': 'roles.volleyball.libero',
+        'Centrale': 'roles.volleyball.middleBlocker',
+        'Setter': 'roles.volleyball.setter',
+        'Outside Hitter': 'roles.volleyball.outsideHitter',
+        'Opposite': 'roles.volleyball.opposite',
+        'Middle Blocker': 'roles.volleyball.middleBlocker',
+      },
+      'rugby': {
+        'Pilone': 'roles.rugby.prop',
+        'Tallonatore': 'roles.rugby.hooker',
+        'Flanker': 'roles.rugby.flanker',
+        'Mediano di mischia': 'roles.rugby.scrumHalf',
+        'Ala': 'roles.rugby.winger',
+        'Centro': 'roles.rugby.centre',
+        'Estremo': 'roles.rugby.fullback',
+        'Prop': 'roles.rugby.prop',
+        'Hooker': 'roles.rugby.hooker',
+        'Scrum Half': 'roles.rugby.scrumHalf',
+        'Winger': 'roles.rugby.winger',
+        'Centre': 'roles.rugby.centre',
+        'Fullback': 'roles.rugby.fullback',
+      }
+    };
+    const sportMapping = roleMapping[sport] || roleMapping['calcio'];
+    const translationKey = sportMapping[role];
+    if (translationKey) {
+      return t(translationKey, role);
+    }
+    return role;
+  };
 
   const handleRatingChange = (playerId: string, rating: number) => {
     if (onRatingChange) {
@@ -3664,7 +3796,7 @@ function TeamRatingsAccordion({
                 <View key={player.id} style={styles.playerRatingRow}>
                   <View style={styles.playerInfo}>
                     <Text style={styles.playerName}>{player.name}</Text>
-                    <Text style={styles.playerRole}>{player.role || '-'}</Text>
+                    <Text style={styles.playerRole}>{translateRole(player.role)}</Text>
                   </View>
                   <TouchableOpacity 
                     style={[styles.votoBtn, hasRating && styles.votoBtnEdit]}
