@@ -77,6 +77,25 @@ export function RugbyMatchModal({
   gameFormat = '15v15',
 }: RugbyMatchModalProps) {
   const { t } = useTranslation();
+  
+  // Rugby role translation mapping
+  const translateRole = (role: string): string => {
+    const roleMapping: { [key: string]: string } = {
+      'Pilone': t('roles.rugby.prop', 'Prop'),
+      'Tallonatore': t('roles.rugby.hooker', 'Hooker'),
+      'Seconda linea': t('roles.rugby.lock', 'Lock'),
+      'Flanker': t('roles.rugby.flanker', 'Flanker'),
+      'Numero 8': t('roles.rugby.number8', 'Number 8'),
+      'Mediano di mischia': t('roles.rugby.scrumHalf', 'Scrum Half'),
+      'Mediano': t('roles.rugby.scrumHalf', 'Scrum Half'),
+      'Apertura': t('roles.rugby.flyHalf', 'Fly Half'),
+      'Centro': t('roles.rugby.center', 'Center'),
+      'Ala': t('roles.rugby.wing', 'Wing'),
+      'Estremo': t('roles.rugby.fullback', 'Fullback'),
+    };
+    return roleMapping[role] || role;
+  };
+  
   const [events, setEvents] = useState<RugbyEvent[]>([]);
   const [homeScore, setHomeScore] = useState(0);
   const [awayScore, setAwayScore] = useState(0);
@@ -468,7 +487,7 @@ export function RugbyMatchModal({
                   >
                     <Text style={styles.pickerNumber}>{player.number || '-'}</Text>
                     <Text style={styles.pickerName}>{player.full_name}</Text>
-                    <Text style={styles.pickerRole}>{player.role || ''}</Text>
+                    <Text style={styles.pickerRole}>{translateRole(player.role || '')}</Text>
                   </TouchableOpacity>
                 ))}
               </ScrollView>
