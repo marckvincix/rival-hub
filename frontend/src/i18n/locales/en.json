@@ -478,7 +478,15 @@
     "twoPointer": "2-Point",
     "threePointer": "3-Point",
     "quarter": "Quarter",
-    "overtime": "Overtime"
+    "overtime": "Overtime",
+    "appearances": "Appearances",
+    "pointsScored": "Points Scored",
+    "notSpecified": "Not specified",
+    "playmaker": "Point Guard",
+    "guard": "Guard",
+    "smallForward": "Small Forward",
+    "powerForward": "Power Forward",
+    "center": "Center"
   },
   "tennis": {
     "set": "Set",

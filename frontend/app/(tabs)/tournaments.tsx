@@ -2290,32 +2290,32 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🏀</Text>
                           <Text style={styles.statValue}>{playerStats?.points || 0}</Text>
-                          <Text style={styles.statLabel}>Punti</Text>
+                          <Text style={styles.statLabel}>{t('basketball.points')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🅰️</Text>
                           <Text style={styles.statValue}>{playerStats?.assists || 0}</Text>
-                          <Text style={styles.statLabel}>Assist</Text>
+                          <Text style={styles.statLabel}>{t('basketball.assists')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>📊</Text>
                           <Text style={styles.statValue}>{playerStats?.rebounds || 0}</Text>
-                          <Text style={styles.statLabel}>Rimbalzi</Text>
+                          <Text style={styles.statLabel}>{t('basketball.rebounds')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🤚</Text>
                           <Text style={styles.statValue}>{playerStats?.steals || 0}</Text>
-                          <Text style={styles.statLabel}>Palle rubate</Text>
+                          <Text style={styles.statLabel}>{t('basketball.steals')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🚫</Text>
                           <Text style={styles.statValue}>{playerStats?.blocks || 0}</Text>
-                          <Text style={styles.statLabel}>Stoppate</Text>
+                          <Text style={styles.statLabel}>{t('basketball.blocks')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>👟</Text>
                           <Text style={styles.statValue}>{playerStats?.appearances || 0}</Text>
-                          <Text style={styles.statLabel}>Presenze</Text>
+                          <Text style={styles.statLabel}>{t('basketball.appearances')}</Text>
                         </View>
                       </>
                     ) : tournament?.sport === 'pallavolo' ? (

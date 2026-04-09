@@ -1157,7 +1157,7 @@ export default function TournamentPublicPage() {
                       {/* Playmaker */}
                       {selectedFormation.starters.filter((s: any) => s.position === 'playmaker').length > 0 && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>🎯 Playmaker</Text>
+                          <Text style={styles.publicPositionTitle}>🎯 {t('basketball.playmaker')}</Text>
                           {selectedFormation.starters.filter((s: any) => s.position === 'playmaker').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1169,7 +1169,7 @@ export default function TournamentPublicPage() {
                       {/* Guardia */}
                       {selectedFormation.starters.filter((s: any) => s.position === 'guardia').length > 0 && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>🏀 Guardia</Text>
+                          <Text style={styles.publicPositionTitle}>🏀 {t('basketball.guard')}</Text>
                           {selectedFormation.starters.filter((s: any) => s.position === 'guardia').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1181,7 +1181,7 @@ export default function TournamentPublicPage() {
                       {/* Ala Piccola */}
                       {selectedFormation.starters.filter((s: any) => s.position === 'ala_piccola').length > 0 && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>🦅 Ala Piccola</Text>
+                          <Text style={styles.publicPositionTitle}>🦅 {t('basketball.smallForward')}</Text>
                           {selectedFormation.starters.filter((s: any) => s.position === 'ala_piccola').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1193,7 +1193,7 @@ export default function TournamentPublicPage() {
                       {/* Ala Grande */}
                       {selectedFormation.starters.filter((s: any) => s.position === 'ala_grande').length > 0 && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>💪 Ala Grande</Text>
+                          <Text style={styles.publicPositionTitle}>💪 {t('basketball.powerForward')}</Text>
                           {selectedFormation.starters.filter((s: any) => s.position === 'ala_grande').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1205,7 +1205,7 @@ export default function TournamentPublicPage() {
                       {/* Centro */}
                       {selectedFormation.starters.filter((s: any) => s.position === 'centro').length > 0 && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>🗼 Centro</Text>
+                          <Text style={styles.publicPositionTitle}>🗼 {t('basketball.center')}</Text>
                           {selectedFormation.starters.filter((s: any) => s.position === 'centro').map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1460,32 +1460,32 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🏀</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.points || playerStatsData.total_points || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Punti</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.points')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🅰️</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.assists || playerStatsData.basketball_assists || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Assist</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.assists')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>📊</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.rebounds || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Rimbalzi</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.rebounds')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🤚</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.steals || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Palle rub.</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.steals')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🚫</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.blocks || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Stoppate</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.blocks')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>👟</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                            <Text style={styles.playerStatLabel}>{t('basketball.appearances')}</Text>
                           </View>
                         </>
                       ) : isVolleyball ? (
