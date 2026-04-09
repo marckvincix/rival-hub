@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 interface MatchStatsModalProps {
   visible: boolean;
@@ -47,6 +48,7 @@ export function MatchStatsModal({
   getTeamName,
   sport,
 }: MatchStatsModalProps) {
+  const { t } = useTranslation();
   const [events, setEvents] = useState<MatchEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [matchData, setMatchData] = useState<any>(null);
@@ -655,11 +657,11 @@ export function MatchStatsModal({
                   {/* Substitutions */}
                   {hasSubs && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🔄 Sostituzioni</Text>
+                      <Text style={styles.sectionTitle}>🔄 {t('soccer.substitutions')}</Text>
                       {subsOut.map((event, idx) => (
                         <View key={`out-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
-                            🔻 {event.player_name} (esce)
+                            🔻 {event.player_name} ({t('soccer.subOut')})
                           </Text>
                           <Text style={styles.eventTeam}>
                             ({getEventTeamName(event.team_id)})
@@ -669,7 +671,7 @@ export function MatchStatsModal({
                       {subsIn.map((event, idx) => (
                         <View key={`in-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
-                            🔺 {event.player_name} (entra)
+                            🔺 {event.player_name} ({t('soccer.subIn')})
                           </Text>
                           <Text style={styles.eventTeam}>
                             ({getEventTeamName(event.team_id)})

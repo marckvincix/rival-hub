@@ -528,11 +528,11 @@ export function HighlightsUploadModal({
               </View>
             </TouchableOpacity>
             <Text style={styles.termsText}>
-              Caricando questi contenuti accetto i{' '}
+              {t('highlights.termsAcceptance')}{' '}
               <Text style={styles.termsLinkClickable} onPress={() => setShowTermsModal(true)}>
-                Termini e Condizioni
+                {t('highlights.termsAndConditions')}
               </Text>{' '}
-              di Rival Hub.
+              {t('highlights.ofRivalHub')}
             </Text>
           </View>
 

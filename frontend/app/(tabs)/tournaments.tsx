@@ -1817,7 +1817,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           </View>
                           <View style={styles.matchSelectFooter}>
                             <View style={styles.matchSelectBadgeInCorso}>
-                              <Text style={styles.matchSelectBadgeTextInCorso}>In corso</Text>
+                              <Text style={styles.matchSelectBadgeTextInCorso}>{t('tournaments.inProgress')}</Text>
                             </View>
                             <View style={styles.matchEditIcon}>
                               <Ionicons name="create-outline" size={20} color="#000" />
@@ -2529,10 +2529,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         {/* Substitutions */}
                         {(matchStatsEvents.filter(e => e.event_type === 'substitution_out' || e.event_type === 'substitution_in').length > 0) && (
                           <View style={styles.matchStatsSection}>
-                            <Text style={styles.matchStatsSectionTitle}>🔄 Sostituzioni</Text>
+                            <Text style={styles.matchStatsSectionTitle}>🔄 {t('soccer.substitutions')}</Text>
                             {matchStatsEvents.filter(e => e.event_type === 'substitution_out').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
-                                <Text style={styles.matchStatsEventPlayer}>🔻 {event.player_name} (esce)</Text>
+                                <Text style={styles.matchStatsEventPlayer}>🔻 {event.player_name} ({t('soccer.subOut')})</Text>
                                 <Text style={styles.matchStatsEventTeam}>
                                   ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
                                 </Text>
@@ -2540,7 +2540,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             ))}
                             {matchStatsEvents.filter(e => e.event_type === 'substitution_in').map((event, idx) => (
                               <View key={idx} style={styles.matchStatsEventRow}>
-                                <Text style={styles.matchStatsEventPlayer}>🔺 {event.player_name} (entra)</Text>
+                                <Text style={styles.matchStatsEventPlayer}>🔺 {event.player_name} ({t('soccer.subIn')})</Text>
                                 <Text style={styles.matchStatsEventTeam}>
                                   ({event.team_id === selectedMatchForStats.home_team_id ? getTeamName(selectedMatchForStats.home_team_id) : getTeamName(selectedMatchForStats.away_team_id)})
                                 </Text>
@@ -3671,7 +3671,7 @@ function TeamRatingsAccordion({
                     onPress={() => openRatingPicker(player.id, player.name)}
                   >
                     <Ionicons name={hasRating ? "pencil" : "add"} size={14} color="#FFF" />
-                    <Text style={styles.votoBtnText}>{hasRating ? t('common.edit') : 'Voto'}</Text>
+                    <Text style={styles.votoBtnText}>{hasRating ? t('common.edit') : t('soccer.vote')}</Text>
                   </TouchableOpacity>
                   <Ionicons 
                     name={hasRating ? "checkbox" : "checkbox-outline"} 
@@ -3707,7 +3707,7 @@ function TeamRatingsAccordion({
           <TouchableOpacity activeOpacity={1} style={styles.ratingPickerContainer}>
             {/* Header */}
             <View style={styles.ratingPickerHeader}>
-              <Text style={styles.ratingPickerTitle}>Assegna Voto</Text>
+              <Text style={styles.ratingPickerTitle}>{t('soccer.assignRating')}</Text>
               <TouchableOpacity onPress={() => setShowRatingPicker(false)}>
                 <Ionicons name="close" size={24} color="#000" />
               </TouchableOpacity>

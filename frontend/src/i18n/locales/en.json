@@ -278,7 +278,9 @@
     "date": "Date",
     "time": "Time",
     "roundPlaceholder": "Round",
-    "dateTBD": "Date TBD"
+    "dateTBD": "Date TBD",
+    "roundNumber": "Round {{number}}",
+    "statistics": "Statistics"
   },
   "stats": {
     "title": "Statistics",
@@ -341,6 +343,9 @@
     "currentCode": "Current code:",
     "finishUpload": "Finish Upload",
     "doneUploading": "Done uploading",
+    "termsAcceptance": "By uploading this content I accept the",
+    "termsAndConditions": "Terms and Conditions",
+    "ofRivalHub": "of Rival Hub."
     "selectARound": "Select a round",
     "uploadNewContent": "Upload New Content",
     "accessCode": "Highlights Access Code",
@@ -519,15 +524,15 @@
     "appearances": "Apps",
     "minutes": "Min",
     "averageRating": "Avg Rating",
-    "vote": "vote",
+    "vote": "Rating",
     "votes": "votes",
     "saves": "Saves",
     "cleanSheets": "Clean Sheets",
     "scorer": "Scorer",
     "yellowCard": "Yellow",
     "redCard": "Red",
-    "subOut": "Sub Out",
-    "subIn": "Sub In",
+    "subOut": "out",
+    "subIn": "in",
     "ratings": "Ratings",
     "quickRatings": "Quick ratings",
     "scorers": "Scorers",
@@ -538,6 +543,8 @@
     "points": "Pts",
     "matchesPlayed": "MP",
     "wins": "W",
+    "substitutions": "Substitutions",
+    "assignRating": "Assign Rating"
     "draws": "D",
     "losses": "L",
     "goalsFor": "GF",
