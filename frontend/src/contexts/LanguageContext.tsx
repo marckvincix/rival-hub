@@ -44,6 +44,11 @@ export const LanguageProvider: React.FC<LanguageProviderProps> = ({ children }) 
       try {
         const wasSelected = await initializeLanguage();
         
+        console.log('[LanguageContext] Language initialized:', {
+          wasSelected,
+          currentLanguage: i18n.language,
+        });
+        
         if (wasSelected) {
           setCurrentLanguage(i18n.language);
           const lang = LANGUAGES.find(l => l.code === i18n.language);
