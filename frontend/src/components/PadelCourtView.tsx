@@ -160,18 +160,18 @@ export function PadelCourtView({
 
       {/* Home team label */}
       <View style={styles.teamLabel}>
-        <Text style={styles.teamLabelText}>{homeTeamName || 'Casa'}</Text>
+        <Text style={styles.teamLabelText}>{homeTeamName || t('match.home', 'Home')}</Text>
       </View>
 
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#000' }]} />
-          <Text style={styles.legendText}>Casa</Text>
+          <Text style={styles.legendText}>{t('match.home', 'Home')}</Text>
         </View>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#555' }]} />
-          <Text style={styles.legendText}>Ospite</Text>
+          <Text style={styles.legendText}>{t('match.away', 'Away')}</Text>
         </View>
       </View>
 

@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Input } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
+import { useTranslation } from '../../src/i18n';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 
@@ -23,6 +24,7 @@ const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 export default function LoginScreen() {
   const router = useRouter();
   const { login } = useAuthStore();
+  const { t } = useTranslation();
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,9 +33,9 @@ export default function LoginScreen() {
 
   const validate = () => {
     const newErrors: {email?: string; password?: string} = {};
-    if (!email.trim()) newErrors.email = 'Email richiesta';
-    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = 'Email non valida';
-    if (!password) newErrors.password = 'Password richiesta';
+    if (!email.trim()) newErrors.email = t('errors.emailRequired', 'Email required');
+    else if (!/\S+@\S+\.\S+/.test(email)) newErrors.email = t('errors.emailInvalid', 'Invalid email');
+    if (!password) newErrors.password = t('errors.passwordRequired', 'Password required');
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -45,7 +47,7 @@ export default function LoginScreen() {
       await login(email, password);
       router.replace('/(tabs)');
     } catch (error: any) {
-      Alert.alert('Errore', error.message || 'Errore di login');
+      Alert.alert(t('common.error', 'Error'), error.message || t('auth.loginError', 'Login failed'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +75,7 @@ export default function LoginScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Errore', 'Errore durante il login con Google');
+      Alert.alert(t('common.error', 'Error'), t('auth.loginError', 'Google login failed'));
     }
   };
 
@@ -97,27 +99,27 @@ export default function LoginScreen() {
 
           <View style={styles.header}>
             <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
-            <Text style={styles.title}>Bentornato</Text>
-            <Text style={styles.subtitle}>Accedi al tuo account</Text>
+            <Text style={styles.title}>{t('auth.welcomeBack', 'Welcome Back')}</Text>
+            <Text style={styles.subtitle}>{t('auth.accessAccount', 'Access your account')}</Text>
           </View>
 
           {/* Google Login */}
           <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
             <Ionicons name="logo-google" size={20} color="#000" />
-            <Text style={styles.googleButtonText}>Continua con Google</Text>
+            <Text style={styles.googleButtonText}>{t('auth.continueWithGoogle', 'Continue with Google')}</Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>oppure</Text>
+            <Text style={styles.dividerText}>{t('auth.or', 'or')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="Email"
-              placeholder="tuaemail@esempio.com"
+              label={t('auth.email', 'Email')}
+              placeholder={t('auth.emailPlaceholder', 'youremail@example.com')}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
@@ -126,8 +128,8 @@ export default function LoginScreen() {
             />
             
             <Input
-              label="Password"
-              placeholder="La tua password"
+              label={t('auth.password', 'Password')}
+              placeholder={t('auth.passwordPlaceholder', 'Your password')}
               value={password}
               onChangeText={setPassword}
               secureTextEntry
@@ -135,7 +137,7 @@ export default function LoginScreen() {
             />
 
             <Button
-              title="Accedi"
+              title={t('auth.login', 'Login')}
               onPress={handleLogin}
               loading={loading}
               fullWidth
@@ -145,9 +147,9 @@ export default function LoginScreen() {
 
           {/* Footer */}
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Non hai un account?</Text>
+            <Text style={styles.footerText}>{t('auth.noAccount', "Don't have an account?")}</Text>
             <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
-              <Text style={styles.footerLink}>Registrati</Text>
+              <Text style={styles.footerLink}>{t('auth.register', 'Register')}</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>

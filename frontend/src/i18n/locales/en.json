@@ -537,7 +537,9 @@
     "padelDoubles": "Padel Doubles",
     "tennisSingles": "Tennis Singles",
     "tennisDoubles": "Tennis Doubles",
-    "endMatch": "End Match"
+    "endMatch": "End Match",
+    "closeMatch": "Close Match",
+    "closeMatchConfirm": "Are you sure you want to close this match? The match will be marked as completed."
   },
   "volleyball": {
     "set": "Set",
@@ -759,6 +761,7 @@
     "saveFailed": "Could not save the match",
     "nameRequired": "Name required",
     "emailRequired": "Email required",
+    "emailInvalid": "Invalid email",
     "passwordRequired": "Password required",
     "registrationFailed": "Registration failed"
   },

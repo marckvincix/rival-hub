@@ -534,7 +534,7 @@ export default function TournamentPublicPage() {
                       if (!homeFormation && homePlayers.length > 0) {
                         homeFormation = {
                           team_id: match.home_team_id,
-                          module: isDoubles ? 'Doppio' : 'Singolo',
+                          module: isDoubles ? t('tennis.doubles', 'Doubles') : t('tennis.singles', 'Singles'),
                           starters: homePlayers.map((p: any) => ({
                             player_id: p.id,
                             player_name: p.full_name,
@@ -546,7 +546,7 @@ export default function TournamentPublicPage() {
                       if (!awayFormation && awayPlayers.length > 0) {
                         awayFormation = {
                           team_id: match.away_team_id,
-                          module: isDoubles ? 'Doppio' : 'Singolo',
+                          module: isDoubles ? t('tennis.doubles', 'Doubles') : t('tennis.singles', 'Singles'),
                           starters: awayPlayers.map((p: any) => ({
                             player_id: p.id,
                             player_name: p.full_name,

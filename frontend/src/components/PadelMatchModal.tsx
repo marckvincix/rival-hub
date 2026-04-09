@@ -348,12 +348,12 @@ export function PadelMatchModal({
   // Close match
   const handleCloseMatch = async () => {
     Alert.alert(
-      'Chiudi Partita',
-      'Sei sicuro di voler chiudere questa partita? La partita verrà marcata come completata.',
+      t('tennis.closeMatch', 'Close Match'),
+      t('tennis.closeMatchConfirm', 'Are you sure you want to close this match? The match will be marked as completed.'),
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: 'Conferma',
+          text: t('common.confirm', 'Confirm'),
           style: 'destructive',
           onPress: async () => {
             setSaving(true);
@@ -381,7 +381,7 @@ export function PadelMatchModal({
               onSave({ ...match, ...matchData });
               onClose();
             } catch (error) {
-              Alert.alert('Errore', 'Impossibile salvare la partita');
+              Alert.alert(t('common.error', 'Error'), t('errors.saveFailed', 'Could not save the match'));
             } finally {
               setSaving(false);
             }
@@ -524,7 +524,7 @@ export function PadelMatchModal({
 
           {/* Stats Section */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Statistiche {gameFormat === 'doppio' ? 'Coppia' : 'Giocatore'}</Text>
+            <Text style={styles.sectionTitle}>{gameFormat === 'doppio' ? t('stats.pairStats', 'Pair Stats') : t('stats.playerStats', 'Player Stats')}</Text>
             {renderStatRow('Winners', 'winners', homeStats.winners, awayStats.winners)}
             {renderStatRow(t('tennis.unforcedErrorsShort'), 'unforcedErrors', homeStats.unforcedErrors, awayStats.unforcedErrors)}
             {renderStatRow('Smash', 'smashWinners', homeStats.smashWinners, awayStats.smashWinners)}
