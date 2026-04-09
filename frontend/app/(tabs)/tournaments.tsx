@@ -2269,7 +2269,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   )}
                   <View style={styles.statsModalPlayerInfo}>
                     <Text style={styles.statsModalPlayerName}>{selectedPlayerForStats.name}</Text>
-                    <Text style={styles.statsModalPlayerRole}>{selectedPlayerForStats.role || 'Non specificato'}</Text>
+                    <Text style={styles.statsModalPlayerRole}>{selectedPlayerForStats.role ? translateRole(selectedPlayerForStats.role) : t('tennis.notSpecified')}</Text>
                   </View>
                 </View>
 
@@ -2358,12 +2358,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🎾</Text>
                           <Text style={styles.statValue}>{playerStats?.matches_won || 0}</Text>
-                          <Text style={styles.statLabel}>Vittorie</Text>
+                          <Text style={styles.statLabel}>{t('tennis.wins')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>❌</Text>
                           <Text style={styles.statValue}>{playerStats?.matches_lost || 0}</Text>
-                          <Text style={styles.statLabel}>Sconfitte</Text>
+                          <Text style={styles.statLabel}>{t('tennis.losses')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🎯</Text>
@@ -2373,17 +2373,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>💔</Text>
                           <Text style={styles.statValue}>{playerStats?.double_faults || 0}</Text>
-                          <Text style={styles.statLabel}>Doppi falli</Text>
+                          <Text style={styles.statLabel}>{t('tennis.doubleFaults')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>📊</Text>
                           <Text style={styles.statValue}>{playerStats?.sets_won || 0}</Text>
-                          <Text style={styles.statLabel}>Set vinti</Text>
+                          <Text style={styles.statLabel}>{t('tennis.setsWon')}</Text>
                         </View>
                         <View style={styles.statItem}>
                           <Text style={styles.statIcon}>🎮</Text>
                           <Text style={styles.statValue}>{playerStats?.games_won || 0}</Text>
-                          <Text style={styles.statLabel}>Game vinti</Text>
+                          <Text style={styles.statLabel}>{t('tennis.gamesWon')}</Text>
                         </View>
                       </>
                     ) : tournament?.sport === 'rugby' ? (

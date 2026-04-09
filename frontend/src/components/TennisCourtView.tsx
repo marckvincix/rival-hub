@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Dimensions } from 'react-native';
+import { useTranslation } from '../i18n';
 
 interface Player {
   player_id?: string;
@@ -24,6 +25,7 @@ export function TennisCourtView({
   homeTeamName,
   awayTeamName 
 }: TennisCourtViewProps) {
+  const { t } = useTranslation();
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -122,7 +124,7 @@ export function TennisCourtView({
       {/* Format indicator */}
       <View style={styles.formatBadge}>
         <Text style={styles.formatText}>
-          🎾 {format === 'singles' ? 'Singolo' : 'Doppio'}
+          🎾 {format === 'singles' ? t('tennis.singles') : t('tennis.doubles')}
         </Text>
       </View>
     </View>

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 interface Player {
   id: string;
@@ -66,6 +67,7 @@ export function PadelMatchModal({
   gameFormat,
   onSave,
 }: PadelMatchModalProps) {
+  const { t } = useTranslation();
   const maxSets = 3;
   const setsToWin = 2;
   
@@ -437,14 +439,14 @@ export function PadelMatchModal({
           {/* Teams & Score Header */}
           <View style={styles.teamsHeader}>
             <View style={styles.teamCol}>
-              <Text style={styles.teamName} numberOfLines={1}>{homeTeam?.name || 'Casa'}</Text>
+              <Text style={styles.teamName} numberOfLines={1}>{homeTeam?.name || t('tennis.home')}</Text>
             </View>
             <View style={styles.scoreCol}>
               <Text style={styles.setsScore}>{homeSetsWon} - {awaySetsWon}</Text>
               <Text style={styles.setsLabel}>SET</Text>
             </View>
             <View style={styles.teamCol}>
-              <Text style={styles.teamName} numberOfLines={1}>{awayTeam?.name || 'Ospite'}</Text>
+              <Text style={styles.teamName} numberOfLines={1}>{awayTeam?.name || t('tennis.away')}</Text>
             </View>
           </View>
 
@@ -485,7 +487,7 @@ export function PadelMatchModal({
             <Text style={styles.gameScoreTitle}>
               {setScores[activeSetTab]?.tiebreak ? 'Tie-Break' : 
                setScores[activeSetTab]?.superTiebreak && setScores[activeSetTab]?.homeGames === 0 && setScores[activeSetTab]?.awayGames === 0 ? 'Super Tie-Break (10 pt)' : 
-               'Game in Corso'}
+               t('tennis.gameInProgress')}
             </Text>
             <View style={styles.gameScoreRow}>
               {/* Home Team */}
@@ -516,7 +518,7 @@ export function PadelMatchModal({
             {/* Undo Button */}
             <TouchableOpacity style={styles.undoButton} onPress={undoLast}>
               <Ionicons name="arrow-undo" size={18} color="#666" />
-              <Text style={styles.undoText}>Annulla ultimo</Text>
+              <Text style={styles.undoText}>{t('tennis.undoLast')}</Text>
             </TouchableOpacity>
           </View>
 
@@ -524,10 +526,10 @@ export function PadelMatchModal({
           <View style={styles.statsSection}>
             <Text style={styles.sectionTitle}>Statistiche {gameFormat === 'doppio' ? 'Coppia' : 'Giocatore'}</Text>
             {renderStatRow('Winners', 'winners', homeStats.winners, awayStats.winners)}
-            {renderStatRow('Errori NF', 'unforcedErrors', homeStats.unforcedErrors, awayStats.unforcedErrors)}
+            {renderStatRow(t('tennis.unforcedErrorsShort'), 'unforcedErrors', homeStats.unforcedErrors, awayStats.unforcedErrors)}
             {renderStatRow('Smash', 'smashWinners', homeStats.smashWinners, awayStats.smashWinners)}
             {renderStatRow('Ace', 'aces', homeStats.aces, awayStats.aces)}
-            {renderStatRow('Doppi F.', 'doubleFaults', homeStats.doubleFaults, awayStats.doubleFaults)}
+            {renderStatRow(t('tennis.doubleFaultsShort'), 'doubleFaults', homeStats.doubleFaults, awayStats.doubleFaults)}
           </View>
         </ScrollView>
 
@@ -535,12 +537,12 @@ export function PadelMatchModal({
         <View style={styles.footer}>
           <View style={styles.autoSaveIndicator}>
             <Ionicons name="cloud-done" size={16} color="#10B981" />
-            <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+            <Text style={styles.autoSaveText}>{t('tennis.autoSave')}</Text>
           </View>
           
           <TouchableOpacity style={styles.closeMatchButton} onPress={handleCloseMatch} disabled={saving}>
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.closeMatchButtonText}>Fine Partita</Text>
+            <Text style={styles.closeMatchButtonText}>{t('tennis.endMatch')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

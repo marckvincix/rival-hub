@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Dimensions, Image, ImageBackground } from 'react-native';
+import { useTranslation } from '../i18n';
 
 interface Player {
   player_id?: string;
@@ -24,6 +25,7 @@ export function PadelCourtView({
   homeTeamName,
   awayTeamName 
 }: PadelCourtViewProps) {
+  const { t } = useTranslation();
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
@@ -176,7 +178,7 @@ export function PadelCourtView({
       {/* Format indicator */}
       <View style={styles.formatBadge}>
         <Text style={styles.formatText}>
-          🎾 Padel {format === 'singles' ? 'Singolo' : 'Doppio'}
+          🎾 Padel {format === 'singles' ? t('tennis.singles') : t('tennis.doubles')}
         </Text>
       </View>
     </View>

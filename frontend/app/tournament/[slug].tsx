@@ -350,15 +350,15 @@ export default function TournamentPublicPage() {
   // Dynamic tabs based on sport
   const getTeamTabLabel = () => {
     if (isRacketSport) {
-      return isDoubles ? 'Coppie' : 'Giocatori';
+      return isDoubles ? t('tournaments.pairs') : t('tournaments.players');
     }
-    return 'Squadre';
+    return t('teams.title', 'Teams');
   };
 
   const tabs: { id: TabId; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
     { id: 'standings', label: t('stats.standings', 'Standings'), icon: 'podium-outline' },
     { id: 'teams', label: getTeamTabLabel(), icon: isRacketSport ? 'person-outline' : 'people-outline' },
-    { id: 'matches', label: 'Partite', icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
+    { id: 'matches', label: t('tournaments.matches'), icon: isRacketSport ? 'tennisball-outline' : 'football-outline' },
     // Hide "Marcatori" for Tennis/Padel
     ...(isRacketSport ? [] : [{ id: 'scorers' as TabId, label: t('soccer.topScorers', 'Scorers'), icon: 'trophy-outline' as keyof typeof Ionicons.glyphMap }]),
     { id: 'stats', label: 'Stats', icon: 'stats-chart-outline' },
@@ -617,7 +617,7 @@ export default function TournamentPublicPage() {
                             onPress={() => handleOpenMatchStats(match)}
                           >
                             <Ionicons name="stats-chart" size={14} color="#666" />
-                            <Text style={styles.statsButtonText}>Statistiche</Text>
+                            <Text style={styles.statsButtonText}>{t('matches.statistics')}</Text>
                           </TouchableOpacity>
                           <TouchableOpacity 
                             style={styles.calendarButton} 
@@ -630,7 +630,7 @@ export default function TournamentPublicPage() {
                         {/* Formations for this match */}
                         {(homeFormation || awayFormation) && (
                           <View style={styles.matchFormationsSection}>
-                            <Text style={styles.matchFormationsTitle}>{isRacketSport ? 'Giocatori' : 'Formazioni'}</Text>
+                            <Text style={styles.matchFormationsTitle}>{isRacketSport ? t('tournaments.players') : t('tournaments.formations')}</Text>
                             
                             {isRacketSport ? (
                               /* Tennis/Padel: Single "Vedi Campo" button showing both players */
@@ -815,7 +815,7 @@ export default function TournamentPublicPage() {
         {/* Stats Tab */}
         {activeTab === 'stats' && (
           <View style={styles.tabContent}>
-            {playerStats.length === 0 ? <EmptyState icon="stats-chart-outline" title="Nessuna statistica" /> : (
+            {playerStats.length === 0 ? <EmptyState icon="stats-chart-outline" title={t('tennis.noStats')} /> : (
               playerStats.slice(0, 30).map((player: any) => (
                 <View key={player.player_id} style={styles.statsCard}>
                   <View style={styles.statsHeader}>
@@ -831,7 +831,7 @@ export default function TournamentPublicPage() {
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#10B981' }]}>{player.winners || 0}</Text><Text style={styles.statBoxLabel}>Winners</Text></View>
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#F59E0B' }]}>{player.unforced_errors || 0}</Text><Text style={styles.statBoxLabel}>Errori NF</Text></View>
                         {isPadel && <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#8B5CF6' }]}>{player.smash_winners || 0}</Text><Text style={styles.statBoxLabel}>Smash</Text></View>}
-                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.matches_played || 0}</Text><Text style={styles.statBoxLabel}>Partite</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.matches_played || 0}</Text><Text style={styles.statBoxLabel}>{t('tournaments.matches')}</Text></View>
                       </>
                     ) : isBasketball ? (
                       <>
@@ -862,7 +862,7 @@ export default function TournamentPublicPage() {
         {/* News Tab */}
         {activeTab === 'news' && (
           <View style={styles.tabContent}>
-            {news.length === 0 ? <EmptyState icon="newspaper-outline" title="Nessuna news disponibile" /> : (
+            {news.length === 0 ? <EmptyState icon="newspaper-outline" title={t('tennis.noNews')} /> : (
               news.map((item) => (
                 <View key={item.id} style={styles.publicNewsCard}>
                   {item.photo && (
@@ -1523,12 +1523,12 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎾</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.matches_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Vittorie</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.wins')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>❌</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.matches_lost || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Sconfitte</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.losses')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎯</Text>
@@ -1538,17 +1538,17 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>💔</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.double_faults || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Doppi falli</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.doubleFaults')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>📊</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.sets_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Set vinti</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.setsWon')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎮</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.games_won || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Game vinti</Text>
+                            <Text style={styles.playerStatLabel}>{t('tennis.gamesWon')}</Text>
                           </View>
                         </>
                       ) : (
