@@ -247,6 +247,7 @@
     "selectPlayer": "Seleziona il giocatore",
     "selectDouble": "Seleziona la coppia",
     "noPlayers": "Nessun giocatore",
+    "noTeams": "Nessuna squadra",
     "birthDate": "Data di nascita",
     "birthDatePlaceholder": "GG/MM/AAAA",
     "noPlayersInRoster": "Nessun giocatore in rosa"

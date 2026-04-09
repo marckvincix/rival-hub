@@ -38,7 +38,7 @@ function CustomTabBar() {
           onPress={() => router.push('/(tabs)/tournaments')}
         >
           <Ionicons name="trophy-outline" size={24} color="#000" />
-          <Text style={styles.tabLabel}>{t('tournaments.title')}</Text>
+          <Text style={styles.tabLabel}>{t('tournaments.title', 'Tournaments')}</Text>
         </TouchableOpacity>
 
         {/* Profilo Tab */}
@@ -47,7 +47,7 @@ function CustomTabBar() {
           onPress={() => router.push('/(tabs)/profile')}
         >
           <Ionicons name="person-outline" size={24} color="#000" />
-          <Text style={styles.tabLabel}>{t('profile.title')}</Text>
+          <Text style={styles.tabLabel}>{t('profile.title', 'Profile')}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -442,7 +442,7 @@ export function RugbyMatchModal({
           {/* End Match Button */}
           <TouchableOpacity style={styles.endMatchBtn} onPress={handleEndMatch}>
             <Ionicons name="flag" size={20} color="#FFF" />
-            <Text style={styles.endMatchText}>Fine Partita</Text>
+            <Text style={styles.endMatchText}>{t('tennis.endMatch', 'End Match')}</Text>
           </TouchableOpacity>
         </ScrollView>
 
@@ -451,7 +451,7 @@ export function RugbyMatchModal({
           <View style={styles.pickerOverlay}>
             <View style={styles.pickerContent}>
               <View style={styles.pickerHeader}>
-                <Text style={styles.pickerTitle}>Seleziona Giocatore - {selectedTeam === 'home' ? homeTeamName : awayTeamName}</Text>
+                <Text style={styles.pickerTitle}>{t('rugby.selectPlayer', 'Select Player')} - {selectedTeam === 'home' ? homeTeamName : awayTeamName}</Text>
                 <TouchableOpacity onPress={() => setShowPlayerPicker(false)}>
                   <Ionicons name="close" size={24} color="#000" />
                 </TouchableOpacity>
