@@ -293,10 +293,12 @@
   },
   "stats": {
     "title": "Statistics",
+    "stat": "Stat",
     "standings": "Standings",
     "topScorers": "Top Scorers",
     "teamStats": "Team Stats",
     "playerStats": "Player Stats",
+    "pairStats": "Pair Stats",
     "played": "Played",
     "won": "Won",
     "drawn": "Drawn",
@@ -496,10 +498,14 @@
     "scorePoints": "Score Points",
     "otherStats": "Other Stats",
     "undoLast": "Undo Last",
-    "endMatch": "End Match"
+    "endMatch": "End Match",
+    "confirmEndMatch": "Confirm ending the match?",
+    "matchEnded": "Match Ended",
+    "resultsSaved": "Results have been saved"
   },
   "tennis": {
     "set": "Set",
+    "setCompleted": "Set Completed",
     "game": "Game",
     "point": "Point",
     "serve": "Serve",
@@ -512,6 +518,8 @@
     "unforcedErrors": "Unforced Errors",
     "unforcedErrorsShort": "UE",
     "breakPoint": "Break Point",
+    "breakPointsConvertedShort": "BP Conv.",
+    "breakPointsSavedShort": "BP Saved",
     "tiebreak": "Tiebreak",
     "deuce": "Deuce",
     "advantage": "Advantage",
@@ -537,7 +545,6 @@
     "padelDoubles": "Padel Doubles",
     "tennisSingles": "Tennis Singles",
     "tennisDoubles": "Tennis Doubles",
-    "endMatch": "End Match",
     "closeMatch": "Close Match",
     "closeMatchConfirm": "Are you sure you want to close this match? The match will be marked as completed."
   },
@@ -759,6 +766,7 @@
     "galleryPermission": "Gallery permission required",
     "titleRequired": "Title is required",
     "saveFailed": "Could not save the match",
+    "endMatchFailed": "Could not end the match",
     "nameRequired": "Name required",
     "emailRequired": "Email required",
     "emailInvalid": "Invalid email",

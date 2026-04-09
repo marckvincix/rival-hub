@@ -432,12 +432,12 @@ export function BasketballMatchModal({
 
   const handleEndMatch = () => {
     Alert.alert(
-      'Fine Partita',
-      `Confermi di voler terminare la partita?\n\n${homeTeam.name} ${homeTotal} - ${awayTotal} ${awayTeam.name}`,
+      t('tennis.endMatch', 'End Match'),
+      t('basketball.confirmEndMatch', 'Confirm ending the match?') + `\n\n${homeTeam.name} ${homeTotal} - ${awayTotal} ${awayTeam.name}`,
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         {
-          text: 'Conferma',
+          text: t('common.confirm', 'Confirm'),
           style: 'destructive',
           onPress: async () => {
             setSaving(true);
@@ -462,7 +462,7 @@ export function BasketballMatchModal({
               
               await api.put(`/api/matches/${match.id}`, { status: 'completed' });
               
-              Alert.alert('Partita Terminata', 'I risultati sono stati salvati');
+              Alert.alert(t('basketball.matchEnded', 'Match Ended'), t('basketball.resultsSaved', 'Results have been saved'));
               onSave({
                 ...match,
                 status: 'completed',
@@ -471,7 +471,7 @@ export function BasketballMatchModal({
               });
               onClose();
             } catch (error) {
-              Alert.alert('Errore', 'Impossibile terminare la partita');
+              Alert.alert(t('common.error', 'Error'), t('errors.endMatchFailed', 'Could not end the match'));
             } finally {
               setSaving(false);
             }
@@ -503,7 +503,7 @@ export function BasketballMatchModal({
           </View>
           <View style={styles.autoSaveIndicator}>
             <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-            <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+            <Text style={styles.autoSaveText}>{t('tennis.autoSave', 'Auto-save')}</Text>
           </View>
         </View>
 

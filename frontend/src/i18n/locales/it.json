@@ -292,10 +292,12 @@
   },
   "stats": {
     "title": "Statistiche",
+    "stat": "Statistica",
     "standings": "Classifica",
     "topScorers": "Marcatori",
     "teamStats": "Statistiche Squadra",
     "playerStats": "Statistiche Giocatore",
+    "pairStats": "Statistiche Coppia",
     "played": "Giocate",
     "won": "Vinte",
     "drawn": "Pareggiate",
@@ -496,10 +498,14 @@
     "scorePoints": "Registra Punti",
     "otherStats": "Altre Statistiche",
     "undoLast": "Annulla Ultimo",
-    "endMatch": "Fine Partita"
+    "endMatch": "Fine Partita",
+    "confirmEndMatch": "Confermi di voler terminare la partita?",
+    "matchEnded": "Partita Terminata",
+    "resultsSaved": "I risultati sono stati salvati"
   },
   "tennis": {
     "set": "Set",
+    "setCompleted": "Set Completato",
     "game": "Game",
     "point": "Punto",
     "serve": "Servizio",
@@ -512,6 +518,8 @@
     "unforcedErrors": "Errori NF",
     "unforcedErrorsShort": "Errori NF",
     "breakPoint": "Palla Break",
+    "breakPointsConvertedShort": "BP Conv.",
+    "breakPointsSavedShort": "BP Salvati",
     "tiebreak": "Tiebreak",
     "deuce": "Parità",
     "advantage": "Vantaggio",
@@ -537,7 +545,6 @@
     "padelDoubles": "Padel Doppio",
     "tennisSingles": "Tennis Singolo",
     "tennisDoubles": "Tennis Doppio",
-    "endMatch": "Fine Partita",
     "closeMatch": "Chiudi Partita",
     "closeMatchConfirm": "Sei sicuro di voler chiudere questa partita? La partita verrà marcata come completata."
   },
@@ -756,6 +763,7 @@
     "galleryPermission": "Permesso galleria richiesto",
     "titleRequired": "Titolo obbligatorio",
     "saveFailed": "Impossibile salvare la partita",
+    "endMatchFailed": "Impossibile terminare la partita",
     "nameRequired": "Nome richiesto",
     "emailRequired": "Email richiesta",
     "emailInvalid": "Email non valida",

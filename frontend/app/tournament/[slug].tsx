@@ -1067,7 +1067,7 @@ export default function TournamentPublicPage() {
                     /* Tennis/Padel: Show both players */
                     <>
                       <View style={styles.publicPositionSection}>
-                        <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedFormation?.team_id)?.name || 'Giocatore 1'}</Text>
+                        <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedFormation?.team_id)?.name || t('common.player', 'Player') + ' 1'}</Text>
                         {selectedFormation?.starters?.map((player: any, idx: number) => (
                           <View key={idx} style={styles.publicPlayerRow}>
                             <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>
@@ -1077,7 +1077,7 @@ export default function TournamentPublicPage() {
                       </View>
                       {selectedAwayFormation && (
                         <View style={styles.publicPositionSection}>
-                          <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedAwayFormation?.team_id)?.name || 'Giocatore 2'}</Text>
+                          <Text style={styles.publicPositionTitle}>🎾 {teams.find(t => t.id === selectedAwayFormation?.team_id)?.name || t('common.player', 'Player') + ' 2'}</Text>
                           {selectedAwayFormation?.starters?.map((player: any, idx: number) => (
                             <View key={idx} style={styles.publicPlayerRow}>
                               <Text style={styles.publicPlayerNumber}>{player.player_number || '-'}</Text>

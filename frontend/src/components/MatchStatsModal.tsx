@@ -363,7 +363,7 @@ export function MatchStatsModal({
                           {matchData.rugby_events.filter((e: any) => e.type === 'try').map((event: any, idx: number) => (
                             <View key={`try-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
-                                {event.player_name || 'Giocatore'} ({event.minute}'')
+                                {event.player_name || t('common.player', 'Player')} ({event.minute}'')
                               </Text>
                               <Text style={[styles.eventTeam, { color: event.team === 'home' ? '#2D8A2E' : '#E53935' }]}>
                                 ({event.team === 'home' ? getTeamName(matchData.home_team_id) : getTeamName(matchData.away_team_id)}) +5pt
@@ -380,7 +380,7 @@ export function MatchStatsModal({
                           {matchData.rugby_events.filter((e: any) => e.type === 'conversion').map((event: any, idx: number) => (
                             <View key={`conv-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
-                                {event.player_name || 'Giocatore'} ({event.minute}'')
+                                {event.player_name || t('common.player', 'Player')} ({event.minute}'')
                               </Text>
                               <Text style={[styles.eventTeam, { color: event.team === 'home' ? '#2D8A2E' : '#E53935' }]}>
                                 ({event.team === 'home' ? getTeamName(matchData.home_team_id) : getTeamName(matchData.away_team_id)}) +2pt
@@ -397,7 +397,7 @@ export function MatchStatsModal({
                           {matchData.rugby_events.filter((e: any) => e.type === 'penalty').map((event: any, idx: number) => (
                             <View key={`pen-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
-                                {event.player_name || 'Giocatore'} ({event.minute}'')
+                                {event.player_name || t('common.player', 'Player')} ({event.minute}'')
                               </Text>
                               <Text style={[styles.eventTeam, { color: event.team === 'home' ? '#2D8A2E' : '#E53935' }]}>
                                 ({event.team === 'home' ? getTeamName(matchData.home_team_id) : getTeamName(matchData.away_team_id)}) +3pt
@@ -414,7 +414,7 @@ export function MatchStatsModal({
                           {matchData.rugby_events.filter((e: any) => e.type === 'drop_goal').map((event: any, idx: number) => (
                             <View key={`drop-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
-                                {event.player_name || 'Giocatore'} ({event.minute}'')
+                                {event.player_name || t('common.player', 'Player')} ({event.minute}'')
                               </Text>
                               <Text style={[styles.eventTeam, { color: event.team === 'home' ? '#2D8A2E' : '#E53935' }]}>
                                 ({event.team === 'home' ? getTeamName(matchData.home_team_id) : getTeamName(matchData.away_team_id)}) +3pt
@@ -448,7 +448,7 @@ export function MatchStatsModal({
                           {matchData.rugby_events.filter((e: any) => e.type === 'tackle').map((event: any, idx: number) => (
                             <View key={`tackle-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
-                                {event.player_name || 'Giocatore'}
+                                {event.player_name || t('common.player', 'Player')}
                               </Text>
                               <Text style={[styles.eventTeam, { color: event.team === 'home' ? '#2D8A2E' : '#E53935' }]}>
                                 ({event.team === 'home' ? getTeamName(matchData.home_team_id) : getTeamName(matchData.away_team_id)})

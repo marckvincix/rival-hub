@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
+import { useTranslation } from '../i18n';
 
 interface Player {
   id: string;
@@ -66,6 +67,7 @@ export function TennisMatchModal({
   gameStructure,
   onSave,
 }: TennisMatchModalProps) {
+  const { t } = useTranslation();
   const maxSets = gameStructure === '5_sets' ? 5 : 3;
   const setsToWin = gameStructure === '5_sets' ? 3 : 2;
   
@@ -638,26 +640,26 @@ export function TennisMatchModal({
               </View>
             </View>
             {currentSet?.completed && (
-              <Text style={styles.setCompletedText}>Set Completato</Text>
+              <Text style={styles.setCompletedText}>{t('tennis.setCompleted', 'Set Completed')}</Text>
             )}
           </View>
 
           {/* Statistics Section */}
           <View style={styles.statsSection}>
-            <Text style={styles.sectionTitle}>Statistiche Giocatori</Text>
+            <Text style={styles.sectionTitle}>{t('stats.playerStats', 'Player Stats')}</Text>
             
             <View style={styles.statsHeader}>
               <Text style={styles.statsTeamLabel}>{homeTeam?.name || 'G1'}</Text>
-              <Text style={styles.statsMiddleLabel}>Statistica</Text>
+              <Text style={styles.statsMiddleLabel}>{t('stats.stat', 'Stat')}</Text>
               <Text style={styles.statsTeamLabel}>{awayTeam?.name || 'G2'}</Text>
             </View>
 
-            {renderStatRow('Ace', 'aces', homeStats.aces, awayStats.aces)}
-            {renderStatRow('Doppi Falli', 'doubleFaults', homeStats.doubleFaults, awayStats.doubleFaults)}
+            {renderStatRow(t('tennis.ace', 'Ace'), 'aces', homeStats.aces, awayStats.aces)}
+            {renderStatRow(t('tennis.doubleFaultsShort', 'DF'), 'doubleFaults', homeStats.doubleFaults, awayStats.doubleFaults)}
             {renderStatRow('Winners', 'winners', homeStats.winners, awayStats.winners)}
-            {renderStatRow('Errori NF', 'unforcedErrors', homeStats.unforcedErrors, awayStats.unforcedErrors)}
-            {renderStatRow('BP Conv.', 'breakPointsConverted', homeStats.breakPointsConverted, awayStats.breakPointsConverted)}
-            {renderStatRow('BP Salvati', 'breakPointsSaved', homeStats.breakPointsSaved, awayStats.breakPointsSaved)}
+            {renderStatRow(t('tennis.unforcedErrorsShort', 'UE'), 'unforcedErrors', homeStats.unforcedErrors, awayStats.unforcedErrors)}
+            {renderStatRow(t('tennis.breakPointsConvertedShort', 'BP Conv.'), 'breakPointsConverted', homeStats.breakPointsConverted, awayStats.breakPointsConverted)}
+            {renderStatRow(t('tennis.breakPointsSavedShort', 'BP Saved'), 'breakPointsSaved', homeStats.breakPointsSaved, awayStats.breakPointsSaved)}
           </View>
         </ScrollView>
 
@@ -665,12 +667,12 @@ export function TennisMatchModal({
         <View style={styles.footer}>
           <View style={styles.autoSaveIndicator}>
             <Ionicons name="cloud-done" size={16} color="#10B981" />
-            <Text style={styles.autoSaveText}>Salvataggio automatico</Text>
+            <Text style={styles.autoSaveText}>{t('tennis.autoSave', 'Auto-save')}</Text>
           </View>
           
           <TouchableOpacity style={styles.closeMatchButton} onPress={handleCloseMatch} disabled={saving}>
             <Ionicons name="checkmark-circle" size={20} color="#FFF" />
-            <Text style={styles.closeMatchButtonText}>Fine Partita</Text>
+            <Text style={styles.closeMatchButtonText}>{t('tennis.endMatch', 'End Match')}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

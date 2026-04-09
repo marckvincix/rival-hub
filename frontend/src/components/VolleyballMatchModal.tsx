@@ -378,7 +378,7 @@ export function VolleyballMatchModal({
           {lastAction && (
             <TouchableOpacity style={styles.undoButton} onPress={undoLastAction}>
               <Ionicons name="arrow-undo" size={18} color="#666" />
-              <Text style={styles.undoText}>Annulla ultimo</Text>
+              <Text style={styles.undoText}>{t('common.undoLast', 'Undo last')}</Text>
             </TouchableOpacity>
           )}
 
