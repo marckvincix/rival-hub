@@ -202,7 +202,12 @@ export default function TournamentPublicPage() {
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team');
   const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
   const getCategoryLabel = (cat: string) => cat;
-  const getFormatLabel = (f: string) => f === 'league' ? 'Campionato' : f === 'knockout' ? 'Eliminazione' : 'Gironi';
+  const getFormatLabel = (f: string) => {
+    if (f === 'league') return t('tournaments.formatLeague');
+    if (f === 'knockout') return t('tournaments.formatKnockout');
+    if (f === 'groups_knockout') return t('tournaments.formatGroupsKnockout');
+    return t('tournaments.formatChampionship');
+  };
   
   // Check if tournament is basketball
   const isBasketball = tournament?.sport === 'basket';
@@ -897,7 +902,7 @@ export default function TournamentPublicPage() {
             <View style={styles.infoCard}>
               <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('common.name', 'Name')}</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.category', 'Category')}</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
-              <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>Formato</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
+              <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.format')}</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
               {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.startDate', 'Start date')}</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
               <View style={styles.infoRow}>
                 <View style={[styles.statusDot, { backgroundColor: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]} />
