@@ -9,6 +9,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Sport, SPORTS_CONFIG } from '../types';
+import { useTranslation } from 'react-i18next';
 
 interface SportSelectorProps {
   onSelectSport: (sport: Sport) => void;
@@ -16,13 +17,15 @@ interface SportSelectorProps {
 }
 
 export default function SportSelector({ onSelectSport, onBack }: SportSelectorProps) {
+  const { t } = useTranslation();
+  
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <Ionicons name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Scegli lo sport</Text>
+        <Text style={styles.title}>{t('sportSelector.chooseSport', 'Choose sport')}</Text>
         <View style={{ width: 48 }} />
       </View>
 

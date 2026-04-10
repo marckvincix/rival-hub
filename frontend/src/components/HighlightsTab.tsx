@@ -211,7 +211,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>Caricamento...</Text>
+        <Text style={styles.loadingText}>{t('highlightsAccess.loading', 'Loading...')}</Text>
       </View>
     );
   }
@@ -222,16 +222,16 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
       <View style={styles.container}>
         <View style={styles.lockedContainer}>
           <Ionicons name="lock-closed" size={64} color="#CCC" />
-          <Text style={styles.lockedTitle}>Contenuto Protetto</Text>
+          <Text style={styles.lockedTitle}>{t('highlights.codeRequired', 'Protected Content')}</Text>
           <Text style={styles.lockedDescription}>
-            Inserisci il codice per accedere agli Highlights
+            {t('highlightsAccess.enterCodeToAccess', 'Enter code to access Highlights')}
           </Text>
           <TouchableOpacity
             style={styles.unlockButton}
             onPress={() => setShowCodeModal(true)}
           >
             <Ionicons name="key" size={20} color="#FFF" />
-            <Text style={styles.unlockButtonText}>Inserisci Codice</Text>
+            <Text style={styles.unlockButtonText}>{t('highlightsAccess.enterCode', 'Enter Code')}</Text>
           </TouchableOpacity>
         </View>
 
@@ -243,9 +243,9 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
         >
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Accesso Highlights</Text>
+              <Text style={styles.modalTitle}>{t('highlights.accessCode', 'Highlights Access')}</Text>
               <Text style={styles.modalDescription}>
-                Inserisci il codice fornito dall'organizzatore
+                {t('highlightsAccess.enterOrganizerCode', 'Enter the code provided by the organizer')}
               </Text>
               
               <TextInput
@@ -274,7 +274,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
                 {verifying ? (
                   <ActivityIndicator color="#FFF" />
                 ) : (
-                  <Text style={styles.accessButtonText}>Accedi</Text>
+                  <Text style={styles.accessButtonText}>{t('highlightsAccess.access', 'Access')}</Text>
                 )}
               </TouchableOpacity>
               
@@ -282,7 +282,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
                 style={styles.cancelButton}
                 onPress={() => setShowCodeModal(false)}
               >
-                <Text style={styles.cancelButtonText}>Annulla</Text>
+                <Text style={styles.cancelButtonText}>{t('common.cancel', 'Cancel')}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -295,7 +295,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
-        <Text style={styles.loadingText}>Caricamento...</Text>
+        <Text style={styles.loadingText}>{t('highlightsAccess.loading', 'Loading...')}</Text>
       </View>
     );
   }

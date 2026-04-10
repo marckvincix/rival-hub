@@ -101,12 +101,12 @@ export default function ProfileScreen() {
 
   const handleRemoveFavorite = async (type: 'tournament' | 'team', referenceId: string) => {
     Alert.alert(
-      'Rimuovi dai preferiti',
-      'Sei sicuro di voler rimuovere questo elemento dai preferiti?',
+      t('favorites.removeFromFavorites', 'Remove from favorites'),
+      t('alerts.confirmRemoveFavorite', 'Are you sure you want to remove this item from favorites?'),
       [
-        { text: 'Annulla', style: 'cancel' },
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
         { 
-          text: 'Rimuovi', 
+          text: t('alerts.remove', 'Remove'), 
           style: 'destructive',
           onPress: async () => {
             try {
@@ -128,16 +128,16 @@ export default function ProfileScreen() {
   };
 
   const handleLogout = () => {
-    Alert.alert('Logout', 'Sei sicuro di voler uscire?', [
-      { text: 'Annulla', style: 'cancel' },
-      { text: 'Esci', style: 'destructive', onPress: async () => {
+    Alert.alert(t('alerts.logout', 'Logout'), t('alerts.logoutConfirm', 'Are you sure you want to logout?'), [
+      { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+      { text: t('auth.logout', 'Logout'), style: 'destructive', onPress: async () => {
         await logout();
         router.replace('/');
       }}
     ]);
   };
 
-  const firstName = user?.name?.split(' ')[0] || 'Utente';
+  const firstName = user?.name?.split(' ')[0] || t('common.player', 'User');
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -161,14 +161,14 @@ export default function ProfileScreen() {
               <Text style={styles.avatarText}>{firstName.charAt(0).toUpperCase()}</Text>
             )}
           </View>
-          <Text style={styles.userName}>{user?.name || 'Utente'}</Text>
+          <Text style={styles.userName}>{user?.name || t('common.player', 'User')}</Text>
           <Text style={styles.userEmail}>{user?.email}</Text>
         </View>
 
         {/* My Favorites Section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>I miei Preferiti</Text>
+            <Text style={styles.sectionTitle}>{t('profile.myFavorites', 'My Favorites')}</Text>
             <Ionicons name="star" size={20} color="#FFD700" />
           </View>
           
@@ -177,8 +177,8 @@ export default function ProfileScreen() {
           ) : favorites.length === 0 ? (
             <View style={styles.emptyFavorites}>
               <Ionicons name="star-outline" size={40} color="#CCC" />
-              <Text style={styles.emptyFavoritesText}>Nessun preferito</Text>
-              <Text style={styles.emptyFavoritesSubtext}>Aggiungi tornei e squadre ai preferiti per ricevere notifiche</Text>
+              <Text style={styles.emptyFavoritesText}>{t('profile.noFavorites', 'No favorites')}</Text>
+              <Text style={styles.emptyFavoritesSubtext}>{t('profile.addFavoritesHint', 'Add tournaments and teams to favorites to receive notifications')}</Text>
             </View>
           ) : (
             <>
@@ -194,7 +194,7 @@ export default function ProfileScreen() {
                       >
                         <Ionicons name="trophy" size={20} color="#000" />
                         <View style={styles.favoriteDetails}>
-                          <Text style={styles.favoriteName}>{fav.details?.name || 'Torneo'}</Text>
+                          <Text style={styles.favoriteName}>{fav.details?.name || t('profile.tournament', 'Tournament')}</Text>
                           <Text style={styles.favoriteSubtext}>{fav.details?.category} • {fav.details?.location}</Text>
                         </View>
                       </TouchableOpacity>
@@ -220,13 +220,13 @@ export default function ProfileScreen() {
               {/* Team Favorites */}
               {favorites.filter(f => f.type === 'team').length > 0 && (
                 <View style={styles.favoritesGroup}>
-                  <Text style={styles.favoritesGroupTitle}>Squadre</Text>
+                  <Text style={styles.favoritesGroupTitle}>{t('teams.title', 'Teams')}</Text>
                   {favorites.filter(f => f.type === 'team').map(fav => (
                     <View key={fav.id} style={styles.favoriteItem}>
                       <View style={styles.favoriteInfo}>
                         <Ionicons name="people" size={20} color="#000" />
                         <View style={styles.favoriteDetails}>
-                          <Text style={styles.favoriteName}>{fav.details?.name || 'Squadra'}</Text>
+                          <Text style={styles.favoriteName}>{fav.details?.name || t('profile.team', 'Team')}</Text>
                           <Text style={styles.favoriteSubtext}>{fav.details?.tournament_name || ''}</Text>
                         </View>
                       </View>

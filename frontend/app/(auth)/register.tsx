@@ -80,7 +80,7 @@ export default function RegisterScreen() {
         }
       }
     } catch (error) {
-      Alert.alert('Errore', 'Errore durante la registrazione con Google');
+      Alert.alert(t('common.error', 'Error'), t('alerts.errorRegistrationGoogle', 'Error during Google registration'));
     }
   };
 
@@ -104,27 +104,27 @@ export default function RegisterScreen() {
 
           <View style={styles.header}>
             <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
-            <Text style={styles.title}>Crea Account</Text>
-            <Text style={styles.subtitle}>Inizia a gestire i tuoi tornei</Text>
+            <Text style={styles.title}>{t('register.createAccount', 'Create Account')}</Text>
+            <Text style={styles.subtitle}>{t('home.title', 'Start managing your tournaments')}</Text>
           </View>
 
           {/* Google Login */}
           <TouchableOpacity style={styles.googleButton} onPress={handleGoogleLogin}>
             <Ionicons name="logo-google" size={20} color="#000" />
-            <Text style={styles.googleButtonText}>Registrati con Google</Text>
+            <Text style={styles.googleButtonText}>{t('register.registerWithGoogle', 'Register with Google')}</Text>
           </TouchableOpacity>
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>oppure</Text>
+            <Text style={styles.dividerText}>{t('auth.or', 'or')}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Form */}
           <View style={styles.form}>
             <Input
-              label="Nome"
-              placeholder="Il tuo nome"
+              label={t('register.name', 'Name')}
+              placeholder={t('teams.playerNamePlaceholder', 'Your name')}
               value={name}
               onChangeText={setName}
               autoCapitalize="words"
@@ -132,8 +132,8 @@ export default function RegisterScreen() {
             />
             
             <Input
-              label="Email"
-              placeholder="tuaemail@esempio.com"
+              label={t('auth.email', 'Email')}
+              placeholder={t('auth.emailPlaceholder', 'youremail@example.com')}
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"

@@ -10,11 +10,13 @@ import {
   I18nManager,
 } from 'react-native';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useTranslation } from 'react-i18next';
 
 const { width } = Dimensions.get('window');
 
 export const LanguageSelectionScreen: React.FC = () => {
   const { languages, changeLanguage, completeLanguageSelection } = useLanguage();
+  const { t } = useTranslation();
   const [selectedLanguage, setSelectedLanguage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -41,8 +43,8 @@ export const LanguageSelectionScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.logo}>Rival Hub</Text>
-          <Text style={styles.title}>Choose Your Language</Text>
-          <Text style={styles.subtitle}>Seleziona la tua lingua preferita</Text>
+          <Text style={styles.title}>{t('languageSelection.title', 'Choose Your Language')}</Text>
+          <Text style={styles.subtitle}>{t('languageSelection.subtitle', 'Select your preferred language')}</Text>
         </View>
 
         <ScrollView 
@@ -90,7 +92,7 @@ export const LanguageSelectionScreen: React.FC = () => {
             activeOpacity={0.8}
           >
             <Text style={styles.continueButtonText}>
-              {isLoading ? '...' : 'Continue'}
+              {isLoading ? '...' : t('languageSelection.continue', 'Continue')}
             </Text>
           </TouchableOpacity>
         </View>
