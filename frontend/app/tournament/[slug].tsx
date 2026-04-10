@@ -426,17 +426,17 @@ export default function TournamentPublicPage() {
         {/* Standings Tab */}
         {activeTab === 'standings' && (
           <View style={styles.tabContent}>
-            {standings.length === 0 ? <EmptyState icon="podium-outline" title="Nessuna classifica" /> : (
+            {standings.length === 0 ? <EmptyState icon="podium-outline" title={t('stats.noStandings', 'No standings')} /> : (
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
                   <Text style={[styles.standingsHeaderText, { width: 30 }]}>#</Text>
                   <Text style={[styles.standingsHeaderText, { flex: 1 }]}>{isRacketSport ? (isDoubles ? t('teams.pair', 'Pair') : t('teams.player', 'Player')) : t('teams.team', 'Team')}</Text>
-                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>G</Text>
-                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>V</Text>
-                  {!isBasketball && !isRacketSport && <Text style={[styles.standingsHeaderText, { width: 30 }]}>P</Text>}
-                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>{isBasketball ? 'P' : 'S'}</Text>
+                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>{t('stats.matchesPlayedShort', 'MP')}</Text>
+                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>{t('stats.winsShort', 'W')}</Text>
+                  {!isBasketball && !isRacketSport && <Text style={[styles.standingsHeaderText, { width: 30 }]}>{t('stats.drawsShort', 'D')}</Text>}
+                  <Text style={[styles.standingsHeaderText, { width: 30 }]}>{isBasketball ? t('stats.lossesShort', 'L') : t('stats.lossesShort', 'L')}</Text>
                   {isBasketball && <Text style={[styles.standingsHeaderText, { width: 40 }]}>+/-</Text>}
-                  <Text style={[styles.standingsHeaderText, { width: 40, fontWeight: '700' }]}>Pt</Text>
+                  <Text style={[styles.standingsHeaderText, { width: 40, fontWeight: '700' }]}>{t('stats.pointsShort', 'Pts')}</Text>
                 </View>
                 {standings.map((team: any, index) => (
                   <View key={team.team_id} style={[styles.standingsRow, index % 2 === 0 && styles.standingsRowAlt]}>
