@@ -87,7 +87,17 @@
     "more": "altre",
     "dateNotAvailable": "Data non disponibile",
     "player": "Giocatore",
-    "undoLast": "Annulla ultimo"
+    "undoLast": "Annulla ultimo",
+    "viewAll": "Vedi tutti",
+    "all": "Tutti",
+    "field": "Campo"
+  },
+  "dashboard": {
+    "hello": "Ciao",
+    "manageYourTournaments": "Gestisci i tuoi tornei",
+    "newTournament": "Nuovo torneo",
+    "yourTournaments": "I tuoi tornei",
+    "upcoming": "Da giocare"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",

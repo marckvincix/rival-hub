@@ -20,14 +20,14 @@ import { useTranslation } from '../../src/i18n';
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
 // Sport configuration with labels and icons
-const SPORT_CONFIG: Record<string, { label: string; icon: string }> = {
-  'all': { label: 'Tutti', icon: 'apps' },
-  'calcio': { label: 'Calcio', icon: 'football' },
-  'basket': { label: 'Basket', icon: 'basketball' },
-  'tennis': { label: 'Tennis', icon: 'tennisball' },
-  'padel': { label: 'Padel', icon: 'tennisball' },
-  'pallavolo': { label: 'Pallavolo', icon: 'football-outline' },
-  'rugby': { label: 'Rugby', icon: 'american-football' },
+const SPORT_CONFIG: Record<string, { labelKey: string; icon: string }> = {
+  'all': { labelKey: 'common.all', icon: 'apps' },
+  'calcio': { labelKey: 'sports.soccer', icon: 'football' },
+  'basket': { labelKey: 'sports.basketball', icon: 'basketball' },
+  'tennis': { labelKey: 'sports.tennis', icon: 'tennisball' },
+  'padel': { labelKey: 'sports.padel', icon: 'tennisball' },
+  'pallavolo': { labelKey: 'sports.volleyball', icon: 'football-outline' },
+  'rugby': { labelKey: 'sports.rugby', icon: 'american-football' },
 };
 
 export default function DashboardScreen() {
@@ -164,8 +164,8 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <Image source={RivalHubLogo} style={styles.logoImage} resizeMode="contain" />
           <View style={styles.headerTextContainer}>
-            <Text style={styles.greeting}>Ciao, {firstName}</Text>
-            <Text style={styles.subtitle}>Gestisci i tuoi tornei</Text>
+            <Text style={styles.greeting}>{t('dashboard.hello', 'Hello')}, {firstName}</Text>
+            <Text style={styles.subtitle}>{t('dashboard.manageYourTournaments', 'Manage your tournaments')}</Text>
           </View>
         </View>
 
@@ -192,7 +192,7 @@ export default function DashboardScreen() {
                     color={isSelected ? '#FFF' : '#000'} 
                   />
                   <Text style={[styles.sportPillText, isSelected && styles.sportPillTextActive]}>
-                    {config.label}
+                    {t(config.labelKey, sport)}
                   </Text>
                 </TouchableOpacity>
               );
@@ -231,7 +231,7 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.statValue}>{stats.totalTeams}</Text>
               <View style={styles.statLabelContainer}>
-                <Text style={styles.statLabel}>Squadre</Text>
+                <Text style={styles.statLabel}>{t('teams.title', 'Teams')}</Text>
               </View>
             </View>
             <View style={styles.statCard}>
@@ -240,7 +240,7 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.statValue}>{stats.pendingMatches}</Text>
               <View style={styles.statLabelContainer}>
-                <Text style={styles.statLabel}>Da giocare</Text>
+                <Text style={styles.statLabel}>{t('dashboard.upcoming', 'Upcoming')}</Text>
               </View>
             </View>
           </View>
@@ -252,7 +252,7 @@ export default function DashboardScreen() {
           onPress={() => router.push('/(tabs)/tournaments')}
         >
           <Ionicons name="add" size={28} color="#FFF" />
-          <Text style={styles.newTournamentText}>Nuovo torneo</Text>
+          <Text style={styles.newTournamentText}>{t('dashboard.newTournament', 'New Tournament')}</Text>
         </TouchableOpacity>
 
         {/* Spacer */}
@@ -261,18 +261,18 @@ export default function DashboardScreen() {
         {/* I tuoi tornei Section */}
         <View style={styles.tournamentsCard}>
           <View style={styles.tournamentsHeader}>
-            <Text style={styles.tournamentsTitle}>I tuoi tornei</Text>
+            <Text style={styles.tournamentsTitle}>{t('dashboard.yourTournaments', 'Your Tournaments')}</Text>
             <TouchableOpacity 
               style={styles.viewAllButton}
               onPress={() => router.push('/(tabs)/tournaments')}
             >
-              <Text style={styles.viewAllText}>Vedi tutti</Text>
+              <Text style={styles.viewAllText}>{t('common.viewAll', 'View all')}</Text>
             </TouchableOpacity>
           </View>
 
           {tournaments.length === 0 ? (
             <View style={styles.emptyState}>
-              <Text style={styles.emptyText}>Nessun torneo creato</Text>
+              <Text style={styles.emptyText}>{t('tournaments.noTournaments', 'No tournaments created')}</Text>
             </View>
           ) : (
             tournaments.slice(0, 3).map((tournament) => (
@@ -284,7 +284,7 @@ export default function DashboardScreen() {
                 <View style={styles.tournamentInfo}>
                   <Text style={styles.tournamentName}>{tournament.name}</Text>
                   <Text style={styles.tournamentMeta}>
-                    {tournament.category} - {tournament.location || 'Campo'}
+                    {tournament.category} - {tournament.location || t('common.field', 'Field')}
                   </Text>
                   <View style={styles.statusBadge}>
                     <Text style={styles.statusText}>{getStatusLabel(tournament.status)}</Text>

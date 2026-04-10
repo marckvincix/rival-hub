@@ -87,7 +87,17 @@
     "more": "more",
     "dateNotAvailable": "Date not available",
     "player": "Player",
-    "undoLast": "Undo last"
+    "undoLast": "Undo last",
+    "viewAll": "View all",
+    "all": "All",
+    "field": "Field"
+  },
+  "dashboard": {
+    "hello": "Hello",
+    "manageYourTournaments": "Manage your tournaments",
+    "newTournament": "New Tournament",
+    "yourTournaments": "Your Tournaments",
+    "upcoming": "Upcoming"
   },
   "languageSelection": {
     "title": "Choose Your Language",
