@@ -587,7 +587,7 @@ export function MatchStatsModal({
                   {/* Soccer: Goals */}
                   {!isBasketball && goals.length > 0 && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>⚽ Marcatori</Text>
+                      <Text style={styles.sectionTitle}>⚽ {t('soccer.scorers', 'Scorers')}</Text>
                       {goals.map((event, idx) => (
                         <View key={idx} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
@@ -622,7 +622,7 @@ export function MatchStatsModal({
                   {yellowCards.length > 0 && (
                     <View style={styles.section}>
                       <Text style={styles.sectionTitle}>
-                        🟨 Cartellini Gialli
+                        🟨 {t('stats.yellowCards', 'Yellow Cards')}
                       </Text>
                       {yellowCards.map((event, idx) => (
                         <View key={idx} style={styles.eventRow}>
@@ -640,7 +640,7 @@ export function MatchStatsModal({
                   {/* Red Cards (both sports) */}
                   {redCards.length > 0 && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🟥 Cartellini Rossi</Text>
+                      <Text style={styles.sectionTitle}>🟥 {t('stats.redCards', 'Red Cards')}</Text>
                       {redCards.map((event, idx) => (
                         <View key={idx} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
@@ -657,7 +657,7 @@ export function MatchStatsModal({
                   {/* Substitutions */}
                   {hasSubs && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🔄 {t('soccer.substitutions')}</Text>
+                      <Text style={styles.sectionTitle}>🔄 {t('soccer.substitutions', 'Substitutions')}</Text>
                       {subsOut.map((event, idx) => (
                         <View key={`out-${idx}`} style={styles.eventRow}>
                           <Text style={styles.eventPlayer}>
