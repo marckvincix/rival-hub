@@ -1409,13 +1409,13 @@ export default function TournamentPublicPage() {
                   </View>
                   <View style={styles.playerStatsInfo}>
                     <Text style={styles.playerStatsName}>{selectedPlayerForStats.full_name}</Text>
-                    <Text style={styles.playerStatsRole}>{selectedPlayerForStats.role}</Text>
+                    <Text style={styles.playerStatsRole}>{translateRole(selectedPlayerForStats.role || '')}</Text>
                   </View>
                 </View>
 
                 {loadingPlayerStats ? (
                   <View style={styles.playerStatsLoading}>
-                    <Text>Caricamento...</Text>
+                    <Text>{t('common.loading', 'Loading...')}</Text>
                   </View>
                 ) : playerStatsData ? (
                   <>
@@ -1451,7 +1451,7 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🟨</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Gialli</Text>
+                            <Text style={styles.playerStatLabel}>{t('soccer.yellowShort', 'Yellow')}</Text>
                           </View>
                         </>
                       ) : isBasketball ? (
@@ -1572,31 +1572,31 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🟨</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.yellow_cards || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Gialli</Text>
+                            <Text style={styles.playerStatLabel}>{t('soccer.yellowShort', 'Yellow')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🟥</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.red_cards || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Rossi</Text>
+                            <Text style={styles.playerStatLabel}>{t('soccer.redShort', 'Red')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>👟</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.appearances || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Presenze</Text>
+                            <Text style={styles.playerStatLabel}>{t('stats.appearances', 'Apps')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>⏱️</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.minutes_played || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Minuti</Text>
+                            <Text style={styles.playerStatLabel}>{t('stats.minutes', 'Mins')}</Text>
                           </View>
                         </>
                       )}
                     </View>
                     {playerStatsData.average_rating > 0 && (
                       <View style={styles.playerStatsRating}>
-                        <Text style={styles.playerStatsRatingLabel}>⭐ Media Voto</Text>
+                        <Text style={styles.playerStatsRatingLabel}>⭐ {t('stats.avgRating', 'Avg Rating')}</Text>
                         <Text style={styles.playerStatsRatingValue}>{playerStatsData.average_rating?.toFixed(1)}</Text>
-                        <Text style={styles.playerStatsRatingCount}>({playerStatsData.ratings_count || 0} voti)</Text>
+                        <Text style={styles.playerStatsRatingCount}>({playerStatsData.ratings_count || 0} {t('stats.votes', 'votes')})</Text>
                       </View>
                     )}
                   </>
