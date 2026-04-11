@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Header, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -27,6 +27,9 @@ import asyncio
 
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
+
+# Web App directory (built frontend)
+WEB_APP_DIR = Path("/app/frontend/dist")
 
 # Uploads directory for Highlights
 UPLOADS_DIR = Path("/app/uploads/highlights")
@@ -3777,6 +3780,93 @@ async def notify_team_followers(team_id: str, title: str, body: str, data: dict 
 
 # Include the router
 app.include_router(api_router)
+
+# ===================== WEB APP STATIC FILES =====================
+# Serve the built web app from /app/frontend/dist
+
+# Check if web app directory exists
+if WEB_APP_DIR.exists():
+    # Serve static assets (JS, CSS, images, etc.)
+    if (WEB_APP_DIR / "assets").exists():
+        app.mount("/assets", StaticFiles(directory=WEB_APP_DIR / "assets"), name="web_assets")
+    if (WEB_APP_DIR / "_expo").exists():
+        app.mount("/_expo", StaticFiles(directory=WEB_APP_DIR / "_expo"), name="expo_assets")
+    
+    # Serve static files from root (favicon, manifest, etc.)
+    @app.get("/favicon.ico", include_in_schema=False)
+    async def favicon():
+        favicon_path = WEB_APP_DIR / "favicon.ico"
+        if favicon_path.exists():
+            return FileResponse(favicon_path)
+        return FileResponse(WEB_APP_DIR / "favicon.png")
+    
+    @app.get("/favicon.png", include_in_schema=False)
+    async def favicon_png():
+        return FileResponse(WEB_APP_DIR / "favicon.png")
+    
+    @app.get("/icon.png", include_in_schema=False)
+    async def icon():
+        return FileResponse(WEB_APP_DIR / "icon.png")
+    
+    @app.get("/og-image.jpg", include_in_schema=False)
+    async def og_image():
+        return FileResponse(WEB_APP_DIR / "og-image.jpg")
+    
+    @app.get("/manifest.json", include_in_schema=False)
+    async def manifest():
+        return FileResponse(WEB_APP_DIR / "manifest.json")
+    
+    # Serve HTML pages for specific routes
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_index():
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/login", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_login():
+        html_path = WEB_APP_DIR / "login.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/register", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_register():
+        html_path = WEB_APP_DIR / "register.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/profile", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_profile():
+        html_path = WEB_APP_DIR / "profile.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/tournaments", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_tournaments():
+        html_path = WEB_APP_DIR / "tournaments.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/callback", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_callback():
+        html_path = WEB_APP_DIR / "callback.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    @app.get("/tournament/{slug}", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_tournament_detail(slug: str):
+        """Serve tournament detail page for web app deep linking"""
+        tournament_html = WEB_APP_DIR / "tournament" / "[slug].html"
+        if tournament_html.exists():
+            return FileResponse(tournament_html)
+        return FileResponse(WEB_APP_DIR / "index.html")
+    
+    logger.info(f"Web App enabled - serving from {WEB_APP_DIR}")
+else:
+    logger.warning(f"Web App directory not found: {WEB_APP_DIR}")
 
 app.add_middleware(
     CORSMiddleware,
