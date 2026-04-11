@@ -215,7 +215,19 @@ export default function TournamentPublicPage() {
 
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team', 'Team');
   const getStatusLabel = (status: string) => status === 'active' ? t('tournaments.active', 'In progress') : status === 'completed' ? t('tournaments.completed', 'Completed') : t('tournaments.draft', 'Draft');
-  const getCategoryLabel = (cat: string) => cat;
+  const getCategoryLabel = (cat: string) => {
+    const categoryMap: Record<string, string> = {
+      'Open': t('categories.open', 'Open'),
+      'Senior': t('categories.senior', 'Senior'),
+      'U18': t('categories.u18', 'U18'),
+      'U16': t('categories.u16', 'U16'),
+      'U14': t('categories.u14', 'U14'),
+      'U12': t('categories.u12', 'U12'),
+      'U10': t('categories.u10', 'U10'),
+      'U8': t('categories.u8', 'U8'),
+    };
+    return categoryMap[cat] || cat;
+  };
   const getFormatLabel = (f: string) => {
     if (f === 'league') return t('tournaments.formatLeague', 'League');
     if (f === 'knockout') return t('tournaments.formatKnockout', 'Knockout');
@@ -867,8 +879,8 @@ export default function TournamentPublicPage() {
                         <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.assists}</Text><Text style={styles.statBoxLabel}>{t('soccer.assists')}</Text></View>
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#EAB308' }]}>{player.yellow_cards}</Text><Text style={styles.statBoxLabel}>{t('soccer.yellowCard')}</Text></View>
                         <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#DC2626' }]}>{player.red_cards}</Text><Text style={styles.statBoxLabel}>{t('soccer.redCard')}</Text></View>
-                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.appearances}</Text><Text style={styles.statBoxLabel}>Pres.</Text></View>
-                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#2563EB' }]}>{player.average_rating ? player.average_rating.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>Media</Text></View>
+                        <View style={styles.statBox}><Text style={styles.statBoxValue}>{player.appearances}</Text><Text style={styles.statBoxLabel}>{t('stats.appearances', 'Apps')}</Text></View>
+                        <View style={styles.statBox}><Text style={[styles.statBoxValue, { color: '#2563EB' }]}>{player.average_rating ? player.average_rating.toFixed(1) : '-'}</Text><Text style={styles.statBoxLabel}>{t('stats.avgRating', 'Avg')}</Text></View>
                       </>
                     )}
                   </View>

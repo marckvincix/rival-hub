@@ -90,7 +90,8 @@
     "undoLast": "تراجع",
     "viewAll": "عرض الكل",
     "all": "الكل",
-    "field": "الملعب"
+    "field": "الملعب",
+    "other": "أخرى"
   },
   "dashboard": {
     "hello": "مرحباً",
@@ -158,6 +159,16 @@
     "selectSport": "اختر الرياضة",
     "selectFormat": "اختر التنسيق",
     "selectCategory": "اختر الفئة"
+  },
+  "categories": {
+    "open": "مفتوحة",
+    "senior": "كبار",
+    "u18": "تحت 18",
+    "u16": "تحت 16",
+    "u14": "تحت 14",
+    "u12": "تحت 12",
+    "u10": "تحت 10",
+    "u8": "تحت 8"
   },
   "tournaments": {
     "title": "البطولات",
@@ -352,7 +363,10 @@
     "average": "المتوسط",
     "setScore": "نتيجة الشوط",
     "cards": "البطاقات",
-    "loadingStats": "جارٍ تحميل الإحصائيات..."
+    "loadingStats": "جارٍ تحميل الإحصائيات...",
+    "appearances": "مباريات",
+    "minutes": "دقيقة",
+    "avgRating": "التقييم"
   },
   "highlights": {
     "title": "أبرز اللحظات",

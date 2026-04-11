@@ -160,6 +160,16 @@
     "selectFormat": "Seleziona Formato",
     "selectCategory": "Seleziona Categoria"
   },
+  "categories": {
+    "open": "Open",
+    "senior": "Senior",
+    "u18": "U18",
+    "u16": "U16",
+    "u14": "U14",
+    "u12": "U12",
+    "u10": "U10",
+    "u8": "U8"
+  },
   "tournaments": {
     "title": "Tornei",
     "myTournaments": "I Miei Tornei",
@@ -353,7 +363,10 @@
     "cleanSheets": "Porte Inviolate",
     "saves": "Parate",
     "minutesPlayed": "Minuti giocati",
-    "noStatsAvailable": "Nessuna statistica disponibile"
+    "noStatsAvailable": "Nessuna statistica disponibile",
+    "appearances": "Pres.",
+    "minutes": "Min",
+    "avgRating": "Media"
   },
   "highlights": {
     "title": "Highlights",

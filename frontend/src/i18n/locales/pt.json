@@ -90,7 +90,8 @@
     "undoLast": "Anular último",
     "viewAll": "Ver todos",
     "all": "Todos",
-    "field": "Campo"
+    "field": "Campo",
+    "other": "Outro"
   },
   "dashboard": {
     "hello": "Olá",
@@ -158,6 +159,16 @@
     "selectSport": "Selecionar desporto",
     "selectFormat": "Selecionar formato",
     "selectCategory": "Selecionar categoria"
+  },
+  "categories": {
+    "open": "Aberto",
+    "senior": "Sénior",
+    "u18": "U18",
+    "u16": "U16",
+    "u14": "U14",
+    "u12": "U12",
+    "u10": "U10",
+    "u8": "U8"
   },
   "tournaments": {
     "title": "Torneios",
@@ -352,7 +363,10 @@
     "average": "Média",
     "setScore": "Resultado do set",
     "cards": "Cartões",
-    "loadingStats": "A carregar estatísticas..."
+    "loadingStats": "A carregar estatísticas...",
+    "appearances": "Jogos",
+    "minutes": "Min",
+    "avgRating": "Média"
   },
   "highlights": {
     "title": "Highlights",
