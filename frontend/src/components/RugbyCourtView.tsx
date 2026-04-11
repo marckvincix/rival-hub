@@ -175,19 +175,19 @@ export function RugbyCourtView({
 
       {/* Home team label */}
       <View style={styles.teamLabel}>
-        <Text style={styles.teamLabelText}>{homeTeamName || 'Casa'}</Text>
+        <Text style={styles.teamLabelText}>{homeTeamName || t('matches.home', 'Home')}</Text>
       </View>
 
       {/* Legend */}
       <View style={styles.legend}>
         <View style={styles.legendItem}>
           <View style={[styles.legendDot, { backgroundColor: '#000' }]} />
-          <Text style={styles.legendText}>Casa</Text>
+          <Text style={styles.legendText}>{t('matches.home', 'Home')}</Text>
         </View>
         {awayPlayers.length > 0 && (
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#666' }]} />
-            <Text style={styles.legendText}>Ospite</Text>
+            <Text style={styles.legendText}>{t('matches.away', 'Away')}</Text>
           </View>
         )}
       </View>

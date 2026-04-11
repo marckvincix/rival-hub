@@ -1452,27 +1452,27 @@ export default function TournamentPublicPage() {
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🏉</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.tries || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Mete</Text>
+                            <Text style={styles.playerStatLabel}>{t('rugby.triesShort', 'Tries')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>⚽</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.conversions || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Trasform.</Text>
+                            <Text style={styles.playerStatLabel}>{t('rugby.conversionsShort', 'Conv.')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🎯</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.penalties || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Punizioni</Text>
+                            <Text style={styles.playerStatLabel}>{t('rugby.penaltiesShort', 'Pen.')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>💫</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.drop_goals || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Drop</Text>
+                            <Text style={styles.playerStatLabel}>{t('rugby.dropGoalsShort', 'Drop')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🤝</Text>
                             <Text style={styles.playerStatValue}>{playerStatsData.tackles || 0}</Text>
-                            <Text style={styles.playerStatLabel}>Placcaggi</Text>
+                            <Text style={styles.playerStatLabel}>{t('rugby.tacklesShort', 'Tackles')}</Text>
                           </View>
                           <View style={styles.playerStatBox}>
                             <Text style={styles.playerStatIcon}>🟨</Text>

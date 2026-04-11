@@ -359,7 +359,7 @@ export function MatchStatsModal({
                       {/* Tries */}
                       {matchData.rugby_events.filter((e: any) => e.type === 'try').length > 0 && (
                         <View style={styles.section}>
-                          <Text style={styles.sectionTitle}>🏉 Mete</Text>
+                          <Text style={styles.sectionTitle}>🏉 {t('rugby.tries', 'Tries')}</Text>
                           {matchData.rugby_events.filter((e: any) => e.type === 'try').map((event: any, idx: number) => (
                             <View key={`try-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
@@ -376,7 +376,7 @@ export function MatchStatsModal({
                       {/* Conversions */}
                       {matchData.rugby_events.filter((e: any) => e.type === 'conversion').length > 0 && (
                         <View style={styles.section}>
-                          <Text style={styles.sectionTitle}>⚽ Trasformazioni</Text>
+                          <Text style={styles.sectionTitle}>⚽ {t('rugby.conversions', 'Conversions')}</Text>
                           {matchData.rugby_events.filter((e: any) => e.type === 'conversion').map((event: any, idx: number) => (
                             <View key={`conv-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
@@ -393,7 +393,7 @@ export function MatchStatsModal({
                       {/* Penalties */}
                       {matchData.rugby_events.filter((e: any) => e.type === 'penalty').length > 0 && (
                         <View style={styles.section}>
-                          <Text style={styles.sectionTitle}>🎯 Calci Punizione</Text>
+                          <Text style={styles.sectionTitle}>🎯 {t('rugby.penalties', 'Penalties')}</Text>
                           {matchData.rugby_events.filter((e: any) => e.type === 'penalty').map((event: any, idx: number) => (
                             <View key={`pen-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
@@ -410,7 +410,7 @@ export function MatchStatsModal({
                       {/* Drop Goals */}
                       {matchData.rugby_events.filter((e: any) => e.type === 'drop_goal').length > 0 && (
                         <View style={styles.section}>
-                          <Text style={styles.sectionTitle}>💫 Drop Goals</Text>
+                          <Text style={styles.sectionTitle}>💫 {t('rugby.dropGoals', 'Drop Goals')}</Text>
                           {matchData.rugby_events.filter((e: any) => e.type === 'drop_goal').map((event: any, idx: number) => (
                             <View key={`drop-${idx}`} style={styles.eventRow}>
                               <Text style={styles.eventPlayer}>
