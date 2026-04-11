@@ -219,10 +219,10 @@ export function MatchStatsModal({
                   {/* Sets Breakdown - Tennis/Padel */}
                   {isRacketSport && matchData.tennis_sets && matchData.tennis_sets.length > 0 && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🎾 Punteggio Set</Text>
+                      <Text style={styles.sectionTitle}>🎾 {t('tennis.setScore', 'Set Score')}</Text>
                       {matchData.tennis_sets.map((set: any, idx: number) => (
                         <View key={idx} style={styles.setRow}>
-                          <Text style={styles.setLabel}>Set {idx + 1}</Text>
+                          <Text style={styles.setLabel}>{t('tennis.setNumber', { number: idx + 1 }, `Set ${idx + 1}`)}</Text>
                           <View style={styles.setScoreBox}>
                             <Text style={[styles.setScore, set.homeGames > set.awayGames && styles.setScoreWinner]}>
                               {set.homeGames}
@@ -243,10 +243,10 @@ export function MatchStatsModal({
                   {/* Sets Breakdown - Volleyball */}
                   {isVolleyball && matchData.volleyball_sets && matchData.volleyball_sets.length > 0 && (
                     <View style={styles.section}>
-                      <Text style={styles.sectionTitle}>🏐 Punteggio Set</Text>
+                      <Text style={styles.sectionTitle}>🏐 {t('tennis.setScore', 'Set Score')}</Text>
                       {matchData.volleyball_sets.map((set: any, idx: number) => (
                         <View key={idx} style={styles.setRow}>
-                          <Text style={styles.setLabel}>Set {idx + 1}</Text>
+                          <Text style={styles.setLabel}>{t('tennis.setNumber', { number: idx + 1 }, `Set ${idx + 1}`)}</Text>
                           <View style={styles.setScoreBox}>
                             <Text style={[styles.setScore, set.homeScore > set.awayScore && styles.setScoreWinner]}>
                               {set.homeScore || 0}
@@ -279,7 +279,7 @@ export function MatchStatsModal({
                     {/* Aces */}
                     <View style={styles.statsCompareRow}>
                       <Text style={styles.statsCompareValue}>{matchData.home_stats?.aces || 0}</Text>
-                      <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
+                      <Text style={styles.statsCompareStatName}>🎯 {t('tennis.ace', 'Ace')}</Text>
                       <Text style={styles.statsCompareValue}>{matchData.away_stats?.aces || 0}</Text>
                     </View>
                     
@@ -293,7 +293,7 @@ export function MatchStatsModal({
                     {/* Winners */}
                     <View style={styles.statsCompareRow}>
                       <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.home_stats?.winners || 0}</Text>
-                      <Text style={styles.statsCompareStatName}>🏆 Winners</Text>
+                      <Text style={styles.statsCompareStatName}>🏆 {t('tennis.winners', 'Winners')}</Text>
                       <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.away_stats?.winners || 0}</Text>
                     </View>
                     
@@ -308,7 +308,7 @@ export function MatchStatsModal({
                     {isPadel && (
                       <View style={styles.statsCompareRow}>
                         <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.home_stats?.smashWinners || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>💥 Smash</Text>
+                        <Text style={styles.statsCompareStatName}>💥 {t('tennis.smash', 'Smash')}</Text>
                         <Text style={[styles.statsCompareValue, { color: '#8B5CF6' }]}>{matchData.away_stats?.smashWinners || 0}</Text>
                       </View>
                     )}

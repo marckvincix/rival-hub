@@ -605,7 +605,7 @@ export default function TournamentPublicPage() {
                                 {(match as any).currentGame && (
                                   <View style={styles.tennisCurrentGame}>
                                     <Text style={styles.tennisGameScore}>
-                                      Game: {(match as any).currentGame?.homeGamesInSet ?? 0} - {(match as any).currentGame?.awayGamesInSet ?? 0}
+                                      {t('tennis.game', 'Game')}: {(match as any).currentGame?.homeGamesInSet ?? 0} - {(match as any).currentGame?.awayGamesInSet ?? 0}
                                     </Text>
                                     <Text style={styles.tennisPointScore}>
                                       {getTennisPointDisplay((match as any).currentGame?.homePoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'home')} - {getTennisPointDisplay((match as any).currentGame?.awayPoints || 0, (match as any).currentGame?.isDeuce, (match as any).currentGame?.advantage, 'away')}

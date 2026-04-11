@@ -567,6 +567,8 @@
   },
   "tennis": {
     "set": "Set",
+    "setScore": "Resultado del Set",
+    "setNumber": "Set {{number}}",
     "setCompleted": "Set completado",
     "game": "Juego",
     "point": "Punto",
@@ -577,6 +579,8 @@
     "doubleFaults": "Dobles faltas",
     "doubleFaultsShort": "DF",
     "winner": "Winner",
+    "winners": "Golpes ganadores",
+    "smash": "Smash",
     "unforcedError": "Error no forzado",
     "unforcedErrors": "Errores NF",
     "unforcedErrorsShort": "ENF",

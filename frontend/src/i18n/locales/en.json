@@ -580,6 +580,8 @@
   },
   "tennis": {
     "set": "Set",
+    "setScore": "Set Score",
+    "setNumber": "Set {{number}}",
     "setCompleted": "Set Completed",
     "game": "Game",
     "point": "Point",
@@ -590,6 +592,8 @@
     "doubleFaults": "Double Faults",
     "doubleFaultsShort": "DF",
     "winner": "Winner",
+    "winners": "Winners",
+    "smash": "Smash",
     "unforcedError": "Unforced Error",
     "unforcedErrors": "Unforced Errors",
     "unforcedErrorsShort": "UE",
