@@ -330,21 +330,21 @@ export function MatchStatsModal({
                       {/* Points */}
                       <View style={styles.statsCompareRow}>
                         <Text style={styles.statsCompareValue}>{matchData.home_stats?.points || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>🏐 Punti</Text>
+                        <Text style={styles.statsCompareStatName}>🏐 {t('volleyball.points', 'Points')}</Text>
                         <Text style={styles.statsCompareValue}>{matchData.away_stats?.points || 0}</Text>
                       </View>
                       
                       {/* Aces */}
                       <View style={styles.statsCompareRow}>
                         <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.home_stats?.aces || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>🎯 Ace</Text>
+                        <Text style={styles.statsCompareStatName}>🎯 {t('volleyball.ace', 'Ace')}</Text>
                         <Text style={[styles.statsCompareValue, { color: '#10B981' }]}>{matchData.away_stats?.aces || 0}</Text>
                       </View>
                       
                       {/* Blocks */}
                       <View style={styles.statsCompareRow}>
                         <Text style={[styles.statsCompareValue, { color: '#3B82F6' }]}>{matchData.home_stats?.blocks || 0}</Text>
-                        <Text style={styles.statsCompareStatName}>🧱 Muri</Text>
+                        <Text style={styles.statsCompareStatName}>🧱 {t('volleyball.blocks', 'Blocks')}</Text>
                         <Text style={[styles.statsCompareValue, { color: '#3B82F6' }]}>{matchData.away_stats?.blocks || 0}</Text>
                       </View>
                     </View>

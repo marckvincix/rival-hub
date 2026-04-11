@@ -1885,7 +1885,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         </View>
                       ))}
                     </View>
-                  )}))
+                  )})
                 )}
               </View>
             )}
