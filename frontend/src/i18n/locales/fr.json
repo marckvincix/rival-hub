@@ -439,7 +439,8 @@
     "fileTooLarge": "Fichier trop volumineux",
     "compressQuestion": "Le fichier dépasse {{size}}Mo. Voulez-vous le compresser ?",
     "chooseAnother": "Choisir un autre",
-    "compress": "Compresser"
+    "compress": "Compresser",
+    "uploadInfo": "Téléchargez des photos et vidéos des matchs. Le contenu ne sera accessible qu'en entrant le code que vous pouvez partager avec n'importe qui."
   },
   "news": {
     "title": "Actualités",

@@ -440,7 +440,8 @@
     "fileTooLarge": "Datei zu groß",
     "compressQuestion": "Die Datei überschreitet {{size}}MB. Möchtest du sie komprimieren?",
     "chooseAnother": "Andere wählen",
-    "compress": "Komprimieren"
+    "compress": "Komprimieren",
+    "uploadInfo": "Lade Fotos und Videos von Spielen hoch. Der Inhalt ist nur mit dem Code zugänglich, den du mit jedem teilen kannst."
   },
   "news": {
     "title": "News",

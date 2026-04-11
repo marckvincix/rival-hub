@@ -1837,10 +1837,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 {teams.length < 2 && <Text style={styles.warningText}>{t('common.add', 'Add')} almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
                 {matches.length === 0 ? <EmptyState icon={`${sportIcon}-outline` as any} title={t('matches.noMatchesScheduled')} /> : (
-                  groupedMatches.map(([round, roundMatches]) => (
+                  groupedMatches.map(([round, roundMatches]) => {
+                    // Translate "Giornata X" to the current language
+                    const translateRoundName = (roundName: string): string => {
+                      const match = roundName.match(/Giornata\s*(\d+)/i);
+                      if (match) {
+                        return t('matches.roundNumber', { number: match[1] });
+                      }
+                      return roundName;
+                    };
+                    return (
                     <View key={round} style={styles.matchDayGroup}>
                       <View style={styles.matchDayHeader}>
-                        <Text style={styles.matchDayTitle}>{round}</Text>
+                        <Text style={styles.matchDayTitle}>{translateRoundName(round)}</Text>
                         <TouchableOpacity onPress={() => {
                           Alert.alert(t('matches.deleteRound', 'Delete Round'), t('matches.deleteRoundConfirm', `Delete all matches from ${round}?`), [
                             { text: t('common.no') },
@@ -1876,7 +1885,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         </View>
                       ))}
                     </View>
-                  ))
+                  )}))
                 )}
               </View>
             )}

@@ -440,7 +440,8 @@
     "fileTooLarge": "Archivo demasiado grande",
     "compressQuestion": "El archivo supera {{size}}MB. ¿Quieres comprimirlo?",
     "chooseAnother": "Elegir otro",
-    "compress": "Comprimir"
+    "compress": "Comprimir",
+    "uploadInfo": "Sube fotos y vídeos de los partidos. El contenido solo será accesible al introducir el código que puedes compartir con cualquier persona."
   },
   "news": {
     "title": "Noticias",

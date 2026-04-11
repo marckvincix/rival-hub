@@ -446,7 +446,8 @@
     "fileTooLarge": "File too large",
     "compressQuestion": "The file exceeds {{size}}MB. Do you want to compress it?",
     "chooseAnother": "Choose another",
-    "compress": "Compress"
+    "compress": "Compress",
+    "uploadInfo": "Upload photos and videos of matches. Content will only be accessible by entering the code you can share with anyone."
   },
   "news": {
     "title": "News",

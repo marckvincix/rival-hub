@@ -440,7 +440,8 @@
     "fileTooLarge": "Ficheiro demasiado grande",
     "compressQuestion": "O ficheiro excede {{size}}MB. Queres comprimi-lo?",
     "chooseAnother": "Escolher outro",
-    "compress": "Comprimir"
+    "compress": "Comprimir",
+    "uploadInfo": "Carrega fotos e vídeos dos jogos. O conteúdo só estará acessível ao inserir o código que podes partilhar com qualquer pessoa."
   },
   "news": {
     "title": "Notícias",

@@ -444,7 +444,8 @@
     "fileTooLarge": "File troppo grande",
     "compressQuestion": "Il file supera {{size}}MB. Vuoi comprimerlo?",
     "chooseAnother": "Scegli altro",
-    "compress": "Comprimi"
+    "compress": "Comprimi",
+    "uploadInfo": "Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chiunque."
   },
   "news": {
     "title": "News",
