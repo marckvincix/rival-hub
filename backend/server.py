@@ -2925,9 +2925,8 @@ async def create_checkout_session(
     current_user: User = Depends(get_current_user)
 ):
     """Create Stripe checkout session for subscription"""
-    from emergentintegrations.payments.stripe.checkout import (
-        StripeCheckout, CheckoutSessionRequest
-    )
+    import stripe
+    stripe.api_key = STRIPE_API_KEY
     
     body = await request.json()
     plan = body.get("plan")  # pro_monthly, pro_yearly
@@ -2953,28 +2952,37 @@ async def create_checkout_session(
     success_url = f"{origin_url}/dashboard/subscription?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin_url}/dashboard/subscription"
     
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url=webhook_url)
-    
-    checkout_request = CheckoutSessionRequest(
-        amount=float(amount),
-        currency="eur",
-        success_url=success_url,
-        cancel_url=cancel_url,
-        metadata={
-            "user_id": current_user.user_id,
-            "plan": plan,
-            "source": "goalmanager"
-        }
-    )
-    
-    session = await stripe_checkout.create_checkout_session(checkout_request)
+    try:
+        session = stripe.checkout.Session.create(
+            payment_method_types=["card"],
+            line_items=[{
+                "price_data": {
+                    "currency": "eur",
+                    "product_data": {
+                        "name": f"Rival Hub {plan.replace('_', ' ').title()}",
+                    },
+                    "unit_amount": int(amount * 100),  # Stripe uses cents
+                },
+                "quantity": 1,
+            }],
+            mode="payment",
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={
+                "user_id": current_user.user_id,
+                "plan": plan,
+                "source": "rivalhub"
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore Stripe: {str(e)}")
     
     # Create payment transaction record
     now = datetime.now(timezone.utc)
     await db.payment_transactions.insert_one({
         "id": f"payment_{uuid.uuid4().hex[:12]}",
         "user_id": current_user.user_id,
-        "session_id": session.session_id,
+        "session_id": session.id,
         "amount": amount,
         "currency": "eur",
         "plan": plan,
@@ -2983,7 +2991,7 @@ async def create_checkout_session(
         "created_at": now
     })
     
-    return {"url": session.url, "session_id": session.session_id}
+    return {"url": session.url, "session_id": session.id}
 
 @api_router.get("/payments/status/{session_id}")
 async def check_payment_status(
@@ -2991,11 +2999,15 @@ async def check_payment_status(
     current_user: User = Depends(get_current_user)
 ):
     """Check payment status and update user plan"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    import stripe
+    stripe.api_key = STRIPE_API_KEY
     
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
-    
-    status = await stripe_checkout.get_checkout_status(session_id)
+    try:
+        session = stripe.checkout.Session.retrieve(session_id)
+        payment_status = session.payment_status
+        status = session.status
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Errore Stripe: {str(e)}")
     
     # Update transaction
     transaction = await db.payment_transactions.find_one(
@@ -3006,11 +3018,11 @@ async def check_payment_status(
     if transaction:
         await db.payment_transactions.update_one(
             {"session_id": session_id},
-            {"$set": {"status": status.status, "payment_status": status.payment_status}}
+            {"$set": {"status": status, "payment_status": payment_status}}
         )
         
         # If paid and not already processed
-        if status.payment_status == "paid" and transaction.get("payment_status") != "paid":
+        if payment_status == "paid" and transaction.get("payment_status") != "paid":
             plan = transaction.get("plan", "")
             plan_type = "pro"  # Only PRO plan available
             is_yearly = "yearly" in plan
@@ -3023,27 +3035,34 @@ async def check_payment_status(
             )
     
     return {
-        "status": status.status,
-        "payment_status": status.payment_status,
-        "amount_total": status.amount_total,
-        "currency": status.currency
+        "status": status,
+        "payment_status": payment_status,
+        "amount_total": session.amount_total if hasattr(session, 'amount_total') else 0,
+        "currency": session.currency if hasattr(session, 'currency') else "eur"
     }
 
 @api_router.post("/webhook/stripe")
 async def stripe_webhook(request: Request):
     """Handle Stripe webhooks"""
-    from emergentintegrations.payments.stripe.checkout import StripeCheckout
+    import stripe
+    stripe.api_key = STRIPE_API_KEY
     
     body = await request.body()
     signature = request.headers.get("Stripe-Signature")
-    
-    stripe_checkout = StripeCheckout(api_key=STRIPE_API_KEY, webhook_url="")
+    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
     
     try:
-        webhook_response = await stripe_checkout.handle_webhook(body, signature)
+        if webhook_secret:
+            event = stripe.Webhook.construct_event(body, signature, webhook_secret)
+        else:
+            # Parse without signature verification (development)
+            import json
+            event = json.loads(body)
         
-        if webhook_response.payment_status == "paid":
-            session_id = webhook_response.session_id
+        if event.get("type") == "checkout.session.completed":
+            session = event.get("data", {}).get("object", {})
+            session_id = session.get("id")
+            payment_status = session.get("payment_status")
             
             # Update transaction
             await db.payment_transactions.update_one(
