@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, Dimensions, ImageBackground } from 'react-native';
+import { useTranslation } from '../i18n';
 
 interface Player {
   player_id?: string;
@@ -84,6 +85,8 @@ export function RugbyCourtView({
   awayTeamName,
   gameFormat = '15v15'
 }: RugbyCourtViewProps) {
+  const { t } = useTranslation();
+  
   const getInitials = (name?: string) => {
     if (!name) return '?';
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
