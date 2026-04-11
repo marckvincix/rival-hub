@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+frontend/node_modules/
+backend/__pycache__/
+backend/*.pyc
+backend/venv/
+
+# Build outputs (will be rebuilt in Docker)
+frontend/dist/
+frontend/.expo/
+frontend/web-build/
+
+# Development files
+.git/
+.gitignore
+*.md
+!DEPLOY_WEB.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment (will be set in Railway)
+backend/.env.local
+frontend/.env.local
+
+# Test files
+test_result.md
