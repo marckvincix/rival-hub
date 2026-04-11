@@ -90,7 +90,8 @@
     "undoLast": "Undo last",
     "viewAll": "View all",
     "all": "All",
-    "field": "Field"
+    "field": "Field",
+    "other": "Other"
   },
   "dashboard": {
     "hello": "Hello",
@@ -685,6 +686,8 @@
     "scorer": "Scorer",
     "yellowCard": "Yellow",
     "redCard": "Red",
+    "yellowShort": "Yellow",
+    "redShort": "Red",
     "subOut": "out",
     "subIn": "in",
     "ratings": "Ratings",
@@ -945,7 +948,10 @@
     "average": "Avg",
     "setScore": "Set Score",
     "cards": "Cards",
-    "loadingStats": "Loading statistics..."
+    "loadingStats": "Loading statistics...",
+    "appearances": "Apps",
+    "minutes": "Mins",
+    "avgRating": "Avg Rating"
   },
   "matchStats": {
     "setScoreTennis": "Set Score",

@@ -90,7 +90,8 @@
     "undoLast": "Annulla ultimo",
     "viewAll": "Vedi tutti",
     "all": "Tutti",
-    "field": "Campo"
+    "field": "Campo",
+    "other": "Altro"
   },
   "dashboard": {
     "hello": "Ciao",
@@ -683,6 +684,8 @@
     "scorer": "Marcatore",
     "yellowCard": "Giallo",
     "redCard": "Rosso",
+    "yellowShort": "Gialli",
+    "redShort": "Rossi",
     "subOut": "esce",
     "subIn": "entra",
     "ratings": "Voti",

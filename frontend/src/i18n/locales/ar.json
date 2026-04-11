@@ -681,6 +681,8 @@
     "scorer": "هداف",
     "yellowCard": "صفراء",
     "redCard": "حمراء",
+    "yellowShort": "صفراء",
+    "redShort": "حمراء",
     "subOut": "خروج",
     "subIn": "دخول",
     "ratings": "التقييمات",

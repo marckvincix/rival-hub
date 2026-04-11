@@ -48,6 +48,17 @@ interface HighlightsTabProps {
 export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps) {
   const { t } = useTranslation();
   const [isUnlocked, setIsUnlocked] = useState(false);
+
+  // Helper function to translate "Giornata X" to the current language
+  const translateRoundName = (round: string): string => {
+    // Extract number from "Giornata X" format
+    const match = round.match(/Giornata\s+(\d+)/i);
+    if (match) {
+      const number = match[1];
+      return t('matches.roundNumber', { number });
+    }
+    return round;
+  };
   const [showCodeModal, setShowCodeModal] = useState(false);
   const [code, setCode] = useState('');
   const [codeError, setCodeError] = useState('');
@@ -317,7 +328,7 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
       {highlights.map((roundData) => (
         <View key={roundData.round} style={styles.roundSection}>
           <View style={styles.roundHeader}>
-            <Text style={styles.roundTitle}>{roundData.round}</Text>
+            <Text style={styles.roundTitle}>{translateRoundName(roundData.round)}</Text>
             <Text style={styles.roundStats}>
               {roundData.photo_count} {t('highlights.photos', 'photos')} · {roundData.video_count} {t('highlights.videos', 'videos')}
             </Text>

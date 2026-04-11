@@ -681,6 +681,8 @@
     "scorer": "Torschütze",
     "yellowCard": "Gelb",
     "redCard": "Rot",
+    "yellowShort": "Gelb",
+    "redShort": "Rot",
     "subOut": "aus",
     "subIn": "ein",
     "ratings": "Noten",

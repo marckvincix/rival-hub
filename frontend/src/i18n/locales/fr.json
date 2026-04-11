@@ -680,6 +680,8 @@
     "scorer": "Buteur",
     "yellowCard": "Jaune",
     "redCard": "Rouge",
+    "yellowShort": "Jaune",
+    "redShort": "Rouge",
     "subOut": "sortant",
     "subIn": "entrant",
     "ratings": "Notes",

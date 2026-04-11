@@ -681,6 +681,8 @@
     "scorer": "Goleador",
     "yellowCard": "Amarilla",
     "redCard": "Roja",
+    "yellowShort": "Amarilla",
+    "redShort": "Roja",
     "subOut": "sale",
     "subIn": "entra",
     "ratings": "Notas",

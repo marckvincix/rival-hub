@@ -681,6 +681,8 @@
     "scorer": "Marcador",
     "yellowCard": "Amarelo",
     "redCard": "Vermelho",
+    "yellowShort": "Amarelo",
+    "redShort": "Vermelho",
     "subOut": "sai",
     "subIn": "entra",
     "ratings": "Notas",

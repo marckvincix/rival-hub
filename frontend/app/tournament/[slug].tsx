@@ -31,6 +31,20 @@ export default function TournamentPublicPage() {
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
 
+  // Helper function to translate "Giornata X" to the current language
+  const translateRoundName = (round: string): string => {
+    if (!round) return '';
+    // Extract number from "Giornata X" format
+    const match = round.match(/Giornata\s+(\d+)/i);
+    if (match) {
+      const number = match[1];
+      return t('matches.roundNumber', { number });
+    }
+    // Translate other common round names
+    if (round === 'Altro') return t('common.other', 'Other');
+    return round;
+  };
+
   // Translate player role from Italian to current language
   const translateRole = (role: string) => {
     if (!role) return '-';
@@ -518,10 +532,10 @@ export default function TournamentPublicPage() {
         {/* Matches Tab */}
         {activeTab === 'matches' && (
           <View style={styles.tabContent}>
-            {matches.length === 0 ? <EmptyState icon="football-outline" title="Nessuna partita" /> : (
+            {matches.length === 0 ? <EmptyState icon="football-outline" title={t('tournaments.noMatches', 'No matches')} /> : (
               sortedRounds.map(([round, roundMatches]) => (
                 <View key={round} style={styles.matchesGroup}>
-                  <Text style={styles.matchesGroupTitle}>{round}</Text>
+                  <Text style={styles.matchesGroupTitle}>{translateRoundName(round)}</Text>
                   {roundMatches.map((match) => {
                     let homeFormation = formations.find(f => f.team_id === match.home_team_id);
                     let awayFormation = formations.find(f => f.team_id === match.away_team_id);
