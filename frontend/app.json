@@ -30,7 +30,14 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon.png",
+      "name": "Rival Hub",
+      "shortName": "RivalHub",
+      "description": "Crea e gestisci i tuoi tornei sportivi. Organizza competizioni di calcio, basket, pallavolo, tennis, padel e rugby con facilità.",
+      "lang": "it",
+      "themeColor": "#000000",
+      "backgroundColor": "#000000",
+      "preferRelatedApplications": false
     },
     "plugins": [
       "expo-router",
@@ -60,6 +67,11 @@
     "notification": {
       "icon": "./assets/images/icon.png",
       "color": "#000000"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "rival-hub"
+      }
     }
   }
 }
