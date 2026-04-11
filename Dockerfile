@@ -1,10 +1,10 @@
 # Rival Hub - Full Stack Web App
 FROM python:3.11-slim
 
-# Install Node.js for frontend build
+# Install Node.js 20 for frontend build (required by lru-cache@11.3.3+)
 RUN apt-get update && apt-get install -y \
     curl \
-    && curl -fsSL https://deb.nodesource.com/setup_18.x | bash - \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g yarn \
     && apt-get clean \
