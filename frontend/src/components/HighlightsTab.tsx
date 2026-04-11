@@ -51,8 +51,8 @@ export function HighlightsTab({ tournamentId, isOrganizer }: HighlightsTabProps)
 
   // Helper function to translate "Giornata X" to the current language
   const translateRoundName = (round: string): string => {
-    // Extract number from "Giornata X" format
-    const match = round.match(/Giornata\s+(\d+)/i);
+    // Extract number from "Giornata X" or "Giornata X" format (with or without space)
+    const match = round.match(/Giornata\s*(\d+)/i);
     if (match) {
       const number = match[1];
       return t('matches.roundNumber', { number });

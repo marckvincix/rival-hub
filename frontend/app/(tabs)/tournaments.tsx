@@ -318,13 +318,13 @@ export default function TournamentsScreen() {
             <Input label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
             
             {/* Data Field */}
-            <Text style={styles.inputLabel}>Data</Text>
+            <Text style={styles.inputLabel}>{t('tournaments.startDate', 'Date')}</Text>
             <TouchableOpacity 
               style={styles.newMatchInputWithIcon}
               onPress={() => setShowTournamentDatePicker(true)}
             >
               <Text style={tournamentDate ? styles.inputFieldText : styles.inputFieldPlaceholder}>
-                {tournamentDate ? tournamentDate.toLocaleDateString('it-IT') : 'GG/MM/AAAA'}
+                {tournamentDate ? tournamentDate.toLocaleDateString(i18n.language === 'ar' ? 'ar-SA' : i18n.language + '-' + i18n.language.toUpperCase()) : t('gameFormats.datePlaceholder', 'DD/MM/YYYY')}
               </Text>
               <Ionicons name="calendar-outline" size={22} color="#000" />
             </TouchableOpacity>
@@ -396,15 +396,32 @@ export default function TournamentsScreen() {
               <>
                 <Text style={styles.inputLabel}>{t('home.format')}</Text>
                 <View style={styles.gameFormatContainer}>
-                  {getSportConfig(selectedSport)?.formats.map((gf) => (
+                  {getSportConfig(selectedSport)?.formats.map((gf) => {
+                    // Translate game format label
+                    const formatLabelMap: Record<string, string> = {
+                      '11v11': t('gameFormats.soccer11', 'Calcio a 11'),
+                      '8v8': t('gameFormats.soccer8', 'Calcio a 8'),
+                      '7v7': t('gameFormats.soccer7', 'Calcio a 7'),
+                      '5v5': t('gameFormats.5v5', '5 vs 5'),
+                      '3v3': t('gameFormats.3v3', '3 vs 3'),
+                      '6v6': t('gameFormats.6v6', '6 vs 6'),
+                      '15v15': t('gameFormats.15v15', '15 vs 15'),
+                      'custom': t('gameFormats.custom', 'Personalizzato'),
+                      'doppio': t('gameFormats.doubles', 'Doppio'),
+                      'singolo': t('gameFormats.singles', 'Singolo'),
+                      'doubles': t('gameFormats.doubles', 'Doubles'),
+                      'singles': t('gameFormats.singles', 'Singles'),
+                    };
+                    const translatedLabel = formatLabelMap[gf.value] || gf.label;
+                    return (
                     <TouchableOpacity 
                       key={gf.value} 
                       style={[styles.gameFormatOption, formData.game_format === gf.value && styles.gameFormatSelected]} 
                       onPress={() => setFormData({ ...formData, game_format: gf.value })}
                     >
-                      <Text style={[styles.gameFormatText, formData.game_format === gf.value && styles.gameFormatTextSelected]}>{gf.label}</Text>
+                      <Text style={[styles.gameFormatText, formData.game_format === gf.value && styles.gameFormatTextSelected]}>{translatedLabel}</Text>
                     </TouchableOpacity>
-                  ))}
+                  )})}
                 </View>
               </>
             )}
@@ -430,7 +447,7 @@ export default function TournamentsScreen() {
             {/* Custom players input */}
             {formData.game_format === 'custom' && (
               <View style={styles.customPlayersContainer}>
-                <Text style={styles.customPlayersLabel}>Numero giocatori per squadra:</Text>
+                <Text style={styles.customPlayersLabel}>{t('tournaments.playersPerTeam', 'Players per team')}:</Text>
                 <TextInput
                   style={styles.customPlayersInput}
                   value={String(formData.custom_players_per_side)}
@@ -446,11 +463,23 @@ export default function TournamentsScreen() {
 
             <Text style={styles.inputLabel}>{t('home.category')}</Text>
             <View style={styles.chipContainer}>
-              {CATEGORIES.map((cat) => (
+              {CATEGORIES.map((cat) => {
+                const categoryLabelMap: Record<string, string> = {
+                  'Open': t('categories.open', 'Open'),
+                  'Senior': t('categories.senior', 'Senior'),
+                  'U18': t('categories.u18', 'U18'),
+                  'U16': t('categories.u16', 'U16'),
+                  'U14': t('categories.u14', 'U14'),
+                  'U12': t('categories.u12', 'U12'),
+                  'U10': t('categories.u10', 'U10'),
+                  'U8': t('categories.u8', 'U8'),
+                };
+                const translatedCategory = categoryLabelMap[cat] || cat;
+                return (
                 <TouchableOpacity key={cat} style={[styles.chip, formData.category === cat && styles.chipSelected]} onPress={() => setFormData({ ...formData, category: cat })}>
-                  <Text style={[styles.chipText, formData.category === cat && styles.chipTextSelected]}>{cat}</Text>
+                  <Text style={[styles.chipText, formData.category === cat && styles.chipTextSelected]}>{translatedCategory}</Text>
                 </TouchableOpacity>
-              ))}
+              )})}
             </View>
 
             <Text style={styles.inputLabel}>{t('tournaments.format', 'Format')}</Text>

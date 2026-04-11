@@ -170,6 +170,25 @@
     "u10": "U10",
     "u8": "U8"
   },
+  "gameFormats": {
+    "soccer11": "Football à 11",
+    "soccer8": "Football à 8",
+    "soccer7": "Football à 7",
+    "soccer5": "Football à 5",
+    "custom": "Personnalisé",
+    "5v5": "5 contre 5",
+    "3v3": "3 contre 3",
+    "6v6": "6 contre 6",
+    "15v15": "15 contre 15",
+    "7v7": "7 contre 7",
+    "doubles": "Double",
+    "singles": "Simple",
+    "3sets": "3 Sets",
+    "5sets": "5 Sets",
+    "4quarters": "4 Quarts",
+    "2halves": "2 Mi-temps",
+    "datePlaceholder": "JJ/MM/AAAA"
+  },
   "tournaments": {
     "title": "Tournois",
     "myTournaments": "Mes tournois",
@@ -188,6 +207,7 @@
     "city": "Ville",
     "sportType": "Type de sport",
     "maxTeams": "Max équipes",
+    "playersPerTeam": "Joueurs par équipe",
     "status": "Statut",
     "draft": "Brouillon",
     "active": "Actif",
