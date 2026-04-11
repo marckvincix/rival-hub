@@ -19,7 +19,8 @@ RUN pip install --no-cache-dir -r backend/requirements.txt
 # Copy frontend and build
 COPY frontend/ ./frontend/
 WORKDIR /app/frontend
-RUN yarn install --frozen-lockfile || yarn install
+# Use --ignore-engines to bypass Node version checks in cached builds
+RUN yarn install --frozen-lockfile --ignore-engines || yarn install --ignore-engines
 RUN yarn build:web
 
 # Copy backend code
