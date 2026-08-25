@@ -23,3 +23,5 @@ export { HighlightsUploadModal } from './HighlightsUploadModal';
 export { TermsModal } from './TermsModal';
 export { LanguageSelectionScreen } from './LanguageSelectionScreen';
 export { LanguageSelector } from './LanguageSelector';
+export { ProductCarousel } from './ProductCarousel';
+export { ProductDetailModal } from './ProductDetailModal';

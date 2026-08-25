@@ -19,7 +19,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal, SportSelector } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
@@ -1936,6 +1936,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             {formatMatchDateTime(match) ? (
                               <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
                             ) : null}
+                            {tournament?.sport && (
+                              <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
+                            )}
                           </View>
                         );
                       })}

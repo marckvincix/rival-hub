@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab, ProductCarousel } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
@@ -444,6 +444,9 @@ export default function TournamentPublicPage() {
         {/* Standings Tab */}
         {activeTab === 'standings' && (
           <View style={styles.tabContent}>
+            {tournament?.sport && (
+              <ProductCarousel sport={tournament.sport as Sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
+            )}
             {standings.length === 0 ? <EmptyState icon="podium-outline" title={t('stats.noStandings', 'No standings')} /> : (
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
@@ -809,6 +812,9 @@ export default function TournamentPublicPage() {
                               </>
                             )}
                           </View>
+                        )}
+                        {tournament?.sport && (
+                          <ProductCarousel sport={tournament.sport as Sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
                         )}
                       </View>
                     );

@@ -1025,5 +1025,25 @@
     "newsPublished": "News pubblicata!",
     "newsUpdated": "News aggiornata!",
     "playerAdded": "Giocatore aggiunto"
+  },
+  "products": {
+    "sponsoredTitle": "Prodotti consigliati",
+    "disclosure": "I prodotti sono venduti direttamente dal brand ufficiale. Cliccando su un prodotto verrai reindirizzato al sito ufficiale del brand per l'acquisto.",
+    "sortRelevance": "In evidenza",
+    "sortPriceAsc": "Prezzo più basso",
+    "sortNewest": "Novità",
+    "discount20": "-20%",
+    "discount30": "-30%",
+    "discount40": "-40%",
+    "discount50": "-50%",
+    "freeShipping": "Spedizione gratuita",
+    "category": "Categoria",
+    "gender": "Genere",
+    "sizesAvailable": "Misure disponibili",
+    "outOfStock": "Non disponibile",
+    "description": "Descrizione",
+    "buyOnOfficialSite": "Acquista sul sito ufficiale",
+    "redirectNotice": "Verrai reindirizzato al sito ufficiale di {{brand}} per completare l'acquisto.",
+    "off": "di sconto"
   }
 }

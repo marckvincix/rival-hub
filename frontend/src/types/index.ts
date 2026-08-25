@@ -351,3 +351,30 @@ export interface TacticalModule {
     forward: number;
   };
 }
+
+export interface ProductSize {
+  size: string;
+  in_stock: boolean;
+}
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  sport: Sport;
+  category?: string | null;
+  gender?: string | null;
+  colour?: string | null;
+  description?: string | null;
+  price_original?: number | null;
+  price_current: number;
+  discount_percent?: number | null;
+  free_shipping: boolean;
+  referral_link: string;
+  product_page_link?: string | null;
+  images: string[];
+  sizes: ProductSize[];
+  in_stock: boolean;
+  ean?: string | null;
+  last_updated?: string | null;
+}

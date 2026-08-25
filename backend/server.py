@@ -3182,6 +3182,44 @@ async def root():
 async def health():
     return {"status": "healthy"}
 
+# ===================== PRODUCTS (AWIN AFFILIATE) ENDPOINTS =====================
+
+@api_router.get("/products")
+async def get_products(
+    sport: Optional[str] = None,
+    sort: str = "relevance",  # relevance, price_asc, newest, discount
+    min_discount: Optional[float] = None,
+    limit: int = 30,
+):
+    """List affiliate products, optionally filtered by sport and discount, for the carousel."""
+    query: Dict[str, Any] = {"in_stock": True}
+    if sport:
+        query["sport"] = sport
+    if min_discount is not None:
+        query["discount_percent"] = {"$gte": min_discount}
+
+    products = await db.products.find(query, {"_id": 0}).to_list(1000)
+
+    if sort == "price_asc":
+        products.sort(key=lambda p: p.get("price_current") or float("inf"))
+    elif sort == "newest":
+        products.sort(key=lambda p: p.get("last_updated") or "", reverse=True)
+    elif sort == "discount":
+        products.sort(key=lambda p: p.get("discount_percent") or 0, reverse=True)
+    else:
+        # "relevance": no real sales data in the feed, so rank by discount then price
+        products.sort(key=lambda p: (-(p.get("discount_percent") or 0), p.get("price_current") or float("inf")))
+
+    return products[:limit]
+
+@api_router.get("/products/{product_id}")
+async def get_product(product_id: str):
+    """Get a single product's full detail (for the product popup)."""
+    product = await db.products.find_one({"id": product_id}, {"_id": 0})
+    if not product:
+        raise HTTPException(status_code=404, detail="Prodotto non trovato")
+    return product
+
 # ===================== FAVORITES ENDPOINTS =====================
 
 @api_router.post("/favorites")

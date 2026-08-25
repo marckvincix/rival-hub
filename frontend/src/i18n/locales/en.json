@@ -1024,5 +1024,25 @@
     "newsPublished": "News published!",
     "newsUpdated": "News updated!",
     "playerAdded": "Player added"
+  },
+  "products": {
+    "sponsoredTitle": "Recommended products",
+    "disclosure": "Products are sold directly by the official brand. Tapping a product will redirect you to the brand's official website to purchase it.",
+    "sortRelevance": "Featured",
+    "sortPriceAsc": "Lowest price",
+    "sortNewest": "New arrivals",
+    "discount20": "-20%",
+    "discount30": "-30%",
+    "discount40": "-40%",
+    "discount50": "-50%",
+    "freeShipping": "Free shipping",
+    "category": "Category",
+    "gender": "Gender",
+    "sizesAvailable": "Available sizes",
+    "outOfStock": "Out of stock",
+    "description": "Description",
+    "buyOnOfficialSite": "Buy on official site",
+    "redirectNotice": "You'll be redirected to {{brand}}'s official website to complete your purchase.",
+    "off": "off"
   }
 }
