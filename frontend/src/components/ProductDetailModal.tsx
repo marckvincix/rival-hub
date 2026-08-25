@@ -41,32 +41,21 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const [activeProduct, setActiveProduct] = useState<Product | null>(product);
   const [switchingColor, setSwitchingColor] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  // Index into navSteps of the single floating nav button's current target.
-  // Tapping it scrolls to that section and advances to the next one, so the
-  // same fixed-position button walks through sizes -> description ->
-  // category/gender in order.
-  const [navIndex, setNavIndex] = useState(0);
+  // The floating "Misure disponibili" button is a scroll cue, not a step
+  // tracker: visible while the sizes section is still below the fold, gone
+  // once the user has scrolled down to (or past) it — whether by tapping it
+  // or by scrolling manually — and back once they scroll up to the top.
+  const [navButtonVisible, setNavButtonVisible] = useState(true);
 
   const scrollRef = useRef<ScrollView>(null);
   const bodyY = useRef(0);
-  const sizesYInBody = useRef(0);
-  const descriptionYInBody = useRef(0);
-  const catGenYInBody = useRef(0);
+  const targetYInBody = useRef(0);
 
   const onBodyLayout = (e: LayoutChangeEvent) => {
     bodyY.current = e.nativeEvent.layout.y;
   };
-  const onSizesLayout = (e: LayoutChangeEvent) => {
-    sizesYInBody.current = e.nativeEvent.layout.y;
-  };
-  const onDescriptionLayout = (e: LayoutChangeEvent) => {
-    descriptionYInBody.current = e.nativeEvent.layout.y;
-  };
-  const onCatGenLayout = (e: LayoutChangeEvent) => {
-    catGenYInBody.current = e.nativeEvent.layout.y;
-  };
-  const scrollToY = (yRef: React.MutableRefObject<number>) => {
-    scrollRef.current?.scrollTo({ y: bodyY.current + yRef.current - 12, animated: true });
+  const onTargetLayout = (e: LayoutChangeEvent) => {
+    targetYInBody.current = e.nativeEvent.layout.y;
   };
 
   useEffect(() => {
@@ -87,7 +76,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
 
   useEffect(() => {
     setImageIndex(0);
-    setNavIndex(0);
+    setNavButtonVisible(true);
   }, [activeProduct?.id]);
 
   if (!activeProduct) return null;
@@ -95,21 +84,16 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const hasSizes = (activeProduct.sizes?.length || 0) > 0;
   const hasDescription = !!activeProduct.description;
   const hasCatGen = !!activeProduct.category || !!activeProduct.gender;
+  const hasNavTarget = hasSizes || hasDescription || hasCatGen;
 
-  // Only the sections that actually have content count toward the reveal
-  // sequence, so a product missing e.g. a description doesn't leave a dead
-  // step in the middle of the chain.
-  const navSteps = [
-    hasSizes && { key: 'sizes', label: `${t('products.sizesAvailable', 'Misure disponibili')} (${activeProduct.sizes.length})`, yRef: sizesYInBody },
-    hasDescription && { key: 'description', label: t('products.description', 'Descrizione'), yRef: descriptionYInBody },
-    hasCatGen && { key: 'catgen', label: t('products.categoryAndGender', 'Categoria e Genere'), yRef: catGenYInBody },
-  ].filter(Boolean) as { key: string; label: string; yRef: React.MutableRefObject<number> }[];
+  const handleNavButtonPress = () => {
+    scrollRef.current?.scrollTo({ y: bodyY.current + targetYInBody.current - 12, animated: true });
+  };
 
-  const currentNavStep = navSteps[navIndex];
-  const handleFloatingNavPress = () => {
-    if (!currentNavStep) return;
-    scrollToY(currentNavStep.yRef);
-    setNavIndex((i) => i + 1);
+  const SCROLL_HIDE_THRESHOLD = 60;
+  const handleBodyScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    const target = bodyY.current + targetYInBody.current - SCROLL_HIDE_THRESHOLD;
+    setNavButtonVisible(e.nativeEvent.contentOffset.y < target);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -143,7 +127,13 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { width: MODAL_WIDTH }]}>
-          <ScrollView ref={scrollRef} key={activeProduct.id} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            ref={scrollRef}
+            key={activeProduct.id}
+            showsVerticalScrollIndicator={false}
+            onScroll={handleBodyScroll}
+            scrollEventThrottle={16}
+          >
             <View style={styles.galleryWrap}>
               {switchingColor && (
                 <View style={styles.switchingOverlay}>
@@ -257,10 +247,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
               )}
 
               {hasSizes && (
-                <View onLayout={onSizesLayout}>
-                  <Text style={styles.sectionTitle}>
-                    {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
-                  </Text>
+                <View onLayout={hasSizes ? onTargetLayout : undefined}>
                   <View style={styles.sizesRow}>
                     {activeProduct.sizes.map((s) => (
                       <View
@@ -277,14 +264,20 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
               )}
 
               {hasDescription && (
-                <View style={styles.section} onLayout={onDescriptionLayout}>
+                <View
+                  style={[styles.section, hasSizes && { marginTop: 20 }]}
+                  onLayout={!hasSizes ? onTargetLayout : undefined}
+                >
                   <Text style={styles.sectionTitle}>{t('products.description', 'Descrizione')}</Text>
                   <Text style={styles.description}>{activeProduct.description}</Text>
                 </View>
               )}
 
               {hasCatGen && (
-                <View style={styles.section} onLayout={onCatGenLayout}>
+                <View
+                  style={styles.section}
+                  onLayout={!hasSizes && !hasDescription ? onTargetLayout : undefined}
+                >
                   <Text style={styles.sectionTitle}>{t('products.categoryAndGender', 'Categoria e Genere')}</Text>
                   <View style={styles.pillsRow}>
                     {!!activeProduct.category && (
@@ -305,9 +298,9 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
           </ScrollView>
         </View>
 
-        {!!currentNavStep && (
-          <TouchableOpacity style={styles.floatingNavButton} onPress={handleFloatingNavPress} activeOpacity={0.8}>
-            <Text style={styles.jumpButtonText}>{currentNavStep.label}</Text>
+        {hasNavTarget && navButtonVisible && (
+          <TouchableOpacity style={styles.floatingNavButton} onPress={handleNavButtonPress} activeOpacity={0.8}>
+            <Text style={styles.jumpButtonText}>{t('products.sizesAvailable', 'Misure disponibili')}</Text>
             <Ionicons name="chevron-down" size={12} color="#FFF" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
         )}
