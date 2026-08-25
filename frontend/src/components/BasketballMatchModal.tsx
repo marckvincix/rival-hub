@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from './Button';
 import api from '../utils/api';
@@ -491,6 +491,7 @@ export function BasketballMatchModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+      <SafeAreaProvider>
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
         {/* Header */}
         <View style={styles.header}>
@@ -681,6 +682,7 @@ export function BasketballMatchModal({
           )}
         </ScrollView>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

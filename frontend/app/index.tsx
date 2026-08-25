@@ -17,6 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../src/store/authStore';
 import api from '../src/utils/api';
 import { Tournament, getSportEmoji } from '../src/types';
+import { parseFlexibleDate } from '../src/utils/helpers';
 import DateTimePicker from '@react-native-community/datetimepicker';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
@@ -294,10 +295,14 @@ export default function LandingPage() {
     
     // Filter by date
     if (selectedDate) {
-      const filterDateStr = selectedDate.toISOString().split('T')[0];
       result = result.filter(t => {
-        if (!t.start_date) return false;
-        return t.start_date.startsWith(filterDateStr);
+        const tournamentDate = parseFlexibleDate(t.start_date);
+        if (!tournamentDate) return false;
+        return (
+          tournamentDate.getFullYear() === selectedDate.getFullYear() &&
+          tournamentDate.getMonth() === selectedDate.getMonth() &&
+          tournamentDate.getDate() === selectedDate.getDate()
+        );
       });
     }
     

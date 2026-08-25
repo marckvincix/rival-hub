@@ -116,6 +116,8 @@ class TournamentCreate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     logo: Optional[str] = None  # base64
     is_public: bool = True
 
@@ -131,6 +133,8 @@ class TournamentUpdate(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     logo: Optional[str] = None
     is_public: Optional[bool] = None
     status: Optional[str] = None
@@ -151,6 +155,8 @@ class Tournament(BaseModel):
     start_date: Optional[str] = None
     end_date: Optional[str] = None
     location: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     logo: Optional[str] = None
     is_public: bool = True
     created_at: datetime
@@ -588,6 +594,30 @@ async def send_expiry_warning_notifications():
             {"$set": {"expiry_warning_sent": True}}
         )
 
+def _parse_stored_date(date_str: Optional[str]):
+    """Tournament dates are stored as free-text, either 'DD/MM/YYYY' (from the
+    app's own date picker) or ISO 'YYYY-MM-DD'. Returns a date or None."""
+    if not date_str:
+        return None
+    for fmt in ("%d/%m/%Y", "%Y-%m-%d"):
+        try:
+            return datetime.strptime(date_str, fmt).date()
+        except ValueError:
+            continue
+    return None
+
+
+def compute_effective_status(status: str, start_date: Optional[str]) -> str:
+    """Auto-promote a draft tournament to active once its start date is reached.
+    Never touches a tournament that's already active or explicitly completed."""
+    if status != "draft":
+        return status
+    parsed = _parse_stored_date(start_date)
+    if parsed and parsed <= datetime.now(timezone.utc).date():
+        return "active"
+    return status
+
+
 def generate_slug(name: str) -> str:
     """Generate URL-friendly slug from name"""
     # Normalize unicode characters
@@ -905,10 +935,12 @@ async def create_tournament(
         "game_format": tournament_data.game_format,
         "custom_players_per_side": tournament_data.custom_players_per_side,
         "game_structure": tournament_data.game_structure,
-        "status": "draft",
+        "status": compute_effective_status("draft", tournament_data.start_date),
         "start_date": tournament_data.start_date,
         "end_date": tournament_data.end_date,
         "location": tournament_data.location,
+        "venue_name": tournament_data.venue_name,
+        "venue_address": tournament_data.venue_address,
         "logo": tournament_data.logo,
         "is_public": tournament_data.is_public,
         "highlights_code": generate_highlights_code(),  # Auto-generate access code
@@ -928,7 +960,9 @@ async def get_tournaments(
         {"organizer_id": current_user.user_id},
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
-    
+
+    for t in tournaments:
+        t["status"] = compute_effective_status(t["status"], t.get("start_date"))
     return [Tournament(**t) for t in tournaments]
 
 @api_router.get("/tournaments/public", response_model=List[Tournament])
@@ -951,20 +985,27 @@ async def get_public_tournaments(
         query,
         {"_id": 0}
     ).sort("created_at", -1).to_list(100)
-    
+
+    for t in tournaments:
+        t["status"] = compute_effective_status(t["status"], t.get("start_date"))
     return [Tournament(**t) for t in tournaments]
 
 @api_router.get("/tournaments/slug/{slug}")
 async def get_tournament_by_slug(slug: str):
     """Get tournament by slug (public)"""
     tournament = await db.tournaments.find_one({"slug": slug}, {"_id": 0})
-    
+
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+
     if not tournament.get("is_public", True):
         raise HTTPException(status_code=403, detail="Torneo privato")
-    
+
+    effective_status = compute_effective_status(tournament["status"], tournament.get("start_date"))
+    if effective_status != tournament["status"]:
+        tournament["status"] = effective_status
+        await db.tournaments.update_one({"id": tournament["id"]}, {"$set": {"status": effective_status}})
+
     return Tournament(**tournament)
 
 @api_router.get("/tournaments/{tournament_id}", response_model=Tournament)
@@ -977,10 +1018,15 @@ async def get_tournament(
         {"id": tournament_id, "organizer_id": current_user.user_id},
         {"_id": 0}
     )
-    
+
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+
+    effective_status = compute_effective_status(tournament["status"], tournament.get("start_date"))
+    if effective_status != tournament["status"]:
+        tournament["status"] = effective_status
+        await db.tournaments.update_one({"id": tournament["id"]}, {"$set": {"status": effective_status}})
+
     return Tournament(**tournament)
 
 @api_router.put("/tournaments/{tournament_id}", response_model=Tournament)
@@ -1922,19 +1968,37 @@ async def save_match_events_batch(
             player_updates[pid]["blocks"] += 1
     
     # Apply updates to player_stats collection (cumulative stats).
-    # Postgres has no atomic upsert-with-increment via PostgREST, so read-modify-write.
-    for player_id, updates in player_updates.items():
+    # Recomputed from scratch by counting each player's match_events, rather than
+    # incrementing on top of the existing row: this endpoint deletes+reinserts
+    # events for the match on every save, so an incremental update would
+    # double-count every time the same match is re-saved (e.g. repeated
+    # auto-saves during a live match).
+    STAT_EVENT_FIELD = {
+        "goal": "goals", "penalty_goal": "goals",
+        "assist": "assists",
+        "yellow_card": "yellow_cards",
+        "red_card": "red_cards",
+        "points_1pt": "points_1pt",
+        "points_2pt": "points_2pt",
+        "points_3pt": "points_3pt",
+        "rebound": "rebounds",
+        "basketball_assist": "basketball_assists",
+        "foul": "fouls",
+        "steal": "steals",
+        "block": "blocks",
+    }
+    for player_id in player_updates:
+        player_events = await db.match_events.find({"player_id": player_id}).to_list(10000)
+        recomputed = {field: 0 for field in set(STAT_EVENT_FIELD.values())}
+        for ev in player_events:
+            field = STAT_EVENT_FIELD.get(ev.get("event_type"))
+            if field:
+                recomputed[field] += 1
         existing_stats = await db.player_stats.find_one({"player_id": player_id})
         if existing_stats:
-            await db.player_stats.update_one(
-                {"player_id": player_id},
-                {"$set": {
-                    field: existing_stats.get(field, 0) + delta
-                    for field, delta in updates.items()
-                }}
-            )
+            await db.player_stats.update_one({"player_id": player_id}, {"$set": recomputed})
         else:
-            await db.player_stats.insert_one({"player_id": player_id, **updates})
+            await db.player_stats.insert_one({"player_id": player_id, **recomputed})
     
     # Return updated match data
     updated_match = await db.matches.find_one({"id": match_id}, {"_id": 0})

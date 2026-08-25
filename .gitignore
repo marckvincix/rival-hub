@@ -81,6 +81,11 @@ android-sdk/ -e
 # User-uploaded media (highlights), not source
 /uploads/
 .metro-cache/
+
+# Firebase config/credentials
+google-services.json
+GoogleService-Info.plist
+*firebase-adminsdk*.json
 # Environment and credential files
 .env
 .env.*

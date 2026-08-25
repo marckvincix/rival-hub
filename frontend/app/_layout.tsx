@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useAuthStore } from '../src/store/authStore';
 import { Loading, LanguageSelectionScreen } from '../src/components';
 import { useNotifications } from '../src/hooks/useNotifications';
@@ -60,9 +61,11 @@ function RootLayoutContent() {
 
 export default function RootLayout() {
   return (
-    <LanguageProvider>
-      <RootLayoutContent />
-    </LanguageProvider>
+    <SafeAreaProvider>
+      <LanguageProvider>
+        <RootLayoutContent />
+      </LanguageProvider>
+    </SafeAreaProvider>
   );
 }
 

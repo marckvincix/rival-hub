@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { useRouter } from 'expo-router';
 import api from '../utils/api';
 
 // Configure notification handler
@@ -18,6 +20,7 @@ export function useNotifications() {
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
   const notificationListener = useRef<Notifications.Subscription>();
   const responseListener = useRef<Notifications.Subscription>();
+  const router = useRouter();
 
   useEffect(() => {
     registerForPushNotificationsAsync().then(token => {
@@ -36,8 +39,7 @@ export function useNotifications() {
     // Listen for notification responses (when user taps notification)
     responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
       const data = response.notification.request.content.data;
-      // Handle navigation based on notification data
-      handleNotificationResponse(data);
+      handleNotificationResponse(data, router);
     });
 
     return () => {
@@ -80,10 +82,14 @@ async function registerForPushNotificationsAsync(): Promise<string | null> {
       return null;
     }
     
+    const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
+    if (!projectId) {
+      console.log('Error getting push token: no EAS projectId configured');
+      return null;
+    }
+
     try {
-      const tokenData = await Notifications.getExpoPushTokenAsync({
-        projectId: 'your-project-id', // Will be replaced by EAS
-      });
+      const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
       token = tokenData.data;
     } catch (error) {
       console.log('Error getting push token:', error);
@@ -105,9 +111,32 @@ async function registerTokenWithBackend(token: string) {
   }
 }
 
-function handleNotificationResponse(data: any) {
-  // Navigation will be handled by the app
-  console.log('Notification data:', data);
+async function handleNotificationResponse(data: any, router: ReturnType<typeof useRouter>) {
+  if (!data) return;
+
+  try {
+    let tournamentId: string | undefined = data.tournament_id;
+
+    // Team/match-only payloads (goal, team_match_scheduled, team_match_ended, ...)
+    // don't carry tournament_id directly: resolve it via the match first.
+    if (!tournamentId && data.match_id) {
+      const matchRes = await api.get(`/api/matches/${data.match_id}`);
+      tournamentId = matchRes.data?.tournament_id;
+    }
+
+    if (!tournamentId) {
+      console.log('Notification tap: no tournament to navigate to', data);
+      return;
+    }
+
+    const tournamentRes = await api.get(`/api/tournaments/${tournamentId}`);
+    const slug = tournamentRes.data?.slug;
+    if (slug) {
+      router.push(`/tournament/${slug}`);
+    }
+  } catch (error) {
+    console.log('Error navigating from notification:', error);
+  }
 }
 
 export async function scheduleLocalNotification(title: string, body: string, data?: any) {

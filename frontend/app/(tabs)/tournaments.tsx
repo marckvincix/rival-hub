@@ -14,7 +14,7 @@ import {
   ActivityIndicator,
   FlatList
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -82,6 +82,8 @@ export default function TournamentsScreen() {
     game_structure: '',
     custom_players_per_side: 11,
     location: '',
+    venue_name: '',
+    venue_address: '',
     start_date: '',
     start_time: '',
   });
@@ -123,7 +125,7 @@ export default function TournamentsScreen() {
       setTournaments([response.data, ...tournaments]);
       setShowCreateModal(false);
       setSelectedSport(null);
-      setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', start_date: '', start_time: '' });
+      setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', venue_name: '', venue_address: '', start_date: '', start_time: '' });
       setSelectedTournament(response.data);
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.createFailed', 'Creation failed'));
@@ -316,7 +318,9 @@ export default function TournamentsScreen() {
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
             <Input label={t('tournaments.tournamentNameLabel', 'Tournament Name *')} placeholder={t('tournaments.tournamentNamePlaceholder', 'e.g. Spring Tournament 2025')} value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
             <Input label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
-            
+            <Input label={t('tournaments.venueName', 'Nome struttura')} placeholder={t('tournaments.venueNamePlaceholder', 'es. Centro Sportivo San Siro')} value={formData.venue_name} onChangeText={(text) => setFormData({ ...formData, venue_name: text })} />
+            <Input label={t('tournaments.venueAddress', 'Indirizzo struttura')} placeholder={t('tournaments.venueAddressPlaceholder', 'es. Via Piccolomini 5, Milano')} value={formData.venue_address} onChangeText={(text) => setFormData({ ...formData, venue_address: text })} />
+
             {/* Data Field */}
             <Text style={styles.inputLabel}>{t('tournaments.startDate', 'Date')}</Text>
             <TouchableOpacity 
@@ -504,7 +508,7 @@ export default function TournamentsScreen() {
 // Tournament Detail Component
 function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefresh }: any) {
   const router = useRouter();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState('teams');
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
@@ -2131,6 +2135,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
       {/* Add Player Modal - Full Screen */}
       <Modal visible={showAddPlayerModal} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowAddPlayerModal(false)}>
+        <SafeAreaProvider>
         <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setShowAddPlayerModal(false)}>
@@ -2277,6 +2282,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </TouchableOpacity>
           </ScrollView>
         </SafeAreaView>
+        </SafeAreaProvider>
       </Modal>
 
       {/* Player Stats Modal */}
@@ -2946,6 +2952,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
       {/* Match Result Modal - Full Screen */}
       <Modal visible={!!selectedMatch} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setSelectedMatch(null)}>
+        <SafeAreaProvider>
         <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSelectedMatch(null)}>
@@ -3353,6 +3360,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             </ScrollView>
           </SafeAreaView>
         </Modal>
+        </SafeAreaProvider>
       </Modal>
 
       {/* Formation Modal */}

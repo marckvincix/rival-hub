@@ -162,6 +162,8 @@ export interface Tournament {
   start_date?: string;
   end_date?: string;
   location?: string;
+  venue_name?: string;
+  venue_address?: string;
   logo?: string;
   is_public: boolean;
   created_at: string;

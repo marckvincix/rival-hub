@@ -9,7 +9,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
 import { useTranslation } from '../i18n';
@@ -291,6 +291,7 @@ export function RugbyMatchModal({
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
+      <SafeAreaProvider>
       <SafeAreaView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
@@ -495,6 +496,7 @@ export function RugbyMatchModal({
           </View>
         </Modal>
       </SafeAreaView>
+      </SafeAreaProvider>
     </Modal>
   );
 }

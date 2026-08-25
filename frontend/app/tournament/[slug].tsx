@@ -22,6 +22,7 @@ import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player, Sport, getSportEmoji } from '../../src/types';
 import { useTranslation } from '../../src/i18n';
+import { parseFlexibleDate } from '../../src/utils/helpers';
 
 type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info' | 'highlights';
 
@@ -929,7 +930,7 @@ export default function TournamentPublicPage() {
               <View style={styles.infoRow}><Ionicons name="trophy" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('common.name', 'Name')}</Text><Text style={styles.infoValue}>{tournament.name}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="people" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.category', 'Category')}</Text><Text style={styles.infoValue}>{getCategoryLabel(tournament.category)}</Text></View></View>
               <View style={styles.infoRow}><Ionicons name="git-branch" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.format', 'Format')}</Text><Text style={styles.infoValue}>{getFormatLabel(tournament.format)}</Text></View></View>
-              {tournament.start_date && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.startDate', 'Start date')}</Text><Text style={styles.infoValue}>{new Date(tournament.start_date).toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
+              {tournament.start_date && parseFlexibleDate(tournament.start_date) && (<View style={styles.infoRow}><Ionicons name="calendar" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.startDate', 'Start date')}</Text><Text style={styles.infoValue}>{parseFlexibleDate(tournament.start_date)!.toLocaleDateString(i18n.language === 'en' ? 'en-GB' : 'it-IT', { day: 'numeric', month: 'long', year: 'numeric' })}</Text></View></View>)}
               <View style={styles.infoRow}>
                 <View style={[styles.statusDot, { backgroundColor: tournament.status === 'active' ? '#22C55E' : tournament.status === 'completed' ? '#EF4444' : '#EAB308' }]} />
                 <View style={styles.infoContent}>
@@ -940,6 +941,8 @@ export default function TournamentPublicPage() {
                 </View>
               </View>
               {tournament.location && (<View style={styles.infoRow}><Ionicons name="location" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.location', 'Location')}</Text><Text style={styles.infoValue}>{tournament.location}</Text></View></View>)}
+              {tournament.venue_name && (<View style={styles.infoRow}><Ionicons name="business" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.venueName', 'Venue Name')}</Text><Text style={styles.infoValue}>{tournament.venue_name}</Text></View></View>)}
+              {tournament.venue_address && (<View style={styles.infoRow}><Ionicons name="navigate" size={20} color="#000" /><View style={styles.infoContent}><Text style={styles.infoLabel}>{t('tournaments.venueAddress', 'Venue Address')}</Text><Text style={styles.infoValue}>{tournament.venue_address}</Text></View></View>)}
             </View>
             <Text style={styles.teamsTitle}>{t('teams.title', 'Teams')} ({teams.length})</Text>
             <View style={styles.teamsList}>

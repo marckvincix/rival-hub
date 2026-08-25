@@ -1,10 +1,29 @@
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { it } from 'date-fns/locale';
 
+// Dates coming from stored tournament/match fields are saved as either
+// "DD/MM/YYYY" (from the app's own date picker) or ISO "YYYY-MM-DD"
+// (some older records / other entry points). `new Date(str)` and
+// date-fns' `parseISO` only understand the ISO form, so a plain
+// "DD/MM/YYYY" string silently becomes an Invalid Date. Parse both here.
+export const parseFlexibleDate = (dateStr?: string | null): Date | null => {
+  if (!dateStr) return null;
+  const ddmmyyyy = dateStr.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (ddmmyyyy) {
+    const [, day, month, year] = ddmmyyyy;
+    const date = new Date(Number(year), Number(month) - 1, Number(day));
+    return isNaN(date.getTime()) ? null : date;
+  }
+  const isoDate = parseISO(dateStr);
+  return isNaN(isoDate.getTime()) ? null : isoDate;
+};
+
 export const formatDate = (dateStr?: string): string => {
   if (!dateStr) return '';
+  const parsed = parseFlexibleDate(dateStr);
+  if (!parsed) return dateStr;
   try {
-    return format(parseISO(dateStr), 'd MMM yyyy', { locale: it });
+    return format(parsed, 'd MMM yyyy', { locale: it });
   } catch {
     return dateStr;
   }
