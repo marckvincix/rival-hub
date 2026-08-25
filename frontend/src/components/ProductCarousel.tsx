@@ -234,7 +234,8 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
 
 const styles = StyleSheet.create({
   container: {
-    marginVertical: 12,
+    marginTop: 28,
+    marginBottom: 12,
   },
   title: {
     fontSize: 16,

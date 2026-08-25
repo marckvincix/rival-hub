@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  findNodeHandle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -41,6 +42,21 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const [activeProduct, setActiveProduct] = useState<Product | null>(product);
   const [switchingColor, setSwitchingColor] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
+  const scrollRef = useRef<ScrollView>(null);
+  const sizesRef = useRef<View>(null);
+
+  const scrollToSizes = () => {
+    if (sizesRef.current && scrollRef.current) {
+      const node = findNodeHandle(scrollRef.current);
+      if (node) {
+        sizesRef.current.measureLayout(
+          node,
+          (_x: number, y: number) => scrollRef.current?.scrollTo({ y: y - 12, animated: true }),
+          () => {}
+        );
+      }
+    }
+  };
 
   useEffect(() => {
     setActiveProduct(product);
@@ -96,7 +112,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { width: MODAL_WIDTH }]}>
-          <ScrollView key={activeProduct.id} showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollRef} key={activeProduct.id} showsVerticalScrollIndicator={false}>
             <View style={styles.galleryWrap}>
               {switchingColor && (
                 <View style={styles.switchingOverlay}>
@@ -172,6 +188,16 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 </View>
               )}
 
+              {activeProduct.sizes?.length > 0 && (
+                <TouchableOpacity style={styles.sizesJumpButton} onPress={scrollToSizes} activeOpacity={0.7}>
+                  <Ionicons name="resize-outline" size={14} color="#000" style={{ marginRight: 6 }} />
+                  <Text style={styles.sizesJumpButtonText}>
+                    {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
+                  </Text>
+                  <Ionicons name="chevron-down" size={14} color="#000" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+              )}
+
               <TouchableOpacity style={styles.buyButton} onPress={handleBuy} activeOpacity={0.8}>
                 <Ionicons name="open-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
                 <Text style={styles.buyButtonText}>{t('products.buyOnOfficialSite', 'Acquista sul sito ufficiale')}</Text>
@@ -225,7 +251,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
               </View>
 
               {activeProduct.sizes?.length > 0 && (
-                <View style={styles.section}>
+                <View style={styles.section} ref={sizesRef}>
                   <Text style={styles.sectionTitle}>{t('products.sizesAvailable', 'Misure disponibili')}</Text>
                   <View style={styles.sizesRow}>
                     {activeProduct.sizes.map((s) => (
@@ -401,6 +427,22 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#2E7D32',
     fontWeight: '600',
+  },
+  sizesJumpButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    borderWidth: 1.5,
+    borderColor: '#DDD',
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+  sizesJumpButtonText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#000',
   },
   buyButton: {
     flexDirection: 'row',
