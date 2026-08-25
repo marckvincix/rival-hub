@@ -101,7 +101,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     <View style={styles.container}>
       <Text style={styles.title}>{title || t('products.sponsoredTitle', 'Prodotti consigliati')}</Text>
 
-      {brands.length > 1 && (
+      {brands.length > 0 && (
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}

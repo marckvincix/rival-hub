@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   NativeSyntheticEvent,
   NativeScrollEvent,
+  LayoutChangeEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -41,7 +42,20 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const [activeProduct, setActiveProduct] = useState<Product | null>(product);
   const [switchingColor, setSwitchingColor] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  const [sizesExpanded, setSizesExpanded] = useState(false);
+
+  const scrollRef = useRef<ScrollView>(null);
+  const bodyY = useRef(0);
+  const sizesYInBody = useRef(0);
+
+  const onBodyLayout = (e: LayoutChangeEvent) => {
+    bodyY.current = e.nativeEvent.layout.y;
+  };
+  const onSizesLayout = (e: LayoutChangeEvent) => {
+    sizesYInBody.current = e.nativeEvent.layout.y;
+  };
+  const scrollToSizes = () => {
+    scrollRef.current?.scrollTo({ y: bodyY.current + sizesYInBody.current - 12, animated: true });
+  };
 
   useEffect(() => {
     setActiveProduct(product);
@@ -62,7 +76,6 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   useEffect(() => {
     setImageIndex(0);
     setDescExpanded(false);
-    setSizesExpanded(false);
   }, [activeProduct?.id]);
 
   if (!activeProduct) return null;
@@ -98,7 +111,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { width: MODAL_WIDTH }]}>
-          <ScrollView key={activeProduct.id} showsVerticalScrollIndicator={false}>
+          <ScrollView ref={scrollRef} key={activeProduct.id} showsVerticalScrollIndicator={false}>
             <View style={styles.galleryWrap}>
               {switchingColor && (
                 <View style={styles.switchingOverlay}>
@@ -149,7 +162,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
               )}
             </View>
 
-            <View style={styles.body}>
+            <View style={styles.body} onLayout={onBodyLayout}>
               <Text style={styles.brand}>{activeProduct.brand}</Text>
               <Text style={styles.name}>{activeProduct.name}</Text>
 
@@ -211,44 +224,41 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 </View>
               )}
 
-              <View style={styles.pillsRow}>
-                {activeProduct.sizes?.length > 0 && (
-                  <TouchableOpacity
-                    style={styles.smallPill}
-                    onPress={() => setSizesExpanded((v) => !v)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.smallPillText}>
-                      {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
-                    </Text>
-                    <Ionicons name={sizesExpanded ? 'chevron-up' : 'chevron-down'} size={13} color="#000" style={{ marginLeft: 4 }} />
-                  </TouchableOpacity>
-                )}
-                {!!activeProduct.description && (
-                  <TouchableOpacity
-                    style={styles.smallPill}
-                    onPress={() => setDescExpanded((v) => !v)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.smallPillText}>{t('products.description', 'Descrizione')}</Text>
-                    <Ionicons name={descExpanded ? 'chevron-up' : 'chevron-down'} size={13} color="#000" style={{ marginLeft: 4 }} />
-                  </TouchableOpacity>
-                )}
-              </View>
+              {activeProduct.sizes?.length > 0 && (
+                <TouchableOpacity style={styles.jumpButton} onPress={scrollToSizes} activeOpacity={0.7}>
+                  <Text style={styles.jumpButtonText}>
+                    {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
+                  </Text>
+                  <Ionicons name="chevron-down" size={12} color="#FFF" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+              )}
 
-              {sizesExpanded && activeProduct.sizes?.length > 0 && (
-                <View style={styles.sizesRow}>
-                  {activeProduct.sizes.map((s) => (
-                    <View
-                      key={s.size}
-                      style={[styles.sizeChip, !s.in_stock && styles.sizeChipDisabled]}
-                    >
-                      <Text style={[styles.sizeChipText, !s.in_stock && styles.sizeChipTextDisabled]}>
-                        {s.size}
-                      </Text>
-                    </View>
-                  ))}
+              {activeProduct.sizes?.length > 0 && (
+                <View onLayout={onSizesLayout}>
+                  <View style={styles.sizesRow}>
+                    {activeProduct.sizes.map((s) => (
+                      <View
+                        key={s.size}
+                        style={[styles.sizeChip, !s.in_stock && styles.sizeChipDisabled]}
+                      >
+                        <Text style={[styles.sizeChipText, !s.in_stock && styles.sizeChipTextDisabled]}>
+                          {s.size}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
                 </View>
+              )}
+
+              {!!activeProduct.description && (
+                <TouchableOpacity
+                  style={styles.jumpButton}
+                  onPress={() => setDescExpanded((v) => !v)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.jumpButtonText}>{t('products.description', 'Descrizione')}</Text>
+                  <Ionicons name={descExpanded ? 'chevron-up' : 'chevron-down'} size={12} color="#FFF" style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
               )}
 
               {descExpanded && !!activeProduct.description && (
@@ -468,21 +478,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  smallPill: {
+  jumpButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#DDD',
+    alignSelf: 'center',
+    backgroundColor: '#000',
+    borderRadius: 10,
     paddingVertical: 8,
-    paddingHorizontal: 14,
+    paddingHorizontal: 18,
+    marginTop: 14,
+    marginBottom: 10,
   },
-  smallPillText: {
-    fontSize: 12,
+  jumpButtonText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: '#000',
+    color: '#FFF',
   },
   infoPill: {
     backgroundColor: '#FFF',
@@ -509,9 +520,8 @@ const styles = StyleSheet.create({
   sizesRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: 8,
-    marginTop: 12,
+    marginTop: 8,
   },
   sizeChip: {
     borderWidth: 1.5,
