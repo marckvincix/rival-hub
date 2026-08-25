@@ -16,7 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, MatchStatsModal, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
@@ -123,8 +123,6 @@ export default function TournamentPublicPage() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<TabId>('standings');
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [selectedMatchForStats, setSelectedMatchForStats] = useState<Match | null>(null);
   const [selectedFormation, setSelectedFormation] = useState<Formation | null>(null);
   const [selectedAwayFormation, setSelectedAwayFormation] = useState<Formation | null>(null);
   const [showFormationModal, setShowFormationModal] = useState(false);
@@ -267,13 +265,6 @@ export default function TournamentPublicPage() {
       return '40';
     }
     return TENNIS_POINTS[points] || '0';
-  };
-
-  const handleOpenMatchStats = (match: Match) => {
-    // Find the latest match data from the matches state (updated by polling)
-    const latestMatch = matches.find(m => m.id === match.id) || match;
-    setSelectedMatchForStats(latestMatch);
-    setShowStatsModal(true);
   };
 
   // Format date for display
@@ -583,12 +574,30 @@ export default function TournamentPublicPage() {
                       }
                     }
                     
+                    const isLive = ((match as any).has_events || match.status === 'in_progress') && match.status !== 'completed';
+                    const liveEvents: any[] = (match as any).live_events || [];
+                    const eventIcon = (type: string) => (
+                      type === 'goal' || type === 'penalty_goal' ? '⚽'
+                      : type === 'yellow_card' ? '🟨'
+                      : type === 'red_card' ? '🟥'
+                      : type === 'assist' ? '🅰️'
+                      : type === 'points_3pt' ? '3️⃣'
+                      : type === 'points_2pt' ? '2️⃣'
+                      : type === 'points_1pt' ? '1️⃣'
+                      : null
+                    );
+                    const homeLiveEvents = liveEvents.filter(e => e.team_id === match.home_team_id);
+                    const awayLiveEvents = liveEvents.filter(e => e.team_id === match.away_team_id);
+
                     return (
-                      <View key={match.id} style={styles.matchCard}>
+                      <View key={match.id} style={[styles.matchCard, isLive && styles.matchCardLive]}>
                         <View style={styles.matchRow}>
                           <View style={styles.matchTeamColumn}>
                             <TeamLogo logo={teams.find(t => t.id === match.home_team_id)?.logo} name={getTeamName(match.home_team_id)} size="small" />
                             <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
+                            {homeLiveEvents.map((e, idx) => eventIcon(e.event_type) && (
+                              <Text key={idx} style={styles.matchLiveEventLine} numberOfLines={1}>{eventIcon(e.event_type)} {e.player_name}</Text>
+                            ))}
                           </View>
                           <View style={styles.matchCenterContent}>
                             {/* Tennis/Padel: Show detailed score (Sets, Games, Points) */}
@@ -638,21 +647,17 @@ export default function TournamentPublicPage() {
                           <View style={styles.matchTeamColumn}>
                             <TeamLogo logo={teams.find(t => t.id === match.away_team_id)?.logo} name={getTeamName(match.away_team_id)} size="small" />
                             <Text style={styles.matchTeamName} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
+                            {awayLiveEvents.map((e, idx) => eventIcon(e.event_type) && (
+                              <Text key={idx} style={styles.matchLiveEventLine} numberOfLines={1}>{eventIcon(e.event_type)} {e.player_name}</Text>
+                            ))}
                           </View>
                         </View>
                         {/* Date and Time */}
                         <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
                         {/* Action Buttons Row */}
                         <View style={styles.matchActionsRow}>
-                          <TouchableOpacity 
-                            style={styles.statsButton} 
-                            onPress={() => handleOpenMatchStats(match)}
-                          >
-                            <Ionicons name="stats-chart" size={14} color="#666" />
-                            <Text style={styles.statsButtonText}>{t('matches.statistics')}</Text>
-                          </TouchableOpacity>
-                          <TouchableOpacity 
-                            style={styles.calendarButton} 
+                          <TouchableOpacity
+                            style={styles.calendarButton}
                             onPress={() => handleAddToCalendar(match)}
                           >
                             <Ionicons name="calendar-outline" size={18} color="#000" />
@@ -960,15 +965,6 @@ export default function TournamentPublicPage() {
           </View>
         )}
       </ScrollView>
-
-      {/* Match Stats Modal */}
-      <MatchStatsModal
-        visible={showStatsModal}
-        onClose={() => setShowStatsModal(false)}
-        match={selectedMatchForStats}
-        getTeamName={getTeamName}
-        sport={tournament?.sport}
-      />
 
       {/* Formation Field Modal */}
       <Modal
@@ -1667,6 +1663,8 @@ const styles = StyleSheet.create({
   matchesGroup: { marginBottom: 24 },
   matchesGroupTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
   matchCard: { borderWidth: 2, borderColor: '#000', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 8, marginBottom: 8 },
+  matchCardLive: { borderColor: '#E53935', backgroundColor: '#FFF5F5' },
+  matchLiveEventLine: { fontSize: 11, color: '#555', textAlign: 'center', marginTop: 2 },
   matchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   matchCenterContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   matchTeamColumn: { alignItems: 'center', width: 80 },
@@ -1714,8 +1712,6 @@ const styles = StyleSheet.create({
   teamItemName: { fontSize: 13, fontWeight: '600', color: '#000', marginTop: 8, textAlign: 'center' },
   shareBar: { backgroundColor: '#000', borderRadius: 12, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'center' },
   shareBarText: { color: '#FFF', fontSize: 16, fontWeight: '600', marginLeft: 8 },
-  statsButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 10 },
-  statsButtonText: { fontSize: 13, color: '#666', fontWeight: '500' },
   // Formation styles
   formationCard: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
   formationCardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 14 },

@@ -1617,6 +1617,24 @@ async def get_matches_live(tournament_id: str):
         match_data["live_home_score"] = home_score
         match_data["live_away_score"] = away_score
         match_data["has_events"] = has_live_data
+
+        # Compact per-player event list (goal scorers, cards, points) for
+        # showing directly under each team name instead of a separate
+        # "Statistics" button/popup. Only for sports that record these
+        # event types; tennis/padel/volleyball/rugby track score differently.
+        if not is_tennis and not is_padel and not is_volleyball and sport != "rugby":
+            live_events = []
+            display_types = {"goal", "penalty_goal", "yellow_card", "red_card", "assist", "points_1pt", "points_2pt", "points_3pt"}
+            for event in events:
+                if event.get("event_type") in display_types:
+                    player = await db.players.find_one({"id": event.get("player_id")}, {"_id": 0, "full_name": 1})
+                    live_events.append({
+                        "event_type": event.get("event_type"),
+                        "team_id": event.get("team_id"),
+                        "player_name": player.get("full_name") if player else None,
+                    })
+            match_data["live_events"] = live_events
+
         result.append(match_data)
     
     return result

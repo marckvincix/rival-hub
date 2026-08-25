@@ -563,6 +563,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [selectedMatchForStats, setSelectedMatchForStats] = useState<any>(null);
   const [matchStatsEvents, setMatchStatsEvents] = useState<any[]>([]);
   const [loadingMatchStats, setLoadingMatchStats] = useState(false);
+  // Inline live events shown directly under each team name on the match card
+  const [matchEventsMap, setMatchEventsMap] = useState<Record<string, any[]>>({});
   // Basketball Match Modal state
   const [showBasketballMatchModal, setShowBasketballMatchModal] = useState(false);
   const [selectedBasketballMatch, setSelectedBasketballMatch] = useState<any>(null);
@@ -630,7 +632,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       ]);
       setTeams(teamsRes.data);
       setMatches(matchesRes.data);
-      
+      loadMatchEventsMap(matchesRes.data);
+
       // For Tennis/Padel, load players for all teams immediately
       if (tournament.sport === 'tennis' || tournament.sport === 'padel') {
         const playersData: Record<string, any[]> = {};
@@ -858,6 +861,22 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setMatchEvents([]);
       await loadMatchEvents(match.id, match);
     }
+  };
+
+  // Load events for every match in the round, so goal scorers / cards can be
+  // shown inline under each team name instead of behind a "Statistiche" button
+  const loadMatchEventsMap = async (matchList: any[]) => {
+    const entries = await Promise.all(
+      matchList.map(async (m: any) => {
+        try {
+          const response = await api.get(`/api/matches/${m.id}/events`);
+          return [m.id, response.data || []] as const;
+        } catch (error) {
+          return [m.id, []] as const;
+        }
+      })
+    );
+    setMatchEventsMap(Object.fromEntries(entries));
   };
 
   // Open match statistics modal
@@ -1300,7 +1319,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       // Refresh matches list to show updated score (silently)
       const matchesRes = await api.get(`/api/tournaments/${tournament.id}/matches`);
       setMatches(matchesRes.data);
-      
+
+      // Refresh this match's events so the inline scorer/cards summary
+      // under the team names picks up the change right away
+      try {
+        const eventsRes = await api.get(`/api/matches/${selectedMatch.id}/events`);
+        setMatchEventsMap(prev => ({ ...prev, [selectedMatch.id]: eventsRes.data || [] }));
+      } catch (e) {
+        // Non-critical: inline summary just stays stale until next full reload
+      }
+
       // Don't show alert or close modal - this is auto-save
       console.log('Auto-save completed successfully');
       
@@ -1867,27 +1895,50 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           <Ionicons name="trash" size={22} color="#000" />
                         </TouchableOpacity>
                       </View>
-                      {roundMatches.map((match: any) => (
-                        <View key={match.id} style={styles.matchPillCard}>
-                          <View style={styles.matchPillMain}>
-                            <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
-                            <Text style={styles.matchPillScore}>
-                              {match.home_goals ?? 0} - {match.away_goals ?? 0}
-                            </Text>
-                            <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                      {roundMatches.map((match: any) => {
+                        const matchEvents = matchEventsMap[match.id] || [];
+                        const isLive = (matchEvents.length > 0 || match.status === 'in_progress') && match.status !== 'completed';
+                        const eventLine = (event: any) => {
+                          const icon = event.event_type === 'goal' || event.event_type === 'penalty_goal'
+                            ? '⚽' : event.event_type === 'yellow_card'
+                            ? '🟨' : event.event_type === 'red_card'
+                            ? '🟥' : event.event_type === 'assist'
+                            ? '🅰️' : null;
+                          return icon ? { icon, player: event.player_name } : null;
+                        };
+                        const homeEvents = matchEvents.filter((e: any) => e.team_id === match.home_team_id).map(eventLine).filter(Boolean);
+                        const awayEvents = matchEvents.filter((e: any) => e.team_id === match.away_team_id).map(eventLine).filter(Boolean);
+                        return (
+                          <View key={match.id} style={[styles.matchPillCard, isLive && styles.matchPillCardLive]}>
+                            {isLive && (
+                              <View style={styles.matchPillLiveBadge}>
+                                <View style={styles.matchPillLiveDot} />
+                                <Text style={styles.matchPillLiveBadgeText}>LIVE</Text>
+                              </View>
+                            )}
+                            <View style={styles.matchPillMain}>
+                              <View style={styles.matchPillTeamColumn}>
+                                <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
+                                {homeEvents.map((e: any, idx: number) => (
+                                  <Text key={idx} style={styles.matchPillEventLine} numberOfLines={1}>{e.icon} {e.player}</Text>
+                                ))}
+                              </View>
+                              <Text style={styles.matchPillScore}>
+                                {match.home_goals ?? 0} - {match.away_goals ?? 0}
+                              </Text>
+                              <View style={styles.matchPillTeamColumn}>
+                                <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                                {awayEvents.map((e: any, idx: number) => (
+                                  <Text key={idx} style={styles.matchPillEventLine} numberOfLines={1}>{e.icon} {e.player}</Text>
+                                ))}
+                              </View>
+                            </View>
+                            {formatMatchDateTime(match) ? (
+                              <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
+                            ) : null}
                           </View>
-                          {formatMatchDateTime(match) ? (
-                            <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
-                          ) : null}
-                          <TouchableOpacity 
-                            style={styles.matchStatsBtn}
-                            onPress={() => handleOpenMatchStats(match)}
-                          >
-                            <Ionicons name="stats-chart" size={16} color="#666" />
-                            <Text style={styles.matchStatsBtnText}>{t('stats.title')}</Text>
-                          </TouchableOpacity>
-                        </View>
-                      ))}
+                        );
+                      })}
                     </View>
                   )})
                 )}
@@ -4058,12 +4109,16 @@ const styles = StyleSheet.create({
   matchDayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   matchDayTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   matchPillCard: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 12 },
+  matchPillCardLive: { borderColor: '#E53935', backgroundColor: '#FFF5F5' },
+  matchPillLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', backgroundColor: '#E53935', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, marginBottom: 8 },
+  matchPillLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFF' },
+  matchPillLiveBadgeText: { fontSize: 11, fontWeight: '700', color: '#FFF', letterSpacing: 0.5 },
   matchPillTeam: { fontSize: 14, color: '#000', flex: 1, textAlign: 'center' },
   matchPillScore: { fontSize: 16, fontWeight: '700', color: '#000', marginHorizontal: 12, backgroundColor: '#F5F5F5', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 8 },
   matchPillMain: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%' },
+  matchPillTeamColumn: { flex: 1, alignItems: 'center' },
+  matchPillEventLine: { fontSize: 11, color: '#555', textAlign: 'center', marginTop: 2 },
   matchPillDateTime: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 6 },
-  matchStatsBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, paddingHorizontal: 12, paddingVertical: 8, backgroundColor: '#F0F0F0', borderRadius: 8, marginTop: 10 },
-  matchStatsBtnText: { fontSize: 13, color: '#666', fontWeight: '500' },
   warningText: { fontSize: 13, color: '#999', textAlign: 'center', marginTop: 8 },
   resultsTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 16 },
   resultCard: { borderWidth: 2, borderColor: '#000', padding: 16, borderRadius: 12, marginBottom: 12 },

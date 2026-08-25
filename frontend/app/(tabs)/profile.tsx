@@ -131,8 +131,11 @@ export default function ProfileScreen() {
     Alert.alert(t('alerts.logout', 'Logout'), t('alerts.logoutConfirm', 'Are you sure you want to logout?'), [
       { text: t('common.cancel', 'Cancel'), style: 'cancel' },
       { text: t('auth.logout', 'Logout'), style: 'destructive', onPress: async () => {
+        // Don't navigate here: (tabs)/_layout.tsx already redirects to '/'
+        // as soon as isAuthenticated flips to false. Also calling
+        // router.replace() here races with that redirect and can leave
+        // the screen blank.
         await logout();
-        router.replace('/');
       }}
     ]);
   };
