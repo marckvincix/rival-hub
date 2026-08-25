@@ -41,10 +41,11 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const [activeProduct, setActiveProduct] = useState<Product | null>(product);
   const [switchingColor, setSwitchingColor] = useState(false);
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
-  // How many of the progressive nav buttons (sizes -> description ->
-  // category/gender) are unlocked. Starts at 1 so the first applicable
-  // one is always visible; tapping one reveals the next.
-  const [revealCount, setRevealCount] = useState(1);
+  // Index into navSteps of the single floating nav button's current target.
+  // Tapping it scrolls to that section and advances to the next one, so the
+  // same fixed-position button walks through sizes -> description ->
+  // category/gender in order.
+  const [navIndex, setNavIndex] = useState(0);
 
   const scrollRef = useRef<ScrollView>(null);
   const bodyY = useRef(0);
@@ -86,7 +87,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
 
   useEffect(() => {
     setImageIndex(0);
-    setRevealCount(1);
+    setNavIndex(0);
   }, [activeProduct?.id]);
 
   if (!activeProduct) return null;
@@ -104,9 +105,11 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
     hasCatGen && { key: 'catgen', label: t('products.categoryAndGender', 'Categoria e Genere'), yRef: catGenYInBody },
   ].filter(Boolean) as { key: string; label: string; yRef: React.MutableRefObject<number> }[];
 
-  const handleNavPress = (index: number) => {
-    scrollToY(navSteps[index].yRef);
-    setRevealCount((c) => Math.max(c, index + 2));
+  const currentNavStep = navSteps[navIndex];
+  const handleFloatingNavPress = () => {
+    if (!currentNavStep) return;
+    scrollToY(currentNavStep.yRef);
+    setNavIndex((i) => i + 1);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -253,62 +256,61 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 </View>
               )}
 
-              {navSteps.map((step, index) => {
-                if (index >= revealCount) return null;
-                return (
-                  <React.Fragment key={step.key}>
-                    <TouchableOpacity
-                      style={styles.jumpButton}
-                      onPress={() => handleNavPress(index)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.jumpButtonText}>{step.label}</Text>
-                      <Ionicons name="chevron-down" size={12} color="#FFF" style={{ marginLeft: 4 }} />
-                    </TouchableOpacity>
+              {hasSizes && (
+                <View onLayout={onSizesLayout}>
+                  <Text style={styles.sectionTitle}>
+                    {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
+                  </Text>
+                  <View style={styles.sizesRow}>
+                    {activeProduct.sizes.map((s) => (
+                      <View
+                        key={s.size}
+                        style={[styles.sizeChip, !s.in_stock && styles.sizeChipDisabled]}
+                      >
+                        <Text style={[styles.sizeChipText, !s.in_stock && styles.sizeChipTextDisabled]}>
+                          {s.size}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
 
-                    {step.key === 'sizes' && (
-                      <View onLayout={onSizesLayout}>
-                        <View style={styles.sizesRow}>
-                          {activeProduct.sizes.map((s) => (
-                            <View
-                              key={s.size}
-                              style={[styles.sizeChip, !s.in_stock && styles.sizeChipDisabled]}
-                            >
-                              <Text style={[styles.sizeChipText, !s.in_stock && styles.sizeChipTextDisabled]}>
-                                {s.size}
-                              </Text>
-                            </View>
-                          ))}
-                        </View>
+              {hasDescription && (
+                <View style={styles.section} onLayout={onDescriptionLayout}>
+                  <Text style={styles.sectionTitle}>{t('products.description', 'Descrizione')}</Text>
+                  <Text style={styles.description}>{activeProduct.description}</Text>
+                </View>
+              )}
+
+              {hasCatGen && (
+                <View style={styles.section} onLayout={onCatGenLayout}>
+                  <Text style={styles.sectionTitle}>{t('products.categoryAndGender', 'Categoria e Genere')}</Text>
+                  <View style={styles.pillsRow}>
+                    {!!activeProduct.category && (
+                      <View style={styles.infoPill}>
+                        <Text style={styles.infoPillText} numberOfLines={1}>{activeProduct.category.split(',')[0]}</Text>
                       </View>
                     )}
-
-                    {step.key === 'description' && (
-                      <Text style={styles.description} onLayout={onDescriptionLayout}>
-                        {activeProduct.description}
-                      </Text>
-                    )}
-
-                    {step.key === 'catgen' && (
-                      <View style={[styles.pillsRow, { marginTop: 14 }]} onLayout={onCatGenLayout}>
-                        {!!activeProduct.category && (
-                          <View style={styles.infoPill}>
-                            <Text style={styles.infoPillText} numberOfLines={1}>{activeProduct.category.split(',')[0]}</Text>
-                          </View>
-                        )}
-                        {!!activeProduct.gender && (
-                          <View style={styles.infoPill}>
-                            <Text style={styles.infoPillText}>{activeProduct.gender}</Text>
-                          </View>
-                        )}
+                    {!!activeProduct.gender && (
+                      <View style={styles.infoPill}>
+                        <Text style={styles.infoPillText}>{activeProduct.gender}</Text>
                       </View>
                     )}
-                  </React.Fragment>
-                );
-              })}
+                  </View>
+                </View>
+              )}
+
             </View>
           </ScrollView>
         </View>
+
+        {!!currentNavStep && (
+          <TouchableOpacity style={styles.floatingNavButton} onPress={handleFloatingNavPress} activeOpacity={0.8}>
+            <Text style={styles.jumpButtonText}>{currentNavStep.label}</Text>
+            <Ionicons name="chevron-down" size={12} color="#FFF" style={{ marginLeft: 4 }} />
+          </TouchableOpacity>
+        )}
       </View>
     </Modal>
   );
@@ -505,7 +507,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
-  jumpButton: {
+  floatingNavButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -514,8 +516,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     paddingVertical: 8,
     paddingHorizontal: 18,
-    marginTop: 14,
-    marginBottom: 10,
+    marginTop: -18,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
   jumpButtonText: {
     fontSize: 13,
