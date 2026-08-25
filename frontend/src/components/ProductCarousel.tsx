@@ -22,6 +22,7 @@ interface ProductCarouselProps {
 
 type SortFilter = 'relevance' | 'price_asc' | 'newest' | 20 | 30 | 40 | 50;
 type GenderFilter = 'Uomo' | 'Donna' | 'Bambini';
+type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori';
 
 const FILTERS: { key: SortFilter; labelKey: string }[] = [
   { key: 'relevance', labelKey: 'products.sortRelevance' },
@@ -39,6 +40,12 @@ const GENDER_FILTERS: { key: GenderFilter; labelKey: string }[] = [
   { key: 'Bambini', labelKey: 'products.genderKids' },
 ];
 
+const CATEGORY_FILTERS: { key: CategoryFilter; labelKey: string }[] = [
+  { key: 'Scarpe', labelKey: 'products.categoryShoes' },
+  { key: 'Abbigliamento', labelKey: 'products.categoryClothing' },
+  { key: 'Accessori', labelKey: 'products.categoryAccessories' },
+];
+
 // Official brand logos, added as more Awin brand partners come on board.
 const BRAND_LOGOS: Record<string, any> = {
   Adidas: require('../../assets/images/brands/adidas-logo.jpg'),
@@ -52,6 +59,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<SortFilter>('relevance');
   const [gender, setGender] = useState<GenderFilter | null>(null);
+  const [category, setCategory] = useState<CategoryFilter | null>(null);
   const [brands, setBrands] = useState<string[]>([]);
   const [brand, setBrand] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -77,6 +85,9 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     if (gender) {
       params.gender = gender;
     }
+    if (category) {
+      params.category = category;
+    }
     if (brand) {
       params.brand = brand;
     }
@@ -91,7 +102,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       .finally(() => {
         if (requestId.current === thisRequest) setLoading(false);
       });
-  }, [sport, filter, gender, brand]);
+  }, [sport, filter, gender, category, brand]);
 
   if (!loading && products.length === 0) {
     return null;
@@ -147,6 +158,24 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
           >
             <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
               {t(g.labelKey, g.key)}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
+      >
+        {CATEGORY_FILTERS.map((c) => (
+          <TouchableOpacity
+            key={c.key}
+            style={[styles.filterChip, styles.genderChip, category === c.key && styles.filterChipActive]}
+            onPress={() => setCategory(category === c.key ? null : c.key)}
+          >
+            <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
+              {t(c.labelKey, c.key)}
             </Text>
           </TouchableOpacity>
         ))}

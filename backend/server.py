@@ -3189,11 +3189,12 @@ async def get_products(
     sport: Optional[str] = None,
     gender: Optional[str] = None,
     brand: Optional[str] = None,
+    category: Optional[str] = None,  # top-level bucket: Scarpe, Abbigliamento, Accessori
     sort: str = "relevance",  # relevance, price_asc, newest, discount
     min_discount: Optional[float] = None,
     limit: int = 500,
 ):
-    """List affiliate products, optionally filtered by sport/gender/brand/discount, for the carousel."""
+    """List affiliate products, optionally filtered by sport/gender/brand/category/discount, for the carousel."""
     query: Dict[str, Any] = {"in_stock": True}
     if sport:
         query["sport"] = sport
@@ -3201,6 +3202,11 @@ async def get_products(
         query["gender"] = gender
     if brand:
         query["brand"] = brand
+    if category:
+        # category is stored as a full comma-separated path (e.g.
+        # "Scarpe,Scarpe da Calcio"); match on the top-level bucket appearing
+        # anywhere in it.
+        query["category"] = {"$regex": category, "$options": "i"}
     if min_discount is not None:
         query["discount_percent"] = {"$gte": min_discount}
 

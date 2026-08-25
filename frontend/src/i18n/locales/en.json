@@ -1051,6 +1051,9 @@
     "brandAll": "All brands",
     "viewDetails": "View details",
     "colorSelected": "Selected color",
-    "categoryAndGender": "Category & Gender"
+    "categoryAndGender": "Category & Gender",
+    "categoryShoes": "Shoes",
+    "categoryClothing": "Clothing",
+    "categoryAccessories": "Accessories"
   }
 }

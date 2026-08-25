@@ -1052,6 +1052,9 @@
     "brandAll": "Tutti i brand",
     "viewDetails": "Vedi meglio",
     "colorSelected": "Colore selezionato",
-    "categoryAndGender": "Categoria e Genere"
+    "categoryAndGender": "Categoria e Genere",
+    "categoryShoes": "Scarpe",
+    "categoryClothing": "Abbigliamento",
+    "categoryAccessories": "Accessori"
   }
 }
