@@ -39,6 +39,11 @@ const GENDER_FILTERS: { key: GenderFilter; labelKey: string }[] = [
   { key: 'Bambini', labelKey: 'products.genderKids' },
 ];
 
+// Official brand logos, added as more Awin brand partners come on board.
+const BRAND_LOGOS: Record<string, any> = {
+  Adidas: require('../../assets/images/brands/adidas-logo.jpg'),
+};
+
 const CARD_WIDTH = 150;
 
 export function ProductCarousel({ sport, title }: ProductCarouselProps) {
@@ -116,10 +121,12 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
               style={[styles.brandChip, brand === b && styles.filterChipActive]}
               onPress={() => setBrand(brand === b ? null : b)}
             >
-              <View style={[styles.brandAvatar, brand === b && styles.brandAvatarActive]}>
-                <Text style={[styles.brandAvatarText, brand === b && styles.brandAvatarTextActive]}>
-                  {b.charAt(0).toUpperCase()}
-                </Text>
+              <View style={styles.brandAvatar}>
+                {BRAND_LOGOS[b] ? (
+                  <Image source={BRAND_LOGOS[b]} style={styles.brandLogoImage} resizeMode="contain" />
+                ) : (
+                  <Text style={styles.brandAvatarText}>{b.charAt(0).toUpperCase()}</Text>
+                )}
               </View>
               <Text style={[styles.filterChipText, brand === b && styles.filterChipTextActive]}>{b}</Text>
             </TouchableOpacity>
@@ -270,23 +277,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
   },
   brandAvatar: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: '#EEE',
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#FFF',
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
   },
-  brandAvatarActive: {
-    backgroundColor: '#FFF',
+  brandLogoImage: {
+    width: '100%',
+    height: '100%',
   },
   brandAvatarText: {
     fontSize: 11,
     fontWeight: '700',
     color: '#666',
-  },
-  brandAvatarTextActive: {
-    color: '#000',
   },
   genderChip: {
     borderColor: '#CCC',
