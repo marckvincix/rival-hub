@@ -90,10 +90,12 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
     scrollRef.current?.scrollTo({ y: bodyY.current + targetYInBody.current - 12, animated: true });
   };
 
-  const SCROLL_HIDE_THRESHOLD = 60;
+  // Visible only at the very top of the card (viewing the image gallery);
+  // hidden the moment the user scrolls away from it at all, regardless of
+  // how far — reappears only once they scroll all the way back up.
+  const TOP_SCROLL_THRESHOLD = 30;
   const handleBodyScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const target = bodyY.current + targetYInBody.current - SCROLL_HIDE_THRESHOLD;
-    setNavButtonVisible(e.nativeEvent.contentOffset.y < target);
+    setNavButtonVisible(e.nativeEvent.contentOffset.y < TOP_SCROLL_THRESHOLD);
   };
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -248,6 +250,9 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
 
               {hasSizes && (
                 <View onLayout={hasSizes ? onTargetLayout : undefined}>
+                  <Text style={styles.sectionTitle}>
+                    {t('products.sizesAvailable', 'Misure disponibili')} ({activeProduct.sizes.length})
+                  </Text>
                   <View style={styles.sizesRow}>
                     {activeProduct.sizes.map((s) => (
                       <View
@@ -300,7 +305,10 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
 
         {hasNavTarget && navButtonVisible && (
           <TouchableOpacity style={styles.floatingNavButton} onPress={handleNavButtonPress} activeOpacity={0.8}>
-            <Text style={styles.jumpButtonText}>{t('products.sizesAvailable', 'Misure disponibili')}</Text>
+            <Text style={styles.jumpButtonText}>
+              {t('products.sizesAvailable', 'Misure disponibili')}
+              {hasSizes ? ` (${activeProduct.sizes.length})` : ''}
+            </Text>
             <Ionicons name="chevron-down" size={12} color="#FFF" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
         )}
