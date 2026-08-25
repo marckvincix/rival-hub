@@ -3,7 +3,7 @@ from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from motor.motor_asyncio import AsyncIOMotorClient
+from supabase import acreate_client
 import os
 import logging
 from pathlib import Path
@@ -25,14 +25,16 @@ import io
 import base64
 import asyncio
 
+from db_supabase import SupabaseDB
+
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
 # Web App directory (built frontend)
-WEB_APP_DIR = Path("/app/frontend/dist")
+WEB_APP_DIR = Path(os.environ.get('WEB_APP_DIR', ROOT_DIR.parent / "frontend" / "dist"))
 
 # Uploads directory for Highlights
-UPLOADS_DIR = Path("/app/uploads/highlights")
+UPLOADS_DIR = Path(os.environ.get('UPLOADS_DIR', ROOT_DIR.parent / "uploads" / "highlights"))
 UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
 
 # Highlights configuration
@@ -43,10 +45,10 @@ HIGHLIGHTS_MAX_PHOTO_SIZE_MB = 10
 HIGHLIGHTS_MAX_VIDEO_SIZE_MB = 100
 HIGHLIGHTS_RETENTION_DAYS = 365
 
-# MongoDB connection
-mongo_url = os.environ['MONGO_URL']
-client = AsyncIOMotorClient(mongo_url)
-db = client[os.environ['DB_NAME']]
+# Supabase connection (initialized in the startup event, since acreate_client is async)
+SUPABASE_URL = os.environ['SUPABASE_URL']
+SUPABASE_SERVICE_ROLE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
+db: "SupabaseDB" = None
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'goalmanager-secret-key-change-in-production')
@@ -914,8 +916,7 @@ async def create_tournament(
     }
     
     await db.tournaments.insert_one(tournament_doc)
-    del tournament_doc["_id"]
-    
+
     return Tournament(**tournament_doc)
 
 @api_router.get("/tournaments", response_model=List[Tournament])
@@ -1026,16 +1027,22 @@ async def delete_tournament(
     await db.matches.delete_many({"tournament_id": tournament_id})
     await db.match_events.delete_many({"tournament_id": tournament_id})
     await db.news.delete_many({"tournament_id": tournament_id})
-    
+
     # Get teams and delete players
     teams = await db.teams.find({"tournament_id": tournament_id}).to_list(100)
     team_ids = [t["id"] for t in teams]
     await db.players.delete_many({"team_id": {"$in": team_ids}})
     await db.teams.delete_many({"tournament_id": tournament_id})
-    
+
+    # Delete favorites pointing at this tournament or any of its teams (no FK
+    # for these, since reference_id is polymorphic across tournaments/teams)
+    await db.user_favorites.delete_many({"type": "tournament", "reference_id": tournament_id})
+    if team_ids:
+        await db.user_favorites.delete_many({"type": "team", "reference_id": {"$in": team_ids}})
+
     # Delete tournament
     await db.tournaments.delete_one({"id": tournament_id})
-    
+
     return {"message": "Torneo eliminato"}
 
 # ===================== TEAM ENDPOINTS =====================
@@ -1067,8 +1074,7 @@ async def create_team(
     }
     
     await db.teams.insert_one(team_doc)
-    del team_doc["_id"]
-    
+
     return Team(**team_doc)
 
 @api_router.get("/tournaments/{tournament_id}/teams", response_model=List[Team])
@@ -1128,9 +1134,11 @@ async def delete_team(
     
     # Delete players
     await db.players.delete_many({"team_id": team_id})
+    # Delete favorites pointing at this team (no FK, reference_id is polymorphic)
+    await db.user_favorites.delete_many({"type": "team", "reference_id": team_id})
     # Delete team
     await db.teams.delete_one({"id": team_id})
-    
+
     return {"message": "Squadra eliminata"}
 
 # ===================== PLAYER ENDPOINTS =====================
@@ -1169,8 +1177,7 @@ async def create_player(
     }
     
     await db.players.insert_one(player_doc)
-    del player_doc["_id"]
-    
+
     return Player(**player_doc)
 
 @api_router.get("/teams/{team_id}/players", response_model=List[Player])
@@ -1421,8 +1428,7 @@ async def create_match(
     }
     
     await db.matches.insert_one(match_doc)
-    del match_doc["_id"]
-    
+
     # Send notification to tournament followers
     home_team = await db.teams.find_one({"id": match_data.home_team_id}, {"_id": 0, "name": 1})
     away_team = await db.teams.find_one({"id": match_data.away_team_id}, {"_id": 0, "name": 1})
@@ -1723,8 +1729,7 @@ async def create_match_event(
     }
     
     await db.match_events.insert_one(event_doc)
-    del event_doc["_id"]
-    
+
     # Send notification for goals
     if event_data.event_type == "goal":
         scoring_team = await db.teams.find_one({"id": event_data.team_id}, {"_id": 0, "name": 1})
@@ -1916,28 +1921,20 @@ async def save_match_events_batch(
         elif et == "block":
             player_updates[pid]["blocks"] += 1
     
-    # Apply updates to player_stats collection (cumulative stats)
+    # Apply updates to player_stats collection (cumulative stats).
+    # Postgres has no atomic upsert-with-increment via PostgREST, so read-modify-write.
     for player_id, updates in player_updates.items():
-        await db.player_stats.update_one(
-            {"player_id": player_id},
-            {"$inc": {
-                # Football
-                "goals": updates["goals"],
-                "assists": updates["assists"],
-                "yellow_cards": updates["yellow_cards"],
-                "red_cards": updates["red_cards"],
-                # Basketball
-                "points_1pt": updates["points_1pt"],
-                "points_2pt": updates["points_2pt"],
-                "points_3pt": updates["points_3pt"],
-                "rebounds": updates["rebounds"],
-                "basketball_assists": updates["basketball_assists"],
-                "fouls": updates["fouls"],
-                "steals": updates["steals"],
-                "blocks": updates["blocks"]
-            }},
-            upsert=True
-        )
+        existing_stats = await db.player_stats.find_one({"player_id": player_id})
+        if existing_stats:
+            await db.player_stats.update_one(
+                {"player_id": player_id},
+                {"$set": {
+                    field: existing_stats.get(field, 0) + delta
+                    for field, delta in updates.items()
+                }}
+            )
+        else:
+            await db.player_stats.insert_one({"player_id": player_id, **updates})
     
     # Return updated match data
     updated_match = await db.matches.find_one({"id": match_id}, {"_id": 0})
@@ -2066,8 +2063,7 @@ async def create_news(
     }
     
     await db.news.insert_one(news_doc)
-    del news_doc["_id"]
-    
+
     return News(**news_doc)
 
 @api_router.get("/tournaments/{tournament_id}/news", response_model=List[News])
@@ -3464,19 +3460,18 @@ async def get_rounds_with_content(
     if tournament["organizer_id"] != current_user.user_id:
         raise HTTPException(status_code=403, detail="Non autorizzato")
     
-    # Get unique rounds with content
-    pipeline = [
-        {"$match": {"tournament_id": tournament_id}},
-        {"$group": {
-            "_id": "$round",
-            "photo_count": {"$sum": {"$cond": [{"$eq": ["$file_type", "photo"]}, 1, 0]}},
-            "video_count": {"$sum": {"$cond": [{"$eq": ["$file_type", "video"]}, 1, 0]}}
-        }}
-    ]
-    
-    rounds = await db.highlights.aggregate(pipeline).to_list(100)
-    
-    return {r["_id"]: {"photo_count": r["photo_count"], "video_count": r["video_count"]} for r in rounds}
+    # Get unique rounds with content (counted in Python, same as the rest of the stats endpoints)
+    highlights = await db.highlights.find({"tournament_id": tournament_id}).to_list(10000)
+
+    rounds: Dict[str, Dict[str, int]] = {}
+    for h in highlights:
+        entry = rounds.setdefault(h["round"], {"photo_count": 0, "video_count": 0})
+        if h["file_type"] == "photo":
+            entry["photo_count"] += 1
+        elif h["file_type"] == "video":
+            entry["video_count"] += 1
+
+    return rounds
 
 @api_router.post("/tournaments/{tournament_id}/highlights")
 async def upload_highlight(
@@ -3895,18 +3890,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.on_event("shutdown")
-async def shutdown_db_client():
-    client.close()
-
 @app.on_event("startup")
 async def startup_cleanup_task():
-    """Run cleanup tasks on startup"""
+    """Initialize the Supabase connection and run cleanup tasks on startup"""
+    global db
+    supabase_client = await acreate_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    db = SupabaseDB(supabase_client)
+
     try:
         # Cleanup expired highlights
         count = await cleanup_expired_highlights()
         logger.info(f"Startup: Cleaned up {count} expired highlights")
-        
+
         # Send expiry warning notifications
         await send_expiry_warning_notifications()
         logger.info("Startup: Sent expiry warning notifications")

@@ -16,6 +16,8 @@
       }
     },
     "android": {
+      "package": "app.emergent.torneolive4d62a32b",
+      "versionCode": 100,
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#000"
