@@ -357,6 +357,12 @@ export interface ProductSize {
   in_stock: boolean;
 }
 
+export interface ProductColorVariant {
+  id: string;
+  colour?: string | null;
+  image?: string | null;
+}
+
 export interface Product {
   id: string;
   name: string;
@@ -374,6 +380,7 @@ export interface Product {
   product_page_link?: string | null;
   images: string[];
   sizes: ProductSize[];
+  color_variants?: ProductColorVariant[];
   in_stock: boolean;
   ean?: string | null;
   last_updated?: string | null;

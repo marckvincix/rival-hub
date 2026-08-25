@@ -3187,18 +3187,26 @@ async def health():
 @api_router.get("/products")
 async def get_products(
     sport: Optional[str] = None,
+    gender: Optional[str] = None,
     sort: str = "relevance",  # relevance, price_asc, newest, discount
     min_discount: Optional[float] = None,
     limit: int = 30,
 ):
-    """List affiliate products, optionally filtered by sport and discount, for the carousel."""
+    """List affiliate products, optionally filtered by sport/gender/discount, for the carousel."""
     query: Dict[str, Any] = {"in_stock": True}
     if sport:
         query["sport"] = sport
+    if gender:
+        query["gender"] = gender
     if min_discount is not None:
         query["discount_percent"] = {"$gte": min_discount}
 
     products = await db.products.find(query, {"_id": 0}).to_list(1000)
+
+    def absolute_savings(p):
+        original = p.get("price_original")
+        current = p.get("price_current")
+        return (original - current) if original and current else 0
 
     if sort == "price_asc":
         products.sort(key=lambda p: p.get("price_current") or float("inf"))
@@ -3207,8 +3215,10 @@ async def get_products(
     elif sort == "discount":
         products.sort(key=lambda p: p.get("discount_percent") or 0, reverse=True)
     else:
-        # "relevance": no real sales data in the feed, so rank by discount then price
-        products.sort(key=lambda p: (-(p.get("discount_percent") or 0), p.get("price_current") or float("inf")))
+        # "relevance": no real sales data in the feed, so rank by discount
+        # percentage first, then by how much money it actually saves (so a
+        # -50% on a pricey item outranks a -50% on a cheap accessory).
+        products.sort(key=lambda p: (-(p.get("discount_percent") or 0), -absolute_savings(p)))
 
     return products[:limit]
 

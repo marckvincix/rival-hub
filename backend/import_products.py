@@ -121,8 +121,12 @@ def main():
 
                 delivery_cost = to_float(row.get("delivery_cost"))
 
+                # aw_image_url is deliberately excluded: it's a small 200x200
+                # white-background thumbnail proxy, visibly lower quality than
+                # the merchant's own product photography (grey background,
+                # full resolution) used by the other image columns.
                 images = []
-                for col in ("aw_image_url", "large_image", "alternate_image", "alternate_image_two", "alternate_image_three", "alternate_image_four"):
+                for col in ("large_image", "alternate_image", "alternate_image_two", "alternate_image_three", "alternate_image_four"):
                     url = (row.get(col) or "").strip()
                     if url and url not in images:
                         images.append(url)
@@ -144,6 +148,7 @@ def main():
                     "product_page_link": (row.get("merchant_deep_link") or "").strip() or None,
                     "images": images[:6],
                     "sizes": [],
+                    "color_variants": [],
                     "in_stock": False,
                     "ean": (row.get("ean") or "").strip() or None,
                     "last_updated": (row.get("last_updated") or "").strip() or None,
@@ -164,6 +169,28 @@ def main():
     # Drop products with no referral link or no price (unusable in the UI)
     rows = [p for p in products.values() if p["referral_link"] and p["price_current"]]
     print(f"{len(rows)} products have a referral link and price, importing those.")
+
+    # Group colour variants: the feed has no parent/family id linking colours
+    # of the same product (parent_product_id and model_number are both empty
+    # in this feed), so fall back to grouping by exact (sport, lowercased
+    # product_name) — different style codes sharing an identical name are, in
+    # practice, the same product in different colours.
+    name_groups: dict[tuple, list[dict]] = defaultdict(list)
+    for p in rows:
+        name_groups[(p["sport"], p["name"].strip().lower())].append(p)
+
+    variant_count = 0
+    for group in name_groups.values():
+        if len(group) < 2:
+            continue
+        for p in group:
+            p["color_variants"] = [
+                {"id": other["id"], "colour": other["colour"], "image": (other["images"][0] if other["images"] else None)}
+                for other in group
+                if other["id"] != p["id"]
+            ]
+            variant_count += 1
+    print(f"{variant_count} products have colour variants linked.")
 
     by_sport = defaultdict(int)
     for p in rows:

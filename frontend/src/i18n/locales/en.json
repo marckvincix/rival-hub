@@ -1043,6 +1043,10 @@
     "description": "Description",
     "buyOnOfficialSite": "Buy on official site",
     "redirectNotice": "You'll be redirected to {{brand}}'s official website to complete your purchase.",
-    "off": "off"
+    "off": "off",
+    "genderMale": "Men",
+    "genderFemale": "Women",
+    "genderKids": "Kids",
+    "colors": "Available colors"
   }
 }

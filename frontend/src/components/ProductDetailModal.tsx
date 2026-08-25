@@ -9,10 +9,12 @@ import {
   ScrollView,
   Linking,
   Dimensions,
+  ActivityIndicator,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import api from '../utils/api';
 import { useTranslation } from '../i18n';
 import { Product } from '../types';
 
@@ -29,12 +31,20 @@ const GALLERY_HEIGHT = MODAL_WIDTH;
 export function ProductDetailModal({ visible, product, onClose }: ProductDetailModalProps) {
   const { t } = useTranslation();
   const [imageIndex, setImageIndex] = useState(0);
+  const [descExpanded, setDescExpanded] = useState(false);
+  const [activeProduct, setActiveProduct] = useState<Product | null>(product);
+  const [switchingColor, setSwitchingColor] = useState(false);
+
+  useEffect(() => {
+    setActiveProduct(product);
+  }, [product]);
 
   useEffect(() => {
     setImageIndex(0);
-  }, [product?.id]);
+    setDescExpanded(false);
+  }, [activeProduct?.id]);
 
-  if (!product) return null;
+  if (!activeProduct) return null;
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const idx = Math.round(e.nativeEvent.contentOffset.x / MODAL_WIDTH);
@@ -42,20 +52,38 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   };
 
   const handleBuy = () => {
-    if (product.referral_link) {
-      Linking.openURL(product.referral_link);
+    if (activeProduct.referral_link) {
+      Linking.openURL(activeProduct.referral_link);
     }
   };
 
-  const images = product.images?.length ? product.images : [];
+  const handleSelectColor = async (variantId: string) => {
+    if (variantId === activeProduct.id || switchingColor) return;
+    setSwitchingColor(true);
+    try {
+      const res = await api.get(`/api/products/${variantId}`);
+      setActiveProduct(res.data);
+    } catch {
+      // keep showing the current product if the switch fails
+    } finally {
+      setSwitchingColor(false);
+    }
+  };
+
+  const images = activeProduct.images?.length ? activeProduct.images : [];
 
   return (
     <Modal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { width: MODAL_WIDTH }]}>
-          <ScrollView key={product.id} showsVerticalScrollIndicator={false}>
+          <ScrollView key={activeProduct.id} showsVerticalScrollIndicator={false}>
             <View style={styles.galleryWrap}>
+              {switchingColor && (
+                <View style={styles.switchingOverlay}>
+                  <ActivityIndicator size="small" color="#FFF" />
+                </View>
+              )}
               {images.length > 0 ? (
                 <ScrollView
                   horizontal
@@ -81,9 +109,11 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
 
               {images.length > 1 && (
                 <View style={styles.dotsRow}>
-                  {images.map((_, i) => (
-                    <View key={i} style={[styles.dot, i === imageIndex && styles.dotActive]} />
-                  ))}
+                  <View style={styles.dotsPill}>
+                    {images.map((_, i) => (
+                      <View key={i} style={[styles.dot, i === imageIndex && styles.dotActive]} />
+                    ))}
+                  </View>
                 </View>
               )}
 
@@ -91,64 +121,103 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 <Ionicons name="close" size={22} color="#000" />
               </TouchableOpacity>
 
-              {!!product.discount_percent && (
+              {!!activeProduct.discount_percent && (
                 <View style={styles.discountBadge}>
-                  <Text style={styles.discountBadgeText}>-{Math.round(product.discount_percent)}%</Text>
+                  <Text style={styles.discountBadgeText}>-{Math.round(activeProduct.discount_percent)}%</Text>
                 </View>
               )}
             </View>
 
             <View style={styles.body}>
-              <Text style={styles.brand}>{product.brand}</Text>
-              <Text style={styles.name}>{product.name}</Text>
+              <Text style={styles.brand}>{activeProduct.brand}</Text>
+              <Text style={styles.name}>{activeProduct.name}</Text>
 
               <View style={styles.priceRow}>
-                <Text style={styles.priceCurrent}>€{product.price_current.toFixed(2)}</Text>
-                {!!product.price_original && (
-                  <Text style={styles.priceOriginal}>€{product.price_original.toFixed(2)}</Text>
+                <Text style={styles.priceCurrent}>€{activeProduct.price_current.toFixed(2)}</Text>
+                {!!activeProduct.price_original && (
+                  <Text style={styles.priceOriginal}>€{activeProduct.price_original.toFixed(2)}</Text>
                 )}
-                {!!product.discount_percent && (
+                {!!activeProduct.discount_percent && (
                   <View style={styles.discountPill}>
                     <Text style={styles.discountPillText}>
-                      -{Math.round(product.discount_percent)}% {t('products.off', 'di sconto')}
+                      -{Math.round(activeProduct.discount_percent)}% {t('products.off', 'di sconto')}
                     </Text>
                   </View>
                 )}
               </View>
 
-              {product.free_shipping && (
+              {activeProduct.free_shipping && (
                 <View style={styles.shippingRow}>
                   <Ionicons name="rocket-outline" size={14} color="#2E7D32" />
                   <Text style={styles.shippingText}>{t('products.freeShipping', 'Spedizione gratuita')}</Text>
                 </View>
               )}
 
+              <TouchableOpacity style={styles.buyButton} onPress={handleBuy} activeOpacity={0.8}>
+                <Ionicons name="open-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
+                <Text style={styles.buyButtonText}>{t('products.buyOnOfficialSite', 'Acquista sul sito ufficiale')}</Text>
+              </TouchableOpacity>
+              <Text style={styles.redirectNotice}>
+                {t('products.redirectNotice', {
+                  brand: activeProduct.brand,
+                  defaultValue: `Verrai reindirizzato al sito ufficiale di ${activeProduct.brand} per completare l'acquisto.`,
+                })}
+              </Text>
+
+              {!!activeProduct.color_variants?.length && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>{t('products.colors', 'Colori disponibili')}</Text>
+                  <View style={styles.colorsRow}>
+                    <View style={[styles.colorSwatch, styles.colorSwatchActive]}>
+                      {activeProduct.images?.[0] ? (
+                        <Image source={{ uri: activeProduct.images[0] }} style={styles.colorSwatchImage} />
+                      ) : (
+                        <View style={[styles.colorSwatchImage, styles.imagePlaceholder]} />
+                      )}
+                    </View>
+                    {activeProduct.color_variants.map((variant) => (
+                      <TouchableOpacity
+                        key={variant.id}
+                        style={styles.colorSwatch}
+                        onPress={() => handleSelectColor(variant.id)}
+                      >
+                        {variant.image ? (
+                          <Image source={{ uri: variant.image }} style={styles.colorSwatchImage} />
+                        ) : (
+                          <View style={[styles.colorSwatchImage, styles.imagePlaceholder]} />
+                        )}
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                </View>
+              )}
+
               <View style={styles.infoGrid}>
-                {!!product.category && (
+                {!!activeProduct.category && (
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>{t('products.category', 'Categoria')}</Text>
-                    <Text style={styles.infoValue} numberOfLines={1}>{product.category.split(',')[0]}</Text>
+                    <Text style={styles.infoValue} numberOfLines={1}>{activeProduct.category.split(',')[0]}</Text>
                   </View>
                 )}
-                {!!product.gender && (
+                {!!activeProduct.gender && (
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>{t('products.gender', 'Genere')}</Text>
-                    <Text style={styles.infoValue}>{product.gender}</Text>
+                    <Text style={styles.infoValue}>{activeProduct.gender}</Text>
                   </View>
                 )}
-                {!!product.colour && (
+                {!!activeProduct.colour && (
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>Colore</Text>
-                    <Text style={styles.infoValue} numberOfLines={1}>{product.colour}</Text>
+                    <Text style={styles.infoValue} numberOfLines={1}>{activeProduct.colour}</Text>
                   </View>
                 )}
               </View>
 
-              {product.sizes?.length > 0 && (
+              {activeProduct.sizes?.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>{t('products.sizesAvailable', 'Misure disponibili')}</Text>
                   <View style={styles.sizesRow}>
-                    {product.sizes.map((s) => (
+                    {activeProduct.sizes.map((s) => (
                       <View
                         key={s.size}
                         style={[styles.sizeChip, !s.in_stock && styles.sizeChipDisabled]}
@@ -162,23 +231,21 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 </View>
               )}
 
-              {!!product.description && (
+              {!!activeProduct.description && (
                 <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>{t('products.description', 'Descrizione')}</Text>
-                  <Text style={styles.description}>{product.description}</Text>
+                  <TouchableOpacity
+                    style={styles.sectionHeaderRow}
+                    onPress={() => setDescExpanded((v) => !v)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.sectionTitle}>{t('products.description', 'Descrizione')}</Text>
+                    <Ionicons name={descExpanded ? 'chevron-up' : 'chevron-down'} size={18} color="#666" />
+                  </TouchableOpacity>
+                  {descExpanded && (
+                    <Text style={styles.description}>{activeProduct.description}</Text>
+                  )}
                 </View>
               )}
-
-              <TouchableOpacity style={styles.buyButton} onPress={handleBuy} activeOpacity={0.8}>
-                <Ionicons name="open-outline" size={18} color="#FFF" style={{ marginRight: 8 }} />
-                <Text style={styles.buyButtonText}>{t('products.buyOnOfficialSite', 'Acquista sul sito ufficiale')}</Text>
-              </TouchableOpacity>
-              <Text style={styles.redirectNotice}>
-                {t('products.redirectNotice', {
-                  brand: product.brand,
-                  defaultValue: `Verrai reindirizzato al sito ufficiale di ${product.brand} per completare l'acquisto.`,
-                })}
-              </Text>
             </View>
           </ScrollView>
         </View>
@@ -205,6 +272,13 @@ const styles = StyleSheet.create({
     position: 'relative',
     backgroundColor: '#F5F5F5',
   },
+  switchingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 2,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   imagePlaceholder: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -217,13 +291,21 @@ const styles = StyleSheet.create({
     right: 0,
     flexDirection: 'row',
     justifyContent: 'center',
+  },
+  dotsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 6,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    borderRadius: 10,
+    paddingVertical: 5,
+    paddingHorizontal: 8,
   },
   dot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.6)',
+    backgroundColor: 'rgba(255,255,255,0.5)',
   },
   dotActive: {
     backgroundColor: '#FFF',
@@ -309,6 +391,48 @@ const styles = StyleSheet.create({
     color: '#2E7D32',
     fontWeight: '600',
   },
+  buyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+    borderRadius: 12,
+    paddingVertical: 16,
+    marginTop: 2,
+  },
+  buyButtonText: {
+    color: '#FFF',
+    fontSize: 15,
+    fontWeight: '700',
+  },
+  redirectNotice: {
+    fontSize: 11,
+    color: '#999',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 8,
+    marginBottom: 18,
+  },
+  colorsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  colorSwatch: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#EEE',
+    overflow: 'hidden',
+  },
+  colorSwatchActive: {
+    borderColor: '#000',
+  },
+  colorSwatchImage: {
+    width: '100%',
+    height: '100%',
+  },
   infoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -335,6 +459,11 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: 16,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   sectionTitle: {
     fontSize: 13,
@@ -370,26 +499,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#555',
     lineHeight: 19,
-  },
-  buyButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000',
-    borderRadius: 12,
-    paddingVertical: 16,
-    marginTop: 6,
-  },
-  buyButtonText: {
-    color: '#FFF',
-    fontSize: 15,
-    fontWeight: '700',
-  },
-  redirectNotice: {
-    fontSize: 11,
-    color: '#999',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    marginTop: 8,
+    marginTop: 4,
   },
 });

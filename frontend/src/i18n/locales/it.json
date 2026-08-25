@@ -1044,6 +1044,10 @@
     "description": "Descrizione",
     "buyOnOfficialSite": "Acquista sul sito ufficiale",
     "redirectNotice": "Verrai reindirizzato al sito ufficiale di {{brand}} per completare l'acquisto.",
-    "off": "di sconto"
+    "off": "di sconto",
+    "genderMale": "Uomo",
+    "genderFemale": "Donna",
+    "genderKids": "Bambino/i",
+    "colors": "Colori disponibili"
   }
 }

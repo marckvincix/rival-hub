@@ -444,9 +444,6 @@ export default function TournamentPublicPage() {
         {/* Standings Tab */}
         {activeTab === 'standings' && (
           <View style={styles.tabContent}>
-            {tournament?.sport && (
-              <ProductCarousel sport={tournament.sport as Sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
-            )}
             {standings.length === 0 ? <EmptyState icon="podium-outline" title={t('stats.noStandings', 'No standings')} /> : (
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
@@ -475,6 +472,9 @@ export default function TournamentPublicPage() {
                   </View>
                 ))}
               </View>
+            )}
+            {tournament?.sport && (
+              <ProductCarousel sport={tournament.sport as Sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
             )}
           </View>
         )}

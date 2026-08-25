@@ -20,6 +20,7 @@ interface ProductCarouselProps {
 }
 
 type SortFilter = 'relevance' | 'price_asc' | 'newest' | 20 | 30 | 40 | 50;
+type GenderFilter = 'Uomo' | 'Donna' | 'Bambini';
 
 const FILTERS: { key: SortFilter; labelKey: string }[] = [
   { key: 'relevance', labelKey: 'products.sortRelevance' },
@@ -31,11 +32,18 @@ const FILTERS: { key: SortFilter; labelKey: string }[] = [
   { key: 50, labelKey: 'products.discount50' },
 ];
 
+const GENDER_FILTERS: { key: GenderFilter; labelKey: string }[] = [
+  { key: 'Uomo', labelKey: 'products.genderMale' },
+  { key: 'Donna', labelKey: 'products.genderFemale' },
+  { key: 'Bambini', labelKey: 'products.genderKids' },
+];
+
 export function ProductCarousel({ sport, title }: ProductCarouselProps) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<SortFilter>('relevance');
+  const [gender, setGender] = useState<GenderFilter | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
 
   useEffect(() => {
@@ -47,6 +55,9 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       params.min_discount = filter;
     } else {
       params.sort = filter;
+    }
+    if (gender) {
+      params.gender = gender;
     }
     api
       .get('/api/products', { params })
@@ -62,7 +73,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     return () => {
       cancelled = true;
     };
-  }, [sport, filter]);
+  }, [sport, filter, gender]);
 
   if (!loading && products.length === 0) {
     return null;
@@ -85,6 +96,24 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
           >
             <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
               {t(f.labelKey, String(f.key))}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
+      >
+        {GENDER_FILTERS.map((g) => (
+          <TouchableOpacity
+            key={g.key}
+            style={[styles.filterChip, styles.genderChip, gender === g.key && styles.filterChipActive]}
+            onPress={() => setGender(gender === g.key ? null : g.key)}
+          >
+            <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
+              {t(g.labelKey, g.key)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -120,6 +149,9 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
                     <Text style={styles.discountBadgeText}>-{Math.round(product.discount_percent)}%</Text>
                   </View>
                 )}
+                <View style={styles.expandBadge}>
+                  <Ionicons name="expand-outline" size={14} color="#FFF" />
+                </View>
               </View>
               <Text style={styles.brand} numberOfLines={1}>{product.brand}</Text>
               <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
@@ -139,13 +171,6 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
           ))}
         </ScrollView>
       )}
-
-      <Text style={styles.disclosure}>
-        {t(
-          'products.disclosure',
-          "I prodotti sono venduti direttamente dal brand ufficiale. Cliccando su un prodotto verrai reindirizzato al sito ufficiale del brand per l'acquisto."
-        )}
-      </Text>
 
       <ProductDetailModal
         visible={!!selectedProduct}
@@ -172,7 +197,7 @@ const styles = StyleSheet.create({
   filterRow: {
     paddingHorizontal: 16,
     gap: 8,
-    paddingBottom: 12,
+    paddingBottom: 10,
   },
   filterChip: {
     paddingVertical: 6,
@@ -181,6 +206,9 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#DDD',
     backgroundColor: '#FFF',
+  },
+  genderChip: {
+    borderColor: '#CCC',
   },
   filterChipActive: {
     backgroundColor: '#000',
@@ -201,6 +229,7 @@ const styles = StyleSheet.create({
   productsRow: {
     paddingHorizontal: 16,
     gap: 12,
+    paddingTop: 2,
   },
   card: {
     width: CARD_WIDTH,
@@ -237,6 +266,17 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontSize: 11,
     fontWeight: '700',
+  },
+  expandBadge: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   brand: {
     fontSize: 10,
@@ -277,13 +317,5 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#2E7D32',
     fontWeight: '600',
-  },
-  disclosure: {
-    fontSize: 11,
-    color: '#999',
-    fontStyle: 'italic',
-    paddingHorizontal: 16,
-    marginTop: 10,
-    lineHeight: 15,
   },
 });
