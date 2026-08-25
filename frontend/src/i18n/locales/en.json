@@ -1050,6 +1050,7 @@
     "colors": "Available colors",
     "brandAll": "All brands",
     "viewDetails": "View details",
-    "colorSelected": "Selected color"
+    "colorSelected": "Selected color",
+    "categoryAndGender": "Category & Gender"
   }
 }
