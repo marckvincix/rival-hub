@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -30,6 +30,10 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const { t } = useTranslation();
   const [imageIndex, setImageIndex] = useState(0);
 
+  useEffect(() => {
+    setImageIndex(0);
+  }, [product?.id]);
+
   if (!product) return null;
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -50,7 +54,7 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
       <View style={styles.overlay}>
         <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={onClose} />
         <View style={[styles.content, { width: MODAL_WIDTH }]}>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView key={product.id} showsVerticalScrollIndicator={false}>
             <View style={styles.galleryWrap}>
               {images.length > 0 ? (
                 <ScrollView
