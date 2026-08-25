@@ -286,13 +286,13 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                   <Text style={styles.sectionTitle}>{t('products.categoryAndGender', 'Categoria e Genere')}</Text>
                   <View style={styles.pillsRow}>
                     {!!activeProduct.category && (
-                      <View style={styles.infoPill}>
-                        <Text style={styles.infoPillText} numberOfLines={1}>{activeProduct.category.split(',')[0]}</Text>
+                      <View style={styles.sizeChip}>
+                        <Text style={styles.sizeChipText} numberOfLines={1}>{activeProduct.category.split(',')[0]}</Text>
                       </View>
                     )}
                     {!!activeProduct.gender && (
-                      <View style={styles.infoPill}>
-                        <Text style={styles.infoPillText}>{activeProduct.gender}</Text>
+                      <View style={styles.sizeChip}>
+                        <Text style={styles.sizeChipText}>{activeProduct.gender}</Text>
                       </View>
                     )}
                   </View>
@@ -505,7 +505,6 @@ const styles = StyleSheet.create({
   pillsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
     gap: 8,
   },
   floatingNavButton: {
@@ -528,19 +527,6 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     color: '#FFF',
-  },
-  infoPill: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#EEE',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-  },
-  infoPillText: {
-    fontSize: 11,
-    color: '#999',
-    fontWeight: '600',
   },
   section: {
     marginBottom: 16,
