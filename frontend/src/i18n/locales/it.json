@@ -1047,7 +1047,10 @@
     "off": "di sconto",
     "genderMale": "Uomo",
     "genderFemale": "Donna",
-    "genderKids": "Bambino/i",
-    "colors": "Colori disponibili"
+    "genderKids": "Bambini",
+    "colors": "Colori disponibili",
+    "brandAll": "Tutti i brand",
+    "viewDetails": "Vedi meglio",
+    "colorSelected": "Colore selezionato"
   }
 }

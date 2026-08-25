@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  FlatList,
   ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -38,18 +39,30 @@ const GENDER_FILTERS: { key: GenderFilter; labelKey: string }[] = [
   { key: 'Bambini', labelKey: 'products.genderKids' },
 ];
 
+const CARD_WIDTH = 150;
+
 export function ProductCarousel({ sport, title }: ProductCarouselProps) {
   const { t } = useTranslation();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<SortFilter>('relevance');
   const [gender, setGender] = useState<GenderFilter | null>(null);
+  const [brands, setBrands] = useState<string[]>([]);
+  const [brand, setBrand] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const requestId = useRef(0);
 
   useEffect(() => {
-    let cancelled = false;
+    api
+      .get('/api/products/brands', { params: { sport } })
+      .then((res) => setBrands(res.data || []))
+      .catch(() => setBrands([]));
+  }, [sport]);
+
+  useEffect(() => {
+    const thisRequest = ++requestId.current;
     setLoading(true);
-    const params: Record<string, string | number> = { sport, limit: 20 };
+    const params: Record<string, string | number> = { sport, limit: 1000 };
     if (typeof filter === 'number') {
       params.sort = 'discount';
       params.min_discount = filter;
@@ -59,21 +72,21 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     if (gender) {
       params.gender = gender;
     }
+    if (brand) {
+      params.brand = brand;
+    }
     api
       .get('/api/products', { params })
       .then((res) => {
-        if (!cancelled) setProducts(res.data || []);
+        if (requestId.current === thisRequest) setProducts(res.data || []);
       })
       .catch(() => {
-        if (!cancelled) setProducts([]);
+        if (requestId.current === thisRequest) setProducts([]);
       })
       .finally(() => {
-        if (!cancelled) setLoading(false);
+        if (requestId.current === thisRequest) setLoading(false);
       });
-    return () => {
-      cancelled = true;
-    };
-  }, [sport, filter, gender]);
+  }, [sport, filter, gender, brand]);
 
   if (!loading && products.length === 0) {
     return null;
@@ -83,28 +96,41 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     <View style={styles.container}>
       <Text style={styles.title}>{title || t('products.sponsoredTitle', 'Prodotti consigliati')}</Text>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {FILTERS.map((f) => (
+      {brands.length > 1 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
           <TouchableOpacity
-            key={String(f.key)}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            onPress={() => setFilter(f.key)}
+            style={[styles.brandChip, !brand && styles.filterChipActive]}
+            onPress={() => setBrand(null)}
           >
-            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
-              {t(f.labelKey, String(f.key))}
+            <Text style={[styles.filterChipText, !brand && styles.filterChipTextActive]}>
+              {t('products.brandAll', 'Tutti i brand')}
             </Text>
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+          {brands.map((b) => (
+            <TouchableOpacity
+              key={b}
+              style={[styles.brandChip, brand === b && styles.filterChipActive]}
+              onPress={() => setBrand(brand === b ? null : b)}
+            >
+              <View style={[styles.brandAvatar, brand === b && styles.brandAvatarActive]}>
+                <Text style={[styles.brandAvatarText, brand === b && styles.brandAvatarTextActive]}>
+                  {b.charAt(0).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={[styles.filterChipText, brand === b && styles.filterChipTextActive]}>{b}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      )}
 
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
+        contentContainerStyle={styles.filterRow}
       >
         {GENDER_FILTERS.map((g) => (
           <TouchableOpacity
@@ -119,19 +145,39 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
         ))}
       </ScrollView>
 
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
+      >
+        {FILTERS.map((f) => (
+          <TouchableOpacity
+            key={String(f.key)}
+            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
+            onPress={() => setFilter(f.key)}
+          >
+            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
+              {t(f.labelKey, String(f.key))}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+
       {loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="small" color="#000" />
         </View>
       ) : (
-        <ScrollView
+        <FlatList
           horizontal
+          data={products}
+          keyExtractor={(item) => item.id}
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.productsRow}
-        >
-          {products.map((product) => (
+          initialNumToRender={6}
+          windowSize={5}
+          renderItem={({ item: product }) => (
             <TouchableOpacity
-              key={product.id}
               style={styles.card}
               activeOpacity={0.85}
               onPress={() => setSelectedProduct(product)}
@@ -149,9 +195,6 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
                     <Text style={styles.discountBadgeText}>-{Math.round(product.discount_percent)}%</Text>
                   </View>
                 )}
-                <View style={styles.expandBadge}>
-                  <Ionicons name="expand-outline" size={14} color="#FFF" />
-                </View>
               </View>
               <Text style={styles.brand} numberOfLines={1}>{product.brand}</Text>
               <Text style={styles.name} numberOfLines={2}>{product.name}</Text>
@@ -167,9 +210,17 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
                   <Text style={styles.shippingText}>{t('products.freeShipping', 'Spedizione gratuita')}</Text>
                 </View>
               )}
+              <TouchableOpacity
+                style={styles.viewButton}
+                activeOpacity={0.8}
+                onPress={() => setSelectedProduct(product)}
+              >
+                <Ionicons name="eye-outline" size={13} color="#FFF" style={{ marginRight: 4 }} />
+                <Text style={styles.viewButtonText}>{t('products.viewDetails', 'Vedi meglio')}</Text>
+              </TouchableOpacity>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        />
       )}
 
       <ProductDetailModal
@@ -180,8 +231,6 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     </View>
   );
 }
-
-const CARD_WIDTH = 150;
 
 const styles = StyleSheet.create({
   container: {
@@ -206,6 +255,37 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
     borderColor: '#DDD',
     backgroundColor: '#FFF',
+  },
+  brandChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    paddingLeft: 6,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: '#DDD',
+    backgroundColor: '#FFF',
+  },
+  brandAvatar: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#EEE',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brandAvatarActive: {
+    backgroundColor: '#FFF',
+  },
+  brandAvatarText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#666',
+  },
+  brandAvatarTextActive: {
+    color: '#000',
   },
   genderChip: {
     borderColor: '#CCC',
@@ -267,17 +347,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
   },
-  expandBadge: {
-    position: 'absolute',
-    bottom: 6,
-    right: 6,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    borderRadius: 12,
-    width: 24,
-    height: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   brand: {
     fontSize: 10,
     fontWeight: '700',
@@ -317,5 +386,19 @@ const styles = StyleSheet.create({
     fontSize: 9,
     color: '#2E7D32',
     fontWeight: '600',
+  },
+  viewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#000',
+    borderRadius: 8,
+    paddingVertical: 7,
+    marginTop: 8,
+  },
+  viewButtonText: {
+    color: '#FFF',
+    fontSize: 11,
+    fontWeight: '700',
   },
 });

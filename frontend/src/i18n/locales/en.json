@@ -1047,6 +1047,9 @@
     "genderMale": "Men",
     "genderFemale": "Women",
     "genderKids": "Kids",
-    "colors": "Available colors"
+    "colors": "Available colors",
+    "brandAll": "All brands",
+    "viewDetails": "View details",
+    "colorSelected": "Selected color"
   }
 }

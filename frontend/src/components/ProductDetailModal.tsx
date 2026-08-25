@@ -24,6 +24,12 @@ interface ProductDetailModalProps {
   onClose: () => void;
 }
 
+interface FamilyMember {
+  id: string;
+  colour?: string | null;
+  image?: string | null;
+}
+
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const MODAL_WIDTH = Math.min(SCREEN_WIDTH - 40, 380);
 const GALLERY_HEIGHT = MODAL_WIDTH;
@@ -34,9 +40,22 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
   const [descExpanded, setDescExpanded] = useState(false);
   const [activeProduct, setActiveProduct] = useState<Product | null>(product);
   const [switchingColor, setSwitchingColor] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>([]);
 
   useEffect(() => {
     setActiveProduct(product);
+    // Fixed once per product opened from the carousel, not recomputed when
+    // switching colours within the popup — otherwise the swatch row would
+    // reshuffle every time (whichever variant becomes "active" would jump to
+    // the front and disappear from the list of others).
+    if (product) {
+      setFamilyMembers([
+        { id: product.id, colour: product.colour, image: product.images?.[0] || null },
+        ...(product.color_variants || []),
+      ]);
+    } else {
+      setFamilyMembers([]);
+    }
   }, [product]);
 
   useEffect(() => {
@@ -164,31 +183,29 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                 })}
               </Text>
 
-              {!!activeProduct.color_variants?.length && (
+              {familyMembers.length > 1 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>{t('products.colors', 'Colori disponibili')}</Text>
                   <View style={styles.colorsRow}>
-                    <View style={[styles.colorSwatch, styles.colorSwatchActive]}>
-                      {activeProduct.images?.[0] ? (
-                        <Image source={{ uri: activeProduct.images[0] }} style={styles.colorSwatchImage} />
-                      ) : (
-                        <View style={[styles.colorSwatchImage, styles.imagePlaceholder]} />
-                      )}
-                    </View>
-                    {activeProduct.color_variants.map((variant) => (
+                    {familyMembers.map((member) => (
                       <TouchableOpacity
-                        key={variant.id}
-                        style={styles.colorSwatch}
-                        onPress={() => handleSelectColor(variant.id)}
+                        key={member.id}
+                        style={[styles.colorSwatch, member.id === activeProduct.id && styles.colorSwatchActive]}
+                        onPress={() => handleSelectColor(member.id)}
                       >
-                        {variant.image ? (
-                          <Image source={{ uri: variant.image }} style={styles.colorSwatchImage} />
+                        {member.image ? (
+                          <Image source={{ uri: member.image }} style={styles.colorSwatchImage} />
                         ) : (
                           <View style={[styles.colorSwatchImage, styles.imagePlaceholder]} />
                         )}
                       </TouchableOpacity>
                     ))}
                   </View>
+                  {!!activeProduct.colour && (
+                    <Text style={styles.colorNameLabel}>
+                      {t('products.colorSelected', 'Colore selezionato')}: {activeProduct.colour}
+                    </Text>
+                  )}
                 </View>
               )}
 
@@ -203,12 +220,6 @@ export function ProductDetailModal({ visible, product, onClose }: ProductDetailM
                   <View style={styles.infoItem}>
                     <Text style={styles.infoLabel}>{t('products.gender', 'Genere')}</Text>
                     <Text style={styles.infoValue}>{activeProduct.gender}</Text>
-                  </View>
-                )}
-                {!!activeProduct.colour && (
-                  <View style={styles.infoItem}>
-                    <Text style={styles.infoLabel}>Colore</Text>
-                    <Text style={styles.infoValue} numberOfLines={1}>{activeProduct.colour}</Text>
                   </View>
                 )}
               </View>
@@ -432,6 +443,12 @@ const styles = StyleSheet.create({
   colorSwatchImage: {
     width: '100%',
     height: '100%',
+  },
+  colorNameLabel: {
+    fontSize: 12,
+    color: '#555',
+    fontWeight: '600',
+    marginTop: 8,
   },
   infoGrid: {
     flexDirection: 'row',

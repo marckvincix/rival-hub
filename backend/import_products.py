@@ -59,6 +59,30 @@ def match_sport(row: dict) -> str | None:
     return None
 
 
+def build_description(row: dict) -> str | None:
+    # The feed has no long-form marketing copy (product_short_description and
+    # promotional_text are empty on every row); "description" is always a
+    # short generic one-liner ("Acquista X su adidas.it!..."). "specifications"
+    # does carry real per-product detail (fit, closure, materials, care) as a
+    # pipe-separated list, occasionally with duplicated fragments, so it's
+    # deduped and appended as bullet points to give a genuinely fuller picture
+    # than the base line alone.
+    base = (row.get("description") or "").strip()
+    specs_raw = (row.get("specifications") or "").strip()
+    seen = set()
+    bullets = []
+    for part in specs_raw.split("|"):
+        part = part.strip()
+        if part and part not in seen:
+            seen.add(part)
+            bullets.append(part)
+
+    text = base
+    if bullets:
+        text = (text + "\n\n" + "\n".join(f"• {b}" for b in bullets)).strip()
+    return text[:2000] or None
+
+
 def to_float(value: str) -> float | None:
     value = (value or "").strip()
     if not value:
@@ -139,7 +163,7 @@ def main():
                     "category": (row.get("merchant_category") or "").strip(),
                     "gender": (row.get("Fashion:suitable_for") or "").strip() or None,
                     "colour": (row.get("colour") or "").strip() or None,
-                    "description": (row.get("product_short_description") or row.get("description") or "").strip()[:800] or None,
+                    "description": build_description(row),
                     "price_original": price_original,
                     "price_current": price_current,
                     "discount_percent": discount_percent,

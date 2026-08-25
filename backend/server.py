@@ -3188,16 +3188,19 @@ async def health():
 async def get_products(
     sport: Optional[str] = None,
     gender: Optional[str] = None,
+    brand: Optional[str] = None,
     sort: str = "relevance",  # relevance, price_asc, newest, discount
     min_discount: Optional[float] = None,
-    limit: int = 30,
+    limit: int = 500,
 ):
-    """List affiliate products, optionally filtered by sport/gender/discount, for the carousel."""
+    """List affiliate products, optionally filtered by sport/gender/brand/discount, for the carousel."""
     query: Dict[str, Any] = {"in_stock": True}
     if sport:
         query["sport"] = sport
     if gender:
         query["gender"] = gender
+    if brand:
+        query["brand"] = brand
     if min_discount is not None:
         query["discount_percent"] = {"$gte": min_discount}
 
@@ -3221,6 +3224,16 @@ async def get_products(
         products.sort(key=lambda p: (-(p.get("discount_percent") or 0), -absolute_savings(p)))
 
     return products[:limit]
+
+@api_router.get("/products/brands")
+async def get_product_brands(sport: Optional[str] = None):
+    """List distinct brands with products available (optionally scoped to a sport), so the
+    carousel can offer a brand selector without hardcoding brand names on the client."""
+    query: Dict[str, Any] = {"in_stock": True}
+    if sport:
+        query["sport"] = sport
+    brands = await db.products.distinct("brand", query)
+    return sorted(b for b in brands if b)
 
 @api_router.get("/products/{product_id}")
 async def get_product(product_id: str):
