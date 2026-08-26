@@ -167,13 +167,6 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
         ))}
       </ScrollView>
 
-      <View style={[styles.filterRow, { paddingTop: 0 }]}>
-        <TouchableOpacity style={styles.sortDropdown} onPress={() => setSortMenuOpen(true)} activeOpacity={0.7}>
-          <Text style={styles.sortDropdownText}>{t(activeSortFilter.labelKey, String(activeSortFilter.key))}</Text>
-          <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
-        </TouchableOpacity>
-      </View>
-
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -190,6 +183,10 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
             </Text>
           </TouchableOpacity>
         ))}
+        <TouchableOpacity style={styles.sortDropdown} onPress={() => setSortMenuOpen(true)} activeOpacity={0.7}>
+          <Text style={styles.sortDropdownText}>{t(activeSortFilter.labelKey, String(activeSortFilter.key))}</Text>
+          <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
       </ScrollView>
 
       <Modal visible={sortMenuOpen} transparent animationType="fade" onRequestClose={() => setSortMenuOpen(false)}>
