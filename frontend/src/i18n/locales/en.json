@@ -1055,6 +1055,7 @@
     "categoryShoes": "Shoes",
     "categoryClothing": "Clothing",
     "categoryAccessories": "Accessories",
-    "noResults": "No products found for these filters"
+    "noResults": "No products found for these filters",
+    "genderUnisex": "Unisex"
   }
 }

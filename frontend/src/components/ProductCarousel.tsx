@@ -22,7 +22,7 @@ interface ProductCarouselProps {
 }
 
 type SortFilter = 'relevance' | 'price_asc' | 'newest' | 20 | 30 | 40 | 50;
-type GenderFilter = 'Uomo' | 'Donna' | 'Bambini';
+type GenderFilter = 'Uomo' | 'Donna' | 'Bambini' | 'Unisex';
 type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori';
 
 const FILTERS: { key: SortFilter; labelKey: string }[] = [
@@ -39,6 +39,7 @@ const GENDER_FILTERS: { key: GenderFilter; labelKey: string }[] = [
   { key: 'Uomo', labelKey: 'products.genderMale' },
   { key: 'Donna', labelKey: 'products.genderFemale' },
   { key: 'Bambini', labelKey: 'products.genderKids' },
+  { key: 'Unisex', labelKey: 'products.genderUnisex' },
 ];
 
 const CATEGORY_FILTERS: { key: CategoryFilter; labelKey: string }[] = [

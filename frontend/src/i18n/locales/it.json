@@ -1056,6 +1056,7 @@
     "categoryShoes": "Scarpe",
     "categoryClothing": "Abbigliamento",
     "categoryAccessories": "Accessori",
-    "noResults": "Nessun prodotto trovato con questi filtri"
+    "noResults": "Nessun prodotto trovato con questi filtri",
+    "genderUnisex": "Unisex"
   }
 }
