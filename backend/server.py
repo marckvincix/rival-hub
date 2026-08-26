@@ -41,7 +41,6 @@ WEB_APP_DIR = Path(os.environ.get('WEB_APP_DIR', ROOT_DIR.parent / "frontend" / 
 HIGHLIGHTS_BUCKET = "highlights"
 HIGHLIGHTS_MAX_PHOTOS_PER_ROUND = 10
 HIGHLIGHTS_MAX_VIDEOS_PER_ROUND = 10
-HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS = 30
 HIGHLIGHTS_MAX_PHOTO_SIZE_MB = 10
 HIGHLIGHTS_MAX_VIDEO_SIZE_MB = 100
 HIGHLIGHTS_RETENTION_DAYS = 365
@@ -485,34 +484,49 @@ def generate_highlights_code() -> str:
     chars = chars.replace('0', '').replace('O', '').replace('I', '').replace('1', '')
     return ''.join(random.choices(chars, k=6))
 
+# A phone camera photo (3000-4000px wide, several MB) is wildly oversized for
+# what's ever actually displayed (a carousel thumbnail or a phone screen), and
+# an organizer may upload for every single matchday of a season with no total
+# storage cap — so every upload is resized down, not just ones that happen to
+# exceed the raw limit.
+HIGHLIGHT_IMAGE_MAX_DIMENSION = 1600
+HIGHLIGHT_VIDEO_MAX_HEIGHT = 720
+
 async def compress_image(input_path: Path, max_size_mb: int = 5) -> Path:
-    """Compress image to target size"""
+    """Downscale + compress an image to a mobile-appropriate size"""
     output_path = input_path.with_suffix('.compressed.jpg')
-    
+
     with Image.open(input_path) as img:
         # Convert to RGB if necessary
         if img.mode in ('RGBA', 'P'):
             img = img.convert('RGB')
-        
-        # Calculate target quality
-        quality = 85
+
+        # Downscale first — resolution is what actually drives file size for
+        # camera photos, quality alone barely dents a 4000px-wide image.
+        img.thumbnail((HIGHLIGHT_IMAGE_MAX_DIMENSION, HIGHLIGHT_IMAGE_MAX_DIMENSION), Image.LANCZOS)
+
+        quality = 80
         img.save(output_path, 'JPEG', quality=quality, optimize=True)
-        
-        # Reduce quality if still too large
+
+        # Reduce quality further if still too large
         while output_path.stat().st_size > max_size_mb * 1024 * 1024 and quality > 20:
             quality -= 10
             img.save(output_path, 'JPEG', quality=quality, optimize=True)
-    
+
     return output_path
 
 async def compress_video(input_path: Path, max_size_mb: int = 50) -> Path:
-    """Compress video using FFmpeg"""
+    """Downscale + compress a video using FFmpeg to a mobile-appropriate size"""
     output_path = input_path.with_suffix('.compressed.mp4')
-    
+
     try:
-        # Use FFmpeg to compress video
+        # Cap height at 720p (scale filter keeps width even-numbered, required
+        # by libx264) — resolution, not just CRF, is what keeps file size sane
+        # now that there's no duration limit.
+        scale_filter = f"scale=-2:'min({HIGHLIGHT_VIDEO_MAX_HEIGHT},ih)'"
         cmd = [
             'ffmpeg', '-y', '-i', str(input_path),
+            '-vf', scale_filter,
             '-c:v', 'libx264', '-preset', 'medium',
             '-crf', '28',  # Higher CRF = more compression
             '-c:a', 'aac', '-b:a', '128k',
@@ -3695,45 +3709,37 @@ async def upload_highlight(
     content = await file.read()
     file_size = len(content)
 
-    # Check size and compress if needed
+    # Raw upload ceiling — a practical bound on how much the backend has to
+    # hold/process at once. Actual stored size ends up far smaller, since
+    # every upload gets resized below regardless of this.
     max_size = HIGHLIGHTS_MAX_PHOTO_SIZE_MB if file_type == "photo" else HIGHLIGHTS_MAX_VIDEO_SIZE_MB
-
     if file_size > max_size * 1024 * 1024:
-        if not compress:
-            return {
-                "needs_compression": True,
-                "file_size_mb": round(file_size / (1024 * 1024), 2),
-                "max_size_mb": max_size,
-                "message": f"Il file supera {max_size}MB. Vuoi comprimerlo?"
-            }
+        raise HTTPException(status_code=400, detail=f"Il file supera il limite di {max_size}MB")
 
-    # Compression and duration probing need a real file on disk (ffmpeg/PIL),
-    # so we use a scratch temp directory; the final bytes are what actually
-    # get persisted, to Supabase Storage rather than local disk (which
-    # doesn't survive a Render redeploy).
+    # Compression/resizing and duration probing need a real file on disk
+    # (ffmpeg/PIL), so we use a scratch temp directory; the final bytes are
+    # what actually get persisted, to Supabase Storage rather than local disk
+    # (which doesn't survive a Render redeploy).
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / file_name
         with open(tmp_path, 'wb') as f:
             f.write(content)
 
-        if compress or file_size > max_size * 1024 * 1024:
-            if file_type == "photo":
-                compressed_path = await compress_image(tmp_path)
-            else:
-                compressed_path = await compress_video(tmp_path)
-            if compressed_path != tmp_path:
-                tmp_path.unlink()
-                compressed_path.rename(tmp_path)
-                file_size = tmp_path.stat().st_size
+        # Always resize/compress: an organizer may upload for every single
+        # matchday of a season with no total storage cap, so every file
+        # gets cut down, not just ones that happen to exceed the raw limit.
+        if file_type == "photo":
+            compressed_path = await compress_image(tmp_path)
+        else:
+            compressed_path = await compress_video(tmp_path)
+        if compressed_path != tmp_path:
+            tmp_path.unlink()
+            compressed_path.rename(tmp_path)
+            file_size = tmp_path.stat().st_size
 
         duration_seconds = None
         if file_type == "video":
             duration_seconds = await get_video_duration(tmp_path)
-            if duration_seconds > HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Il video supera la durata massima di {HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS} secondi"
-                )
 
         final_content = tmp_path.read_bytes()
         await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).upload(

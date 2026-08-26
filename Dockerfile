@@ -1,9 +1,13 @@
 # Rival Hub - Full Stack Web App
 FROM python:3.11-slim
 
-# Install Node.js 20 for frontend build (required by lru-cache@11.3.3+)
+# Install Node.js 20 for frontend build (required by lru-cache@11.3.3+),
+# and ffmpeg for highlight video compression/resizing (backend/server.py
+# shells out to ffmpeg/ffprobe — without it, video uploads silently skip
+# compression entirely and store the raw original).
 RUN apt-get update && apt-get install -y \
     curl \
+    ffmpeg \
     && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
     && apt-get install -y nodejs \
     && npm install -g yarn \
