@@ -23,7 +23,7 @@ interface ProductCarouselProps {
 
 type SortFilter = 'relevance' | 'price_asc' | 'newest' | 20 | 30 | 40 | 50;
 type GenderFilter = 'Uomo' | 'Donna' | 'Bambini';
-type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori';
+type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori' | 'Test';
 
 const FILTERS: { key: SortFilter; labelKey: string }[] = [
   { key: 'relevance', labelKey: 'products.sortRelevance' },
@@ -45,6 +45,9 @@ const CATEGORY_FILTERS: { key: CategoryFilter; labelKey: string }[] = [
   { key: 'Scarpe', labelKey: 'products.categoryShoes' },
   { key: 'Abbigliamento', labelKey: 'products.categoryClothing' },
   { key: 'Accessori', labelKey: 'products.categoryAccessories' },
+  // TEMP: only to verify the row scrolls correctly with more categories
+  // than fit on screen — remove once confirmed.
+  { key: 'Test', labelKey: 'products.categoryTest' },
 ];
 
 // Official brand logos, added as more Awin brand partners come on board.
@@ -167,27 +170,30 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
         ))}
       </ScrollView>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
-      >
-        {CATEGORY_FILTERS.map((c) => (
-          <TouchableOpacity
-            key={c.key}
-            style={[styles.filterChip, styles.genderChip, category === c.key && styles.filterChipActive]}
-            onPress={() => setCategory(category === c.key ? null : c.key)}
-          >
-            <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
-              {t(c.labelKey, c.key)}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View style={styles.categoryRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.categoryScroll}
+          contentContainerStyle={styles.categoryScrollContent}
+        >
+          {CATEGORY_FILTERS.map((c) => (
+            <TouchableOpacity
+              key={c.key}
+              style={[styles.filterChip, styles.genderChip, category === c.key && styles.filterChipActive]}
+              onPress={() => setCategory(category === c.key ? null : c.key)}
+            >
+              <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
+                {t(c.labelKey, c.key)}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
         <TouchableOpacity style={styles.sortDropdown} onPress={() => setSortMenuOpen(true)} activeOpacity={0.7}>
           <Text style={styles.sortDropdownText}>{t(activeSortFilter.labelKey, String(activeSortFilter.key))}</Text>
           <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
         </TouchableOpacity>
-      </ScrollView>
+      </View>
 
       <Modal visible={sortMenuOpen} transparent animationType="fade" onRequestClose={() => setSortMenuOpen(false)}>
         <TouchableOpacity
@@ -341,6 +347,21 @@ const styles = StyleSheet.create({
   },
   genderChip: {
     borderColor: '#CCC',
+  },
+  categoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingLeft: 16,
+    paddingRight: 16,
+    paddingBottom: 10,
+    gap: 8,
+  },
+  categoryScroll: {
+    flex: 1,
+  },
+  categoryScrollContent: {
+    gap: 8,
+    paddingRight: 4,
   },
   sortDropdown: {
     flexDirection: 'row',
