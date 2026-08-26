@@ -10,6 +10,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 import uuid
+import tempfile
 from datetime import datetime, timezone, timedelta
 import httpx
 from passlib.context import CryptContext
@@ -33,11 +34,11 @@ load_dotenv(ROOT_DIR / '.env')
 # Web App directory (built frontend)
 WEB_APP_DIR = Path(os.environ.get('WEB_APP_DIR', ROOT_DIR.parent / "frontend" / "dist"))
 
-# Uploads directory for Highlights
-UPLOADS_DIR = Path(os.environ.get('UPLOADS_DIR', ROOT_DIR.parent / "uploads" / "highlights"))
-UPLOADS_DIR.mkdir(parents=True, exist_ok=True)
-
 # Highlights configuration
+# Photo/video files themselves live in Supabase Storage (bucket below), not on
+# local disk: Render's filesystem is wiped on every deploy/restart, which
+# silently destroyed previously-uploaded highlights.
+HIGHLIGHTS_BUCKET = "highlights"
 HIGHLIGHTS_MAX_PHOTOS_PER_ROUND = 10
 HIGHLIGHTS_MAX_VIDEOS_PER_ROUND = 10
 HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS = 30
@@ -49,6 +50,11 @@ HIGHLIGHTS_RETENTION_DAYS = 365
 SUPABASE_URL = os.environ['SUPABASE_URL']
 SUPABASE_SERVICE_ROLE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
 db: "SupabaseDB" = None
+supabase_client = None  # raw client, used directly for Storage (db is the Mongo-shim wrapper around it)
+
+
+async def get_highlight_public_url(file_path: str) -> str:
+    return await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).get_public_url(file_path)
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'goalmanager-secret-key-change-in-production')
@@ -551,13 +557,11 @@ async def cleanup_expired_highlights():
         {"_id": 0}
     ).to_list(1000)
     
+    if expired:
+        paths = [h["file_path"] for h in expired]
+        await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(paths)
+
     for highlight in expired:
-        # Delete file from filesystem
-        file_path = UPLOADS_DIR / highlight["file_path"]
-        if file_path.exists():
-            file_path.unlink()
-        
-        # Delete from database
         await db.highlights.delete_one({"id": highlight["id"]})
     
     logger.info(f"Cleaned up {len(expired)} expired highlights")
@@ -3583,7 +3587,7 @@ async def get_highlights(
             "tournament_id": h["tournament_id"],
             "round": h["round"],
             "file_type": h["file_type"],
-            "file_url": f"/api/highlights/file/{h['id']}",
+            "file_url": await get_highlight_public_url(h["file_path"]),
             "file_name": h["file_name"],
             "file_size": h["file_size"],
             "duration_seconds": h.get("duration_seconds"),
@@ -3671,23 +3675,18 @@ async def upload_highlight(
     if file_type == "video" and file.content_type not in allowed_video_types:
         raise HTTPException(status_code=400, detail="Formato video non supportato. Usa MP4 o MOV.")
     
-    # Create directory structure
-    round_dir = UPLOADS_DIR / tournament_id / round.replace(" ", "_")
-    round_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Generate unique filename
+    # Generate unique filename / storage object key
     file_ext = Path(file.filename).suffix.lower() if file.filename else ('.jpg' if file_type == 'photo' else '.mp4')
     highlight_id = f"highlight_{uuid.uuid4().hex[:12]}"
     file_name = f"{highlight_id}{file_ext}"
-    file_path = round_dir / file_name
-    
-    # Save file
+    relative_path = f"{tournament_id}/{round.replace(' ', '_')}/{file_name}"
+
     content = await file.read()
     file_size = len(content)
-    
+
     # Check size and compress if needed
     max_size = HIGHLIGHTS_MAX_PHOTO_SIZE_MB if file_type == "photo" else HIGHLIGHTS_MAX_VIDEO_SIZE_MB
-    
+
     if file_size > max_size * 1024 * 1024:
         if not compress:
             return {
@@ -3696,41 +3695,45 @@ async def upload_highlight(
                 "max_size_mb": max_size,
                 "message": f"Il file supera {max_size}MB. Vuoi comprimerlo?"
             }
-    
-    # Write file
-    with open(file_path, 'wb') as f:
-        f.write(content)
-    
-    # Compress if requested
-    if compress or file_size > max_size * 1024 * 1024:
-        if file_type == "photo":
-            compressed_path = await compress_image(file_path)
-            if compressed_path != file_path:
-                file_path.unlink()  # Delete original
-                compressed_path.rename(file_path)  # Rename compressed to original name
-                file_size = file_path.stat().st_size
-        else:
-            compressed_path = await compress_video(file_path)
-            if compressed_path != file_path:
-                file_path.unlink()
-                compressed_path.rename(file_path)
-                file_size = file_path.stat().st_size
-    
-    # Check video duration
-    duration_seconds = None
-    if file_type == "video":
-        duration_seconds = await get_video_duration(file_path)
-        if duration_seconds > HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS:
-            file_path.unlink()  # Delete the file
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Il video supera la durata massima di {HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS} secondi"
-            )
-    
+
+    # Compression and duration probing need a real file on disk (ffmpeg/PIL),
+    # so we use a scratch temp directory; the final bytes are what actually
+    # get persisted, to Supabase Storage rather than local disk (which
+    # doesn't survive a Render redeploy).
+    with tempfile.TemporaryDirectory() as tmp_dir:
+        tmp_path = Path(tmp_dir) / file_name
+        with open(tmp_path, 'wb') as f:
+            f.write(content)
+
+        if compress or file_size > max_size * 1024 * 1024:
+            if file_type == "photo":
+                compressed_path = await compress_image(tmp_path)
+            else:
+                compressed_path = await compress_video(tmp_path)
+            if compressed_path != tmp_path:
+                tmp_path.unlink()
+                compressed_path.rename(tmp_path)
+                file_size = tmp_path.stat().st_size
+
+        duration_seconds = None
+        if file_type == "video":
+            duration_seconds = await get_video_duration(tmp_path)
+            if duration_seconds > HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Il video supera la durata massima di {HIGHLIGHTS_MAX_VIDEO_DURATION_SECONDS} secondi"
+                )
+
+        final_content = tmp_path.read_bytes()
+        await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).upload(
+            relative_path,
+            final_content,
+            {"content-type": file.content_type or ('image/jpeg' if file_type == 'photo' else 'video/mp4')}
+        )
+
     # Save to database
     now = datetime.now(timezone.utc)
-    relative_path = f"{tournament_id}/{round.replace(' ', '_')}/{file_name}"
-    
+
     highlight_doc = {
         "id": highlight_id,
         "tournament_id": tournament_id,
@@ -3744,12 +3747,12 @@ async def upload_highlight(
         "created_at": now,
         "expires_at": now + timedelta(days=HIGHLIGHTS_RETENTION_DAYS)
     }
-    
+
     await db.highlights.insert_one(highlight_doc)
-    
+
     # Send push notifications to team followers
     teams = await db.teams.find({"tournament_id": tournament_id}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
-    
+
     for team in teams:
         await notify_team_followers(
             team["id"],
@@ -3757,88 +3760,12 @@ async def upload_highlight(
             f"Nuovi Highlights per {team['name']}! Inserisci il codice per visualizzarli su Rival Hub",
             {"type": "new_highlights", "tournament_id": tournament_id}
         )
-    
+
     return {
         "id": highlight_id,
         "message": "Contenuto caricato con successo",
-        "file_url": f"/api/highlights/file/{highlight_id}"
+        "file_url": await get_highlight_public_url(relative_path)
     }
-
-@api_router.get("/highlights/file/{highlight_id}")
-async def get_highlight_file(
-    highlight_id: str,
-    request: Request
-):
-    """Get highlight file with Range request support for video streaming"""
-    highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
-    
-    if not highlight:
-        raise HTTPException(status_code=404, detail="File non trovato")
-    
-    file_path = UPLOADS_DIR / highlight["file_path"]
-    
-    if not file_path.exists():
-        raise HTTPException(status_code=404, detail="File non trovato sul server")
-    
-    # For images, return directly
-    if highlight["file_type"] == "photo":
-        return FileResponse(
-            path=str(file_path),
-            media_type="image/jpeg",
-            filename=highlight["file_name"]
-        )
-    
-    # For videos, support Range requests for iOS streaming
-    file_size = file_path.stat().st_size
-    range_header = request.headers.get("range")
-    
-    if range_header:
-        # Parse range header
-        range_match = re.match(r'bytes=(\d+)-(\d*)', range_header)
-        if range_match:
-            start = int(range_match.group(1))
-            end = int(range_match.group(2)) if range_match.group(2) else file_size - 1
-            
-            # Ensure end doesn't exceed file size
-            end = min(end, file_size - 1)
-            content_length = end - start + 1
-            
-            def iter_file():
-                with open(file_path, 'rb') as f:
-                    f.seek(start)
-                    remaining = content_length
-                    while remaining > 0:
-                        chunk_size = min(65536, remaining)
-                        data = f.read(chunk_size)
-                        if not data:
-                            break
-                        remaining -= len(data)
-                        yield data
-            
-            from starlette.responses import StreamingResponse
-            
-            return StreamingResponse(
-                iter_file(),
-                status_code=206,
-                media_type="video/mp4",
-                headers={
-                    "Content-Range": f"bytes {start}-{end}/{file_size}",
-                    "Accept-Ranges": "bytes",
-                    "Content-Length": str(content_length),
-                    "Content-Disposition": f'inline; filename="{highlight["file_name"]}"'
-                }
-            )
-    
-    # No range header - return full file
-    return FileResponse(
-        path=str(file_path),
-        media_type="video/mp4",
-        filename=highlight["file_name"],
-        headers={
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(file_size)
-        }
-    )
 
 @api_router.delete("/highlights/{highlight_id}")
 async def delete_highlight(
@@ -3847,24 +3774,22 @@ async def delete_highlight(
 ):
     """Delete a highlight"""
     highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
-    
+
     if not highlight:
         raise HTTPException(status_code=404, detail="Highlight non trovato")
-    
+
     # Check authorization
     tournament = await db.tournaments.find_one({"id": highlight["tournament_id"]}, {"_id": 0})
-    
+
     if not tournament or tournament["organizer_id"] != current_user.user_id:
         raise HTTPException(status_code=403, detail="Non autorizzato")
-    
-    # Delete file
-    file_path = UPLOADS_DIR / highlight["file_path"]
-    if file_path.exists():
-        file_path.unlink()
-    
+
+    # Delete file from Supabase Storage
+    await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove([highlight["file_path"]])
+
     # Delete from database
     await db.highlights.delete_one({"id": highlight_id})
-    
+
     return {"message": "Highlight eliminato"}
 
 @api_router.post("/highlights/cleanup-expired")
@@ -4045,7 +3970,7 @@ app.add_middleware(
 @app.on_event("startup")
 async def startup_cleanup_task():
     """Initialize the Supabase connection and run cleanup tasks on startup"""
-    global db
+    global db, supabase_client
     supabase_client = await acreate_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     db = SupabaseDB(supabase_client)
 

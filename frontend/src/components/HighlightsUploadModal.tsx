@@ -316,8 +316,8 @@ export function HighlightsUploadModal({
   };
   
   const getFileUrl = (highlight: Highlight) => {
-    const baseUrl = api.defaults.baseURL || '';
-    return `${baseUrl}${highlight.file_url}`;
+    // file_url is now always an absolute Supabase Storage URL.
+    return highlight.file_url;
   };
   
   const openPhoto = (highlight: Highlight) => {

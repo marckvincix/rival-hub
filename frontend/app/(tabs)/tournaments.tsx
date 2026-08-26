@@ -2091,7 +2091,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                               .map((photo: any) => (
                                 <View key={photo.id} style={styles.highlightsPhotoThumbnail}>
                                   <Image
-                                    source={{ uri: `${api.defaults.baseURL}${photo.file_url}` }}
+                                    source={{ uri: photo.file_url }}
                                     style={styles.highlightsPhotoImage}
                                     resizeMode="cover"
                                   />
