@@ -61,7 +61,6 @@ const MAX_PHOTOS = 10;
 const MAX_VIDEOS = 10;
 const MAX_PHOTO_SIZE_MB = 10;
 const MAX_VIDEO_SIZE_MB = 100;
-const MAX_VIDEO_DURATION = 30;
 
 export function HighlightsUploadModal({
   visible,
@@ -216,7 +215,6 @@ export function HighlightsUploadModal({
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Videos,
       allowsMultipleSelection: false,
-      videoMaxDuration: MAX_VIDEO_DURATION,
     });
 
     if (!result.canceled && result.assets.length > 0) {

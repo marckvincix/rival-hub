@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Platform } from 'react-native';
 import { User } from '../types';
 import api from '../utils/api';
+import { configurePurchases, logOutPurchases } from '../utils/purchases';
 
 // Safe storage wrapper that handles errors gracefully
 const safeStorage = {
@@ -89,7 +90,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
-      
+      configurePurchases((userData as User).user_id);
+
       set({
         user: userData as User,
         sessionToken: session_token,
@@ -108,7 +110,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
-      
+      configurePurchases((userData as User).user_id);
+
       set({
         user: userData as User,
         sessionToken: session_token,
@@ -127,7 +130,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       
       await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
-      
+      configurePurchases((userData as User).user_id);
+
       set({
         user: userData as User,
         sessionToken: session_token,
@@ -145,14 +149,15 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     } catch (error) {
       // Ignore logout errors
     }
-    
+
     try {
       await safeStorage.removeItem('session_token');
     } catch (error) {
       // Ignore storage errors
     }
     delete api.defaults.headers.common['Authorization'];
-    
+    await logOutPurchases();
+
     set({
       user: null,
       sessionToken: null,
@@ -179,7 +184,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
       const response = await api.get('/api/auth/me');
-      
+      configurePurchases((response.data as User).user_id);
+
       set({
         user: response.data as User,
         sessionToken: token,

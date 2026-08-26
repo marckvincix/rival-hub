@@ -144,6 +144,8 @@ export interface User {
   email: string;
   name: string;
   picture?: string;
+  plan?: 'free' | 'plus';
+  plan_expiry?: string | null;
 }
 
 export interface Tournament {

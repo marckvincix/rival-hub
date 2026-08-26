@@ -19,7 +19,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, HighlightsPaywallModal } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
@@ -509,6 +509,7 @@ export default function TournamentsScreen() {
 function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefresh }: any) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('teams');
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
@@ -619,6 +620,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   
   // Highlights Management state
   const [showHighlightsModal, setShowHighlightsModal] = useState(false);
+  const [showHighlightsPaywall, setShowHighlightsPaywall] = useState(false);
   const [tournamentHighlights, setTournamentHighlights] = useState<any[]>([]);
   const [highlightsLoading, setHighlightsLoading] = useState(false);
 
@@ -2050,9 +2052,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {/* Highlights Tab */}
             {activeTab === 'highlights' && (
               <View style={styles.highlightsTabContent}>
-                <TouchableOpacity 
-                  style={styles.addNewsButton} 
-                  onPress={() => setShowHighlightsModal(true)}
+                <TouchableOpacity
+                  style={styles.addNewsButton}
+                  onPress={() => {
+                    const expiry = user?.plan_expiry ? new Date(user.plan_expiry) : null;
+                    const hasPlus = user?.plan === 'plus' && !!expiry && expiry > new Date();
+                    if (hasPlus) {
+                      setShowHighlightsModal(true);
+                    } else {
+                      setShowHighlightsPaywall(true);
+                    }
+                  }}
                 >
                   <Ionicons name="film" size={20} color="#FFF" />
                   <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
@@ -3657,6 +3667,15 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         }}
         tournamentId={tournament?.id || ''}
         rounds={getRounds()}
+      />
+
+      <HighlightsPaywallModal
+        visible={showHighlightsPaywall}
+        onClose={() => setShowHighlightsPaywall(false)}
+        onSubscribed={() => {
+          setShowHighlightsPaywall(false);
+          setShowHighlightsModal(true);
+        }}
       />
     </SafeAreaView>
   );

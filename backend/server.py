@@ -45,6 +45,13 @@ HIGHLIGHTS_MAX_PHOTO_SIZE_MB = 10
 HIGHLIGHTS_MAX_VIDEO_SIZE_MB = 100
 HIGHLIGHTS_RETENTION_DAYS = 365
 
+# "Highlights Plus" subscription (sold via RevenueCat -> App Store/Play Store
+# in-app purchase, never Stripe/web checkout directly — Apple/Google require
+# their own billing for a subscription that unlocks a feature inside the app).
+# Must match the entitlement identifier created in the RevenueCat dashboard.
+HIGHLIGHTS_PLUS_ENTITLEMENT = os.environ.get("REVENUECAT_ENTITLEMENT_ID", "Rival Hub Pro")
+REVENUECAT_WEBHOOK_SECRET = os.environ.get("REVENUECAT_WEBHOOK_SECRET", "")
+
 # Supabase connection (initialized in the startup event, since acreate_client is async)
 SUPABASE_URL = os.environ['SUPABASE_URL']
 SUPABASE_SERVICE_ROLE_KEY = os.environ['SUPABASE_SERVICE_ROLE_KEY']
@@ -73,9 +80,6 @@ ACCESS_TOKEN_EXPIRE_DAYS = 7
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-# Stripe Configuration
-STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY', 'sk_test_emergent')
 
 # Create the main app
 app = FastAPI(title="GoalManager API")
@@ -112,12 +116,16 @@ class User(BaseModel):
     name: str
     picture: Optional[str] = None
     created_at: datetime
+    plan: str = "free"  # free | plus
+    plan_expiry: Optional[datetime] = None
 
 class UserResponse(BaseModel):
     user_id: str
     email: str
     name: str
     picture: Optional[str] = None
+    plan: str = "free"
+    plan_expiry: Optional[datetime] = None
 
 # Tournament Models
 class TournamentCreate(BaseModel):
@@ -744,6 +752,18 @@ async def get_optional_user(
     except HTTPException:
         return None
 
+def user_has_highlights_plus(user: User) -> bool:
+    """Whether a user's Highlights Plus subscription is currently active.
+    Re-derived from plan/plan_expiry on every call rather than trusting a
+    boolean flag, so it self-heals from whatever the last RevenueCat webhook
+    reported instead of needing a separate "is it still valid" sync step."""
+    if user.plan != "plus" or not user.plan_expiry:
+        return False
+    expiry = user.plan_expiry
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+    return expiry > datetime.now(timezone.utc)
+
 # ===================== AUTH ENDPOINTS =====================
 
 @api_router.post("/auth/register")
@@ -765,7 +785,6 @@ async def register(user_data: UserCreate):
         "picture": None,
         "plan": "free",
         "plan_expiry": None,
-        "stripe_customer_id": None,
         "created_at": now
     }
     
@@ -929,7 +948,9 @@ async def get_me(current_user: User = Depends(get_current_user)):
         user_id=current_user.user_id,
         email=current_user.email,
         name=current_user.name,
-        picture=current_user.picture
+        picture=current_user.picture,
+        plan=current_user.plan,
+        plan_expiry=current_user.plan_expiry
     )
 
 @api_router.post("/auth/logout")
@@ -3028,182 +3049,46 @@ async def get_tennis_stats(tournament_id: str):
     
     return result
 
-# ===================== PAYMENT ENDPOINTS =====================
+# ===================== SUBSCRIPTION (REVENUECAT) ENDPOINTS =====================
+# Highlights Plus is sold as a native App Store / Play Store subscription via
+# RevenueCat (react-native-purchases in the app) — never a Stripe/web
+# checkout, since Apple and Google require their own in-app purchase system
+# for a subscription that unlocks a feature inside the app. This webhook is
+# RevenueCat's only path to our backend: it fires on every purchase, renewal,
+# cancellation and expiration event, and is the single source of truth we
+# sync users.plan/plan_expiry from.
 
-@api_router.post("/payments/checkout")
-async def create_checkout_session(
-    request: Request,
-    current_user: User = Depends(get_current_user)
-):
-    """Create Stripe checkout session for subscription"""
-    import stripe
-    stripe.api_key = STRIPE_API_KEY
-    
+@api_router.post("/webhooks/revenuecat")
+async def revenuecat_webhook(request: Request):
+    """Receive subscription lifecycle events from RevenueCat."""
+    auth_header = request.headers.get("authorization", "")
+    if not REVENUECAT_WEBHOOK_SECRET or auth_header != REVENUECAT_WEBHOOK_SECRET:
+        raise HTTPException(status_code=401, detail="Non autorizzato")
+
     body = await request.json()
-    plan = body.get("plan")  # pro_monthly, pro_yearly
-    origin_url = body.get("origin_url")
-    
-    if not plan or not origin_url:
-        raise HTTPException(status_code=400, detail="Piano e origin_url richiesti")
-    
-    # Define fixed prices - Only PRO plan available
-    PLANS = {
-        "pro_monthly": 3.99,
-        "pro_yearly": 39.99
-    }
-    
-    if plan not in PLANS:
-        raise HTTPException(status_code=400, detail="Piano non valido")
-    
-    amount = PLANS[plan]
-    
-    host_url = str(request.base_url).rstrip("/")
-    webhook_url = f"{host_url}/api/webhook/stripe"
-    
-    success_url = f"{origin_url}/dashboard/subscription?session_id={{CHECKOUT_SESSION_ID}}"
-    cancel_url = f"{origin_url}/dashboard/subscription"
-    
-    try:
-        session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
-            line_items=[{
-                "price_data": {
-                    "currency": "eur",
-                    "product_data": {
-                        "name": f"Rival Hub {plan.replace('_', ' ').title()}",
-                    },
-                    "unit_amount": int(amount * 100),  # Stripe uses cents
-                },
-                "quantity": 1,
-            }],
-            mode="payment",
-            success_url=success_url,
-            cancel_url=cancel_url,
-            metadata={
-                "user_id": current_user.user_id,
-                "plan": plan,
-                "source": "rivalhub"
-            }
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore Stripe: {str(e)}")
-    
-    # Create payment transaction record
-    now = datetime.now(timezone.utc)
-    await db.payment_transactions.insert_one({
-        "id": f"payment_{uuid.uuid4().hex[:12]}",
-        "user_id": current_user.user_id,
-        "session_id": session.id,
-        "amount": amount,
-        "currency": "eur",
-        "plan": plan,
-        "status": "pending",
-        "payment_status": "initiated",
-        "created_at": now
-    })
-    
-    return {"url": session.url, "session_id": session.id}
+    event = body.get("event", {})
+    user_id = event.get("app_user_id")
+    entitlement_ids = event.get("entitlement_ids") or []
 
-@api_router.get("/payments/status/{session_id}")
-async def check_payment_status(
-    session_id: str,
-    current_user: User = Depends(get_current_user)
-):
-    """Check payment status and update user plan"""
-    import stripe
-    stripe.api_key = STRIPE_API_KEY
-    
-    try:
-        session = stripe.checkout.Session.retrieve(session_id)
-        payment_status = session.payment_status
-        status = session.status
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore Stripe: {str(e)}")
-    
-    # Update transaction
-    transaction = await db.payment_transactions.find_one(
-        {"session_id": session_id},
-        {"_id": 0}
+    if not user_id or HIGHLIGHTS_PLUS_ENTITLEMENT not in entitlement_ids:
+        return {"status": "ignored"}
+
+    # Sync plan/expiry directly from what RevenueCat reports rather than
+    # branching on the event type string (INITIAL_PURCHASE, RENEWAL,
+    # CANCELLATION, EXPIRATION, BILLING_ISSUE, ...): a cancelled subscription
+    # still has a future expiration_at_ms until the paid period actually
+    # ends, so this self-heals correctly for every event type without having
+    # to track RevenueCat's exact taxonomy.
+    expiration_ms = event.get("expiration_at_ms")
+    expiry = datetime.fromtimestamp(expiration_ms / 1000, tz=timezone.utc) if expiration_ms else None
+    is_active = expiry is not None and expiry > datetime.now(timezone.utc)
+
+    await db.users.update_one(
+        {"user_id": user_id},
+        {"$set": {"plan": "plus" if is_active else "free", "plan_expiry": expiry}}
     )
-    
-    if transaction:
-        await db.payment_transactions.update_one(
-            {"session_id": session_id},
-            {"$set": {"status": status, "payment_status": payment_status}}
-        )
-        
-        # If paid and not already processed
-        if payment_status == "paid" and transaction.get("payment_status") != "paid":
-            plan = transaction.get("plan", "")
-            plan_type = "pro"  # Only PRO plan available
-            is_yearly = "yearly" in plan
-            
-            expiry = datetime.now(timezone.utc) + timedelta(days=365 if is_yearly else 30)
-            
-            await db.users.update_one(
-                {"user_id": current_user.user_id},
-                {"$set": {"plan": plan_type, "plan_expiry": expiry}}
-            )
-    
-    return {
-        "status": status,
-        "payment_status": payment_status,
-        "amount_total": session.amount_total if hasattr(session, 'amount_total') else 0,
-        "currency": session.currency if hasattr(session, 'currency') else "eur"
-    }
 
-@api_router.post("/webhook/stripe")
-async def stripe_webhook(request: Request):
-    """Handle Stripe webhooks"""
-    import stripe
-    stripe.api_key = STRIPE_API_KEY
-    
-    body = await request.body()
-    signature = request.headers.get("Stripe-Signature")
-    webhook_secret = os.environ.get("STRIPE_WEBHOOK_SECRET", "")
-    
-    try:
-        if webhook_secret:
-            event = stripe.Webhook.construct_event(body, signature, webhook_secret)
-        else:
-            # Parse without signature verification (development)
-            import json
-            event = json.loads(body)
-        
-        if event.get("type") == "checkout.session.completed":
-            session = event.get("data", {}).get("object", {})
-            session_id = session.get("id")
-            payment_status = session.get("payment_status")
-            
-            # Update transaction
-            await db.payment_transactions.update_one(
-                {"session_id": session_id},
-                {"$set": {"status": "complete", "payment_status": "paid"}}
-            )
-            
-            # Get transaction to update user
-            transaction = await db.payment_transactions.find_one(
-                {"session_id": session_id},
-                {"_id": 0}
-            )
-            
-            if transaction:
-                user_id = transaction.get("user_id")
-                plan = transaction.get("plan", "")
-                plan_type = "pro"  # Only PRO plan available
-                is_yearly = "yearly" in plan
-                
-                expiry = datetime.now(timezone.utc) + timedelta(days=365 if is_yearly else 30)
-                
-                await db.users.update_one(
-                    {"user_id": user_id},
-                    {"$set": {"plan": plan_type, "plan_expiry": expiry}}
-                )
-        
-        return {"status": "ok"}
-    except Exception as e:
-        logger.error(f"Webhook error: {e}")
-        return {"status": "error"}
+    return {"status": "ok"}
 
 # ===================== HEALTH CHECK =====================
 
@@ -3676,10 +3561,16 @@ async def upload_highlight(
     
     if tournament["organizer_id"] != current_user.user_id:
         raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+
+    if not user_has_highlights_plus(current_user):
+        raise HTTPException(
+            status_code=402,
+            detail="Serve l'abbonamento Highlights Plus per caricare foto e video"
+        )
+
     if not terms_accepted:
         raise HTTPException(status_code=400, detail="Devi accettare i Termini e Condizioni")
-    
+
     # Check limits
     existing_count = await db.highlights.count_documents({
         "tournament_id": tournament_id,

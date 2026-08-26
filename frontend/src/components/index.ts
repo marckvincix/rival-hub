@@ -20,6 +20,7 @@ export { RugbyCourtView } from './RugbyCourtView';
 export { RugbyMatchModal } from './RugbyMatchModal';
 export { HighlightsTab } from './HighlightsTab';
 export { HighlightsUploadModal } from './HighlightsUploadModal';
+export { HighlightsPaywallModal } from './HighlightsPaywallModal';
 export { TermsModal } from './TermsModal';
 export { LanguageSelectionScreen } from './LanguageSelectionScreen';
 export { LanguageSelector } from './LanguageSelector';
