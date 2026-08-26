@@ -522,12 +522,16 @@ async def compress_video(input_path: Path, max_size_mb: int = 50) -> Path:
     try:
         # Cap height at 720p (scale filter keeps width even-numbered, required
         # by libx264) — resolution, not just CRF, is what keeps file size sane
-        # now that there's no duration limit.
+        # now that there's no duration limit. Preset "veryfast" trades a
+        # modest bitrate increase for a large encode-time cut: on Render's
+        # free-tier CPU, "medium" took ~3 minutes for a 40-second 1080p clip
+        # — a multi-minute upload would have taken 10+ minutes and risked
+        # timing out.
         scale_filter = f"scale=-2:'min({HIGHLIGHT_VIDEO_MAX_HEIGHT},ih)'"
         cmd = [
             'ffmpeg', '-y', '-i', str(input_path),
             '-vf', scale_filter,
-            '-c:v', 'libx264', '-preset', 'medium',
+            '-c:v', 'libx264', '-preset', 'veryfast',
             '-crf', '28',  # Higher CRF = more compression
             '-c:a', 'aac', '-b:a', '128k',
             '-movflags', '+faststart',
