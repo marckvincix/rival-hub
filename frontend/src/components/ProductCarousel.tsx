@@ -11,6 +11,7 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import api from '../utils/api';
 import { useTranslation } from '../i18n';
 import { Product, Sport } from '../types';
@@ -125,25 +126,34 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       <Text style={styles.title}>{title || t('products.sponsoredTitle', 'Prodotti consigliati')}</Text>
 
       <View style={styles.categoryRow}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryScroll}
-          contentContainerStyle={styles.categoryScrollContent}
-        >
-          {GENDER_FILTERS.map((g) => (
-            <TouchableOpacity
-              key={g.key}
-              style={[styles.filterChip, styles.genderChip, gender === g.key && styles.filterChipActive]}
-              onPress={() => setGender(gender === g.key ? null : g.key)}
-            >
-              <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
-                {t(g.labelKey, g.key)}
-              </Text>
-              {gender === g.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={styles.scrollWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {GENDER_FILTERS.map((g) => (
+              <TouchableOpacity
+                key={g.key}
+                style={[styles.filterChip, styles.genderChip, gender === g.key && styles.filterChipActive]}
+                onPress={() => setGender(gender === g.key ? null : g.key)}
+              >
+                <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
+                  {t(g.labelKey, g.key)}
+                </Text>
+                {gender === g.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.scrollFade}
+            pointerEvents="none"
+          />
+        </View>
         {brands.length > 0 && (
           <TouchableOpacity style={styles.sortDropdown} onPress={() => setBrandMenuOpen(true)} activeOpacity={0.7}>
             {brand && BRAND_LOGOS[brand] && (
@@ -201,25 +211,34 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       </Modal>
 
       <View style={styles.categoryRow}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoryScroll}
-          contentContainerStyle={styles.categoryScrollContent}
-        >
-          {CATEGORY_FILTERS.map((c) => (
-            <TouchableOpacity
-              key={c.key}
-              style={[styles.filterChip, styles.genderChip, category === c.key && styles.filterChipActive]}
-              onPress={() => setCategory(category === c.key ? null : c.key)}
-            >
-              <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
-                {t(c.labelKey, c.key)}
-              </Text>
-              {category === c.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+        <View style={styles.scrollWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={styles.categoryScroll}
+            contentContainerStyle={styles.categoryScrollContent}
+          >
+            {CATEGORY_FILTERS.map((c) => (
+              <TouchableOpacity
+                key={c.key}
+                style={[styles.filterChip, styles.genderChip, category === c.key && styles.filterChipActive]}
+                onPress={() => setCategory(category === c.key ? null : c.key)}
+              >
+                <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
+                  {t(c.labelKey, c.key)}
+                </Text>
+                {category === c.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+          <LinearGradient
+            colors={['rgba(255,255,255,0)', '#FFFFFF']}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 0 }}
+            style={styles.scrollFade}
+            pointerEvents="none"
+          />
+        </View>
         <TouchableOpacity style={styles.sortDropdown} onPress={() => setSortMenuOpen(true)} activeOpacity={0.7}>
           <Text style={styles.sortDropdownText}>{t(activeSortFilter.labelKey, String(activeSortFilter.key))}</Text>
           <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
@@ -390,12 +409,23 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
     gap: 8,
   },
+  scrollWrap: {
+    flex: 1,
+    position: 'relative',
+  },
   categoryScroll: {
     flex: 1,
   },
   categoryScrollContent: {
     gap: 8,
     paddingRight: 4,
+  },
+  scrollFade: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
+    width: 28,
   },
   sortDropdown: {
     flexDirection: 'row',
