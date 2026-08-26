@@ -150,6 +150,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
                 )}
               </View>
               <Text style={[styles.filterChipText, brand === b && styles.filterChipTextActive]}>{b}</Text>
+              {brand === b && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -169,6 +170,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
             <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
               {t(g.labelKey, g.key)}
             </Text>
+            {gender === g.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -189,6 +191,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
               <Text style={[styles.filterChipText, category === c.key && styles.filterChipTextActive]}>
                 {t(c.labelKey, c.key)}
               </Text>
+              {category === c.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
             </TouchableOpacity>
           ))}
         </ScrollView>
@@ -318,6 +321,8 @@ const styles = StyleSheet.create({
     paddingBottom: 10,
   },
   filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,

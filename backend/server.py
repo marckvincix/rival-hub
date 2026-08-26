@@ -3199,7 +3199,10 @@ async def get_products(
     if sport:
         query["sport"] = sport
     if gender:
-        query["gender"] = gender
+        # Unisex products are relevant under any gender filter, not just
+        # their own exact value — e.g. filtering "Uomo" should still surface
+        # a unisex accessory.
+        query["gender"] = {"$in": [gender, "Unisex"]}
     if brand:
         query["brand"] = brand
     if category:
