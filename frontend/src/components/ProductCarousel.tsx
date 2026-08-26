@@ -108,7 +108,13 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       });
   }, [sport, filter, gender, category, brand]);
 
-  if (!loading && products.length === 0) {
+  const hasActiveFilters = !!gender || !!category || !!brand || filter !== 'relevance';
+
+  // Only hide the whole carousel (filters included) when there's no
+  // inventory for this sport at all. If the user narrowed it down with
+  // filters to zero results, keep the filters visible with an empty-state
+  // message instead of the section vanishing on them.
+  if (!loading && products.length === 0 && !hasActiveFilters) {
     return null;
   }
 
@@ -221,6 +227,13 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
       {loading ? (
         <View style={styles.loadingBox}>
           <ActivityIndicator size="small" color="#000" />
+        </View>
+      ) : products.length === 0 ? (
+        <View style={styles.emptyBox}>
+          <Ionicons name="search-outline" size={20} color="#CCC" />
+          <Text style={styles.emptyBoxText}>
+            {t('products.noResults', 'Nessun prodotto trovato con questi filtri')}
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -419,6 +432,18 @@ const styles = StyleSheet.create({
   loadingBox: {
     paddingVertical: 30,
     alignItems: 'center',
+  },
+  emptyBox: {
+    paddingVertical: 30,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyBoxText: {
+    fontSize: 12,
+    color: '#999',
+    fontWeight: '600',
+    textAlign: 'center',
   },
   productsRow: {
     paddingHorizontal: 16,
