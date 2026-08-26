@@ -23,7 +23,7 @@ interface ProductCarouselProps {
 
 type SortFilter = 'relevance' | 'price_asc' | 'newest' | 20 | 30 | 40 | 50;
 type GenderFilter = 'Uomo' | 'Donna' | 'Bambini';
-type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori' | 'Test';
+type CategoryFilter = 'Scarpe' | 'Abbigliamento' | 'Accessori';
 
 const FILTERS: { key: SortFilter; labelKey: string }[] = [
   { key: 'relevance', labelKey: 'products.sortRelevance' },
@@ -45,9 +45,6 @@ const CATEGORY_FILTERS: { key: CategoryFilter; labelKey: string }[] = [
   { key: 'Scarpe', labelKey: 'products.categoryShoes' },
   { key: 'Abbigliamento', labelKey: 'products.categoryClothing' },
   { key: 'Accessori', labelKey: 'products.categoryAccessories' },
-  // TEMP: only to verify the row scrolls correctly with more categories
-  // than fit on screen — remove once confirmed.
-  { key: 'Test', labelKey: 'products.categoryTest' },
 ];
 
 // Official brand logos, added as more Awin brand partners come on board.
