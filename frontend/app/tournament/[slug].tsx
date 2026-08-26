@@ -658,15 +658,17 @@ export default function TournamentPublicPage() {
                         {/* Date and Time */}
                         <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
                         {/* Action Buttons Row */}
-                        <View style={styles.matchActionsRow}>
-                          <TouchableOpacity
-                            style={styles.calendarButton}
-                            onPress={() => handleAddToCalendar(match)}
-                          >
-                            <Ionicons name="calendar-outline" size={18} color="#000" />
-                          </TouchableOpacity>
-                        </View>
-                        
+                        {!isLive && (
+                          <View style={styles.matchActionsRow}>
+                            <TouchableOpacity
+                              style={styles.calendarButton}
+                              onPress={() => handleAddToCalendar(match)}
+                            >
+                              <Ionicons name="calendar-outline" size={18} color="#000" />
+                            </TouchableOpacity>
+                          </View>
+                        )}
+
                         {/* Formations for this match */}
                         {(homeFormation || awayFormation) && (
                           <View style={styles.matchFormationsSection}>
@@ -1670,11 +1672,11 @@ const styles = StyleSheet.create({
   matchesGroupTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
   matchCard: { borderWidth: 2, borderColor: '#000', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 8, marginBottom: 8 },
   matchCardLive: { borderColor: '#E53935', backgroundColor: '#FFF5F5' },
-  matchLiveEventLine: { fontSize: 11, color: '#555', textAlign: 'center', marginTop: 2 },
+  matchLiveEventLine: { fontSize: 13, color: '#555', textAlign: 'center', marginTop: 2 },
   matchRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   matchCenterContent: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  matchTeamColumn: { alignItems: 'center', width: 80 },
-  matchTeamName: { fontSize: 11, fontWeight: '500', color: '#000', marginTop: 4, textAlign: 'center' },
+  matchTeamColumn: { alignItems: 'center', width: 92 },
+  matchTeamName: { fontSize: 14, fontWeight: '600', color: '#000', marginTop: 4, textAlign: 'center' },
   matchScore: { fontSize: 22, fontWeight: '700', color: '#000' },
   liveIndicator: { fontSize: 10, fontWeight: '700', color: '#E53935', marginTop: 4, backgroundColor: '#FFEBEE', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4 },
   // Tennis LIVE score styles
