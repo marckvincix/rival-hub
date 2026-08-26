@@ -1918,7 +1918,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             )}
                             <View style={styles.matchPillMain}>
                               <View style={styles.matchPillTeamColumn}>
-                                <Text style={styles.matchPillTeam}>{getTeamName(match.home_team_id)}</Text>
+                                <Text style={styles.matchPillTeam} numberOfLines={1}>{getTeamName(match.home_team_id)}</Text>
                                 {homeEvents.map((e: any, idx: number) => (
                                   <Text key={idx} style={styles.matchPillEventLine} numberOfLines={1}>{e.icon} {e.player}</Text>
                                 ))}
@@ -1927,7 +1927,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                 {match.home_goals ?? 0} - {match.away_goals ?? 0}
                               </Text>
                               <View style={styles.matchPillTeamColumn}>
-                                <Text style={styles.matchPillTeam}>{getTeamName(match.away_team_id)}</Text>
+                                <Text style={styles.matchPillTeam} numberOfLines={1}>{getTeamName(match.away_team_id)}</Text>
                                 {awayEvents.map((e: any, idx: number) => (
                                   <Text key={idx} style={styles.matchPillEventLine} numberOfLines={1}>{e.icon} {e.player}</Text>
                                 ))}
@@ -1937,7 +1937,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                               <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
                             ) : null}
                             {tournament?.sport && (
-                              <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
+                              <View style={styles.matchPillCarouselWrap}>
+                                <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
+                              </View>
                             )}
                           </View>
                         );
@@ -4111,7 +4113,8 @@ const styles = StyleSheet.create({
   matchDayGroup: { marginBottom: 32 },
   matchDayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   matchDayTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
-  matchPillCard: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 12 },
+  matchPillCard: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 12, overflow: 'hidden' },
+  matchPillCarouselWrap: { alignSelf: 'stretch', marginHorizontal: -16 },
   matchPillCardLive: { borderColor: '#E53935', backgroundColor: '#FFF5F5' },
   matchPillLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', backgroundColor: '#E53935', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, marginBottom: 8 },
   matchPillLiveDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: '#FFF' },
