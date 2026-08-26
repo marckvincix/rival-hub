@@ -8,6 +8,7 @@ import {
   ScrollView,
   FlatList,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import api from '../utils/api';
@@ -63,7 +64,10 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
   const [brands, setBrands] = useState<string[]>([]);
   const [brand, setBrand] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [sortMenuOpen, setSortMenuOpen] = useState(false);
   const requestId = useRef(0);
+
+  const activeSortFilter = FILTERS.find((f) => f.key === filter) || FILTERS[0];
 
   useEffect(() => {
     api
@@ -163,6 +167,13 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
         ))}
       </ScrollView>
 
+      <View style={[styles.filterRow, { paddingTop: 0 }]}>
+        <TouchableOpacity style={styles.sortDropdown} onPress={() => setSortMenuOpen(true)} activeOpacity={0.7}>
+          <Text style={styles.sortDropdownText}>{t(activeSortFilter.labelKey, String(activeSortFilter.key))}</Text>
+          <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -181,23 +192,31 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
         ))}
       </ScrollView>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={[styles.filterRow, { paddingTop: 0 }]}
-      >
-        {FILTERS.map((f) => (
-          <TouchableOpacity
-            key={String(f.key)}
-            style={[styles.filterChip, filter === f.key && styles.filterChipActive]}
-            onPress={() => setFilter(f.key)}
-          >
-            <Text style={[styles.filterChipText, filter === f.key && styles.filterChipTextActive]}>
-              {t(f.labelKey, String(f.key))}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+      <Modal visible={sortMenuOpen} transparent animationType="fade" onRequestClose={() => setSortMenuOpen(false)}>
+        <TouchableOpacity
+          style={styles.sortMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setSortMenuOpen(false)}
+        >
+          <View style={styles.sortMenuCard}>
+            {FILTERS.map((f) => (
+              <TouchableOpacity
+                key={String(f.key)}
+                style={styles.sortMenuItem}
+                onPress={() => {
+                  setFilter(f.key);
+                  setSortMenuOpen(false);
+                }}
+              >
+                <Text style={[styles.sortMenuItemText, filter === f.key && styles.sortMenuItemTextActive]}>
+                  {t(f.labelKey, String(f.key))}
+                </Text>
+                {filter === f.key && <Ionicons name="checkmark" size={16} color="#000" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       {loading ? (
         <View style={styles.loadingBox}>
@@ -325,6 +344,50 @@ const styles = StyleSheet.create({
   },
   genderChip: {
     borderColor: '#CCC',
+  },
+  sortDropdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#000',
+    borderRadius: 20,
+    paddingVertical: 7,
+    paddingHorizontal: 14,
+  },
+  sortDropdownText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFF',
+  },
+  sortMenuOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  sortMenuCard: {
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    width: '100%',
+    maxWidth: 320,
+    paddingVertical: 8,
+    overflow: 'hidden',
+  },
+  sortMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+  },
+  sortMenuItemText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600',
+  },
+  sortMenuItemTextActive: {
+    color: '#000',
+    fontWeight: '700',
   },
   filterChipActive: {
     backgroundColor: '#000',
