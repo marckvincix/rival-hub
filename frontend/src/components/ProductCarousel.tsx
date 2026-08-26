@@ -65,6 +65,7 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
   const [brand, setBrand] = useState<string | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [sortMenuOpen, setSortMenuOpen] = useState(false);
+  const [brandMenuOpen, setBrandMenuOpen] = useState(false);
   const requestId = useRef(0);
 
   const activeSortFilter = FILTERS.find((f) => f.key === filter) || FILTERS[0];
@@ -122,58 +123,81 @@ export function ProductCarousel({ sport, title }: ProductCarouselProps) {
     <View style={styles.container}>
       <Text style={styles.title}>{title || t('products.sponsoredTitle', 'Prodotti consigliati')}</Text>
 
-      {brands.length > 0 && (
+      <View style={styles.categoryRow}>
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.filterRow}
+          style={styles.categoryScroll}
+          contentContainerStyle={styles.categoryScrollContent}
         >
-          <TouchableOpacity
-            style={[styles.brandChip, !brand && styles.filterChipActive]}
-            onPress={() => setBrand(null)}
-          >
-            <Text style={[styles.filterChipText, !brand && styles.filterChipTextActive]}>
-              {t('products.brandAll', 'Tutti i brand')}
-            </Text>
-          </TouchableOpacity>
-          {brands.map((b) => (
+          {GENDER_FILTERS.map((g) => (
             <TouchableOpacity
-              key={b}
-              style={[styles.brandChip, brand === b && styles.filterChipActive]}
-              onPress={() => setBrand(brand === b ? null : b)}
+              key={g.key}
+              style={[styles.filterChip, styles.genderChip, gender === g.key && styles.filterChipActive]}
+              onPress={() => setGender(gender === g.key ? null : g.key)}
             >
-              <View style={styles.brandAvatar}>
-                {BRAND_LOGOS[b] ? (
-                  <Image source={BRAND_LOGOS[b]} style={styles.brandLogoImage} resizeMode="contain" />
-                ) : (
-                  <Text style={styles.brandAvatarText}>{b.charAt(0).toUpperCase()}</Text>
-                )}
-              </View>
-              <Text style={[styles.filterChipText, brand === b && styles.filterChipTextActive]}>{b}</Text>
-              {brand === b && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
+              <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
+                {t(g.labelKey, g.key)}
+              </Text>
+              {gender === g.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
             </TouchableOpacity>
           ))}
         </ScrollView>
-      )}
-
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-      >
-        {GENDER_FILTERS.map((g) => (
-          <TouchableOpacity
-            key={g.key}
-            style={[styles.filterChip, styles.genderChip, gender === g.key && styles.filterChipActive]}
-            onPress={() => setGender(gender === g.key ? null : g.key)}
-          >
-            <Text style={[styles.filterChipText, gender === g.key && styles.filterChipTextActive]}>
-              {t(g.labelKey, g.key)}
-            </Text>
-            {gender === g.key && <Ionicons name="close" size={13} color="#FFF" style={{ marginLeft: 4 }} />}
+        {brands.length > 0 && (
+          <TouchableOpacity style={styles.sortDropdown} onPress={() => setBrandMenuOpen(true)} activeOpacity={0.7}>
+            {brand && BRAND_LOGOS[brand] && (
+              <Image source={BRAND_LOGOS[brand]} style={styles.brandDropdownLogo} resizeMode="contain" />
+            )}
+            <Text style={styles.sortDropdownText}>{brand || t('products.brandAll', 'Tutti i brand')}</Text>
+            <Ionicons name="chevron-down" size={14} color="#FFF" style={{ marginLeft: 4 }} />
           </TouchableOpacity>
-        ))}
-      </ScrollView>
+        )}
+      </View>
+
+      <Modal visible={brandMenuOpen} transparent animationType="fade" onRequestClose={() => setBrandMenuOpen(false)}>
+        <TouchableOpacity
+          style={styles.sortMenuOverlay}
+          activeOpacity={1}
+          onPress={() => setBrandMenuOpen(false)}
+        >
+          <View style={styles.sortMenuCard}>
+            <TouchableOpacity
+              style={styles.sortMenuItem}
+              onPress={() => {
+                setBrand(null);
+                setBrandMenuOpen(false);
+              }}
+            >
+              <Text style={[styles.sortMenuItemText, !brand && styles.sortMenuItemTextActive]}>
+                {t('products.brandAll', 'Tutti i brand')}
+              </Text>
+              {!brand && <Ionicons name="checkmark" size={16} color="#000" />}
+            </TouchableOpacity>
+            {brands.map((b) => (
+              <TouchableOpacity
+                key={b}
+                style={styles.sortMenuItem}
+                onPress={() => {
+                  setBrand(b);
+                  setBrandMenuOpen(false);
+                }}
+              >
+                <View style={styles.sortMenuItemLeft}>
+                  <View style={styles.brandAvatar}>
+                    {BRAND_LOGOS[b] ? (
+                      <Image source={BRAND_LOGOS[b]} style={styles.brandLogoImage} resizeMode="contain" />
+                    ) : (
+                      <Text style={styles.brandAvatarText}>{b.charAt(0).toUpperCase()}</Text>
+                    )}
+                  </View>
+                  <Text style={[styles.sortMenuItemText, brand === b && styles.sortMenuItemTextActive]}>{b}</Text>
+                </View>
+                {brand === b && <Ionicons name="checkmark" size={16} color="#000" />}
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
 
       <View style={styles.categoryRow}>
         <ScrollView
@@ -330,18 +354,6 @@ const styles = StyleSheet.create({
     borderColor: '#DDD',
     backgroundColor: '#FFF',
   },
-  brandChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    paddingLeft: 6,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#DDD',
-    backgroundColor: '#FFF',
-  },
   brandAvatar: {
     width: 22,
     height: 22,
@@ -359,6 +371,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700',
     color: '#666',
+  },
+  brandDropdownLogo: {
+    width: 16,
+    height: 16,
+    marginRight: 6,
+    borderRadius: 8,
   },
   genderChip: {
     borderColor: '#CCC',
@@ -412,6 +430,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 14,
     paddingHorizontal: 20,
+  },
+  sortMenuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
   },
   sortMenuItemText: {
     fontSize: 14,
