@@ -53,8 +53,19 @@ db: "SupabaseDB" = None
 supabase_client = None  # raw client, used directly for Storage (db is the Mongo-shim wrapper around it)
 
 
-async def get_highlight_public_url(file_path: str) -> str:
-    return await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).get_public_url(file_path)
+# Highlights are only meant to be viewable by whoever has the tournament's
+# organizer-issued code. The Storage bucket is private and a signed,
+# time-limited URL is minted here — called only after the code (or organizer
+# auth) has already been verified by the caller — rather than a permanent
+# public URL, which anyone forwarding the raw link could otherwise use to
+# bypass the code check entirely.
+HIGHLIGHT_URL_EXPIRY_SECONDS = 3600
+
+async def get_highlight_signed_url(file_path: str) -> str:
+    signed = await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).create_signed_url(
+        file_path, HIGHLIGHT_URL_EXPIRY_SECONDS
+    )
+    return signed.get("signedURL") or signed.get("signedUrl")
 
 # JWT Configuration
 SECRET_KEY = os.environ.get('JWT_SECRET', 'goalmanager-secret-key-change-in-production')
@@ -3587,7 +3598,7 @@ async def get_highlights(
             "tournament_id": h["tournament_id"],
             "round": h["round"],
             "file_type": h["file_type"],
-            "file_url": await get_highlight_public_url(h["file_path"]),
+            "file_url": await get_highlight_signed_url(h["file_path"]),
             "file_name": h["file_name"],
             "file_size": h["file_size"],
             "duration_seconds": h.get("duration_seconds"),
@@ -3764,7 +3775,7 @@ async def upload_highlight(
     return {
         "id": highlight_id,
         "message": "Contenuto caricato con successo",
-        "file_url": await get_highlight_public_url(relative_path)
+        "file_url": await get_highlight_signed_url(relative_path)
     }
 
 @api_router.delete("/highlights/{highlight_id}")
