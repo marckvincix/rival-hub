@@ -854,6 +854,9 @@ export default function TournamentPublicPage() {
                 </View>
               ))
             )}
+            {tournament?.sport && (
+              <ProductCarousel sport={tournament.sport as Sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
+            )}
           </View>
         )}
 
