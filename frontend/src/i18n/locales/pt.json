@@ -443,6 +443,27 @@
     "compress": "Comprimir",
     "uploadInfo": "Carrega fotos e vídeos dos jogos. O conteúdo só estará acessível ao inserir o código que podes partilhar com qualquer pessoa."
   },
+  "highlightsPaywall": {
+    "badge": "PLUS",
+    "title": "Highlights Plus",
+    "subtitle": "Desbloqueie o envio de fotos e vídeos para os seus torneios",
+    "benefit1": "Envie fotos e vídeos de cada jornada",
+    "benefit2": "Conteúdo disponível enquanto a subscrição estiver ativa",
+    "benefit3": "Sem limite de duração dos vídeos",
+    "benefit4": "Visível apenas para quem tem o código do torneio",
+    "monthly": "Mensal",
+    "annual": "Anual",
+    "save": "Poupe",
+    "subscribe": "Subscrever",
+    "restorePurchases": "Restaurar compras",
+    "restoring": "A restaurar...",
+    "unavailable": "Subscrição indisponível de momento. Tente novamente mais tarde.",
+    "purchaseFailedTitle": "Compra falhou",
+    "purchaseFailedGeneric": "Tente novamente mais tarde.",
+    "restoreFailedTitle": "Restauro falhou",
+    "noSubscriptionTitle": "Nenhuma subscrição encontrada",
+    "noSubscriptionMessage": "Não foram encontradas compras para restaurar nesta conta."
+  },
   "news": {
     "title": "Notícias",
     "newNews": "Nova notícia",
@@ -883,7 +904,9 @@
     "logoutConfirm": "Tens a certeza de que queres terminar sessão?",
     "validResults": "Resultados válidos",
     "errorRegistration": "Erro durante o registo",
-    "errorRegistrationGoogle": "Erro durante o registo com Google"
+    "errorRegistrationGoogle": "Erro durante o registo com Google",
+    "errorLoginApple": "Erro durante o início de sessão com Apple",
+    "errorRegistrationApple": "Erro durante o registo com Apple"
   },
   "calendar": {
     "matchDetails": "Jogo do torneio {{name}}"

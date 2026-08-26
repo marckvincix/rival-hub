@@ -443,6 +443,27 @@
     "compress": "ضغط",
     "uploadInfo": "قم بتحميل الصور ومقاطع الفيديو للمباريات. المحتوى سيكون متاحاً فقط عند إدخال الرمز الذي يمكنك مشاركته مع أي شخص."
   },
+  "highlightsPaywall": {
+    "badge": "بلس",
+    "title": "Highlights Plus",
+    "subtitle": "افتح تحميل الصور والفيديوهات لبطولاتك",
+    "benefit1": "قم بتحميل الصور والفيديوهات لكل جولة",
+    "benefit2": "المحتوى متاح طالما اشتراكك نشط",
+    "benefit3": "لا يوجد حد لمدة الفيديو",
+    "benefit4": "مرئي فقط لمن يملك رمز البطولة",
+    "monthly": "شهري",
+    "annual": "سنوي",
+    "save": "وفّر",
+    "subscribe": "اشترك",
+    "restorePurchases": "استعادة المشتريات",
+    "restoring": "جارٍ الاستعادة...",
+    "unavailable": "الاشتراك غير متاح حاليًا. يرجى المحاولة لاحقًا.",
+    "purchaseFailedTitle": "فشلت عملية الشراء",
+    "purchaseFailedGeneric": "يرجى المحاولة مرة أخرى لاحقًا.",
+    "restoreFailedTitle": "فشلت الاستعادة",
+    "noSubscriptionTitle": "لم يتم العثور على اشتراك",
+    "noSubscriptionMessage": "لم يتم العثور على مشتريات لاستعادتها لهذا الحساب."
+  },
   "news": {
     "title": "الأخبار",
     "newNews": "خبر جديد",
@@ -883,7 +904,9 @@
     "logoutConfirm": "هل أنت متأكد من تسجيل الخروج؟",
     "validResults": "نتائج صالحة",
     "errorRegistration": "خطأ أثناء التسجيل",
-    "errorRegistrationGoogle": "خطأ أثناء التسجيل بجوجل"
+    "errorRegistrationGoogle": "خطأ أثناء التسجيل بجوجل",
+    "errorLoginApple": "خطأ أثناء تسجيل الدخول بآبل",
+    "errorRegistrationApple": "خطأ أثناء التسجيل بآبل"
   },
   "calendar": {
     "matchDetails": "مباراة بطولة {{name}}"

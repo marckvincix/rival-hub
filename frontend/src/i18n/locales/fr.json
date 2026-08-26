@@ -442,6 +442,27 @@
     "compress": "Compresser",
     "uploadInfo": "Téléchargez des photos et vidéos des matchs. Le contenu ne sera accessible qu'en entrant le code que vous pouvez partager avec n'importe qui."
   },
+  "highlightsPaywall": {
+    "badge": "PLUS",
+    "title": "Highlights Plus",
+    "subtitle": "Débloquez l'envoi de photos et vidéos pour vos tournois",
+    "benefit1": "Téléversez photos et vidéos pour chaque journée",
+    "benefit2": "Contenu disponible tant que l'abonnement est actif",
+    "benefit3": "Aucune limite de durée pour les vidéos",
+    "benefit4": "Visible uniquement par ceux qui ont le code du tournoi",
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "save": "Économisez",
+    "subscribe": "S'abonner",
+    "restorePurchases": "Restaurer les achats",
+    "restoring": "Restauration...",
+    "unavailable": "Abonnement indisponible pour le moment. Réessayez plus tard.",
+    "purchaseFailedTitle": "Échec de l'achat",
+    "purchaseFailedGeneric": "Veuillez réessayer plus tard.",
+    "restoreFailedTitle": "Échec de la restauration",
+    "noSubscriptionTitle": "Aucun abonnement trouvé",
+    "noSubscriptionMessage": "Aucun achat à restaurer n'a été trouvé pour ce compte."
+  },
   "news": {
     "title": "Actualités",
     "newNews": "Nouvelle actualité",
@@ -882,7 +903,9 @@
     "logoutConfirm": "Êtes-vous sûr de vouloir vous déconnecter ?",
     "validResults": "Résultats valides",
     "errorRegistration": "Erreur lors de l'inscription",
-    "errorRegistrationGoogle": "Erreur lors de l'inscription avec Google"
+    "errorRegistrationGoogle": "Erreur lors de l'inscription avec Google",
+    "errorLoginApple": "Erreur lors de la connexion avec Apple",
+    "errorRegistrationApple": "Erreur lors de l'inscription avec Apple"
   },
   "calendar": {
     "matchDetails": "Match du tournoi {{name}}"

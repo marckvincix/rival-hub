@@ -445,6 +445,27 @@
     "compress": "Compress",
     "uploadInfo": "Upload photos and videos of matches. Content will only be accessible by entering the code you can share with anyone."
   },
+  "highlightsPaywall": {
+    "badge": "PLUS",
+    "title": "Highlights Plus",
+    "subtitle": "Unlock photo and video uploads for your tournaments",
+    "benefit1": "Upload photos and videos for every matchday",
+    "benefit2": "Content stays available while your subscription is active",
+    "benefit3": "No limit on video length",
+    "benefit4": "Only visible to those with the tournament code",
+    "monthly": "Monthly",
+    "annual": "Annual",
+    "save": "Save",
+    "subscribe": "Subscribe",
+    "restorePurchases": "Restore purchases",
+    "restoring": "Restoring...",
+    "unavailable": "Subscription unavailable right now. Please try again later.",
+    "purchaseFailedTitle": "Purchase failed",
+    "purchaseFailedGeneric": "Please try again later.",
+    "restoreFailedTitle": "Restore failed",
+    "noSubscriptionTitle": "No subscription found",
+    "noSubscriptionMessage": "No purchases to restore were found for this account."
+  },
   "news": {
     "title": "Title",
     "newNews": "New News",
@@ -886,7 +907,9 @@
     "logoutConfirm": "Are you sure you want to logout?",
     "validResults": "Valid results",
     "errorRegistration": "Error during registration",
-    "errorRegistrationGoogle": "Error during Google registration"
+    "errorRegistrationGoogle": "Error during Google registration",
+    "errorLoginApple": "Error during Apple login",
+    "errorRegistrationApple": "Error during Apple registration"
   },
   "calendar": {
     "matchDetails": "Match of tournament {{name}}"

@@ -2,7 +2,7 @@ import { Platform } from 'react-native';
 import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
 
 // Must match backend HIGHLIGHTS_PLUS_ENTITLEMENT / RevenueCat dashboard entitlement id.
-export const HIGHLIGHTS_PLUS_ENTITLEMENT = 'Rival Hub Pro';
+export const HIGHLIGHTS_PLUS_ENTITLEMENT = 'rival_hub_pro';
 
 let configured = false;
 

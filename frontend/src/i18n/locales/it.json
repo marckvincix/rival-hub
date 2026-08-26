@@ -446,6 +446,27 @@
     "compress": "Comprimi",
     "uploadInfo": "Carica foto e video delle partite. I contenuti saranno accessibili solo inserendo il codice che puoi condividere con chiunque."
   },
+  "highlightsPaywall": {
+    "badge": "PLUS",
+    "title": "Highlights Plus",
+    "subtitle": "Sblocca il caricamento di foto e video per i tuoi tornei",
+    "benefit1": "Caricamento di foto e video per ogni giornata",
+    "benefit2": "Contenuti disponibili finché l'abbonamento è attivo",
+    "benefit3": "Nessun limite sulla durata dei video",
+    "benefit4": "Visibili solo a chi ha il codice del torneo",
+    "monthly": "Mensile",
+    "annual": "Annuale",
+    "save": "Risparmi",
+    "subscribe": "Abbonati",
+    "restorePurchases": "Ripristina acquisti",
+    "restoring": "Ripristino...",
+    "unavailable": "Abbonamento non disponibile al momento. Riprova più tardi.",
+    "purchaseFailedTitle": "Acquisto non riuscito",
+    "purchaseFailedGeneric": "Riprova più tardi.",
+    "restoreFailedTitle": "Ripristino non riuscito",
+    "noSubscriptionTitle": "Nessun abbonamento trovato",
+    "noSubscriptionMessage": "Non risultano acquisti da ripristinare per questo account."
+  },
   "news": {
     "title": "Titolo",
     "newNews": "Nuova News",
@@ -887,7 +908,9 @@
     "logoutConfirm": "Sei sicuro di voler uscire?",
     "validResults": "Risultati validi",
     "errorRegistration": "Errore durante la registrazione",
-    "errorRegistrationGoogle": "Errore durante la registrazione con Google"
+    "errorRegistrationGoogle": "Errore durante la registrazione con Google",
+    "errorLoginApple": "Errore durante l'accesso con Apple",
+    "errorRegistrationApple": "Errore durante la registrazione con Apple"
   },
   "calendar": {
     "matchDetails": "Partita del torneo {{name}}"

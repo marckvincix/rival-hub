@@ -12,7 +12,8 @@
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://rival-hub.onrender.com",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd"
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "536042438061-g23ljan2592dognseq2rfjivgusahtoi.apps.googleusercontent.com"
       }
     },
     "preview": {
@@ -23,7 +24,8 @@
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://rival-hub.onrender.com",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd"
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
+        "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "536042438061-g23ljan2592dognseq2rfjivgusahtoi.apps.googleusercontent.com"
       }
     }
   },

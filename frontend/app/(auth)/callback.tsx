@@ -7,7 +7,7 @@ import { useAuthStore } from '../../src/store/authStore';
 export default function AuthCallback() {
   const router = useRouter();
   const params = useLocalSearchParams();
-  const { exchangeSession } = useAuthStore();
+  const { googleLogin } = useAuthStore();
   const hasProcessed = useRef(false);
 
   useEffect(() => {
@@ -15,13 +15,14 @@ export default function AuthCallback() {
     hasProcessed.current = true;
 
     const processAuth = async () => {
-      const sessionId = params.session_id as string;
-      if (!sessionId) {
+      const code = params.code as string;
+      const redirectUri = params.redirect_uri as string;
+      if (!code || !redirectUri) {
         router.replace('/(auth)/login');
         return;
       }
       try {
-        await exchangeSession(sessionId);
+        await googleLogin(code, redirectUri);
         router.replace('/(tabs)');
       } catch (error) {
         router.replace('/(auth)/login');

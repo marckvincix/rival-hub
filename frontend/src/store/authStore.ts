@@ -71,10 +71,12 @@ interface AuthState {
   isAuthenticated: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
-  exchangeSession: (sessionId: string) => Promise<void>;
+  googleLogin: (code: string, redirectUri: string) => Promise<void>;
+  appleLogin: (identityToken: string, fullName?: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
   setUser: (user: User | null) => void;
+  deleteAccount: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -123,11 +125,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     }
   },
 
-  exchangeSession: async (sessionId: string) => {
+  googleLogin: async (code: string, redirectUri: string) => {
     try {
-      const response = await api.post('/api/auth/session', { session_id: sessionId });
+      const response = await api.post('/api/auth/google', { code, redirect_uri: redirectUri });
       const { session_token, ...userData } = response.data;
-      
+
       await safeStorage.setItem('session_token', session_token);
       api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
       configurePurchases((userData as User).user_id);
@@ -140,6 +142,26 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       });
     } catch (error: any) {
       throw new Error(error.response?.data?.detail || 'Errore di autenticazione');
+    }
+  },
+
+  appleLogin: async (identityToken: string, fullName?: string) => {
+    try {
+      const response = await api.post('/api/auth/apple', { identity_token: identityToken, full_name: fullName });
+      const { session_token, ...userData } = response.data;
+
+      await safeStorage.setItem('session_token', session_token);
+      api.defaults.headers.common['Authorization'] = `Bearer ${session_token}`;
+      configurePurchases((userData as User).user_id);
+
+      set({
+        user: userData as User,
+        sessionToken: session_token,
+        isAuthenticated: true,
+        isLoading: false
+      });
+    } catch (error: any) {
+      throw new Error(error.response?.data?.detail || 'Errore di autenticazione con Apple');
     }
   },
 
@@ -211,5 +233,24 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   setUser: (user: User | null) => {
     set({ user, isAuthenticated: !!user });
+  },
+
+  deleteAccount: async () => {
+    await api.delete('/api/auth/me');
+
+    try {
+      await safeStorage.removeItem('session_token');
+    } catch (error) {
+      // Ignore storage errors
+    }
+    delete api.defaults.headers.common['Authorization'];
+    await logOutPurchases();
+
+    set({
+      user: null,
+      sessionToken: null,
+      isAuthenticated: false,
+      isLoading: false
+    });
   }
 }));

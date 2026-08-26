@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 import {
   getHighlightsPlusOffering,
@@ -25,15 +26,16 @@ interface HighlightsPaywallModalProps {
   onSubscribed: () => void;
 }
 
-const BENEFITS = [
-  { icon: 'image-outline' as const, text: 'Caricamento di foto e video per ogni giornata' },
-  { icon: 'cloud-outline' as const, text: 'Conservazione in cloud per 12 mesi per ogni file' },
-  { icon: 'infinite-outline' as const, text: 'Nessun limite sulla durata dei video' },
-  { icon: 'people-outline' as const, text: 'Visibili solo a chi ha il codice del torneo' },
-];
-
 export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: HighlightsPaywallModalProps) {
+  const { t } = useTranslation();
   const { user, checkAuth } = useAuthStore();
+
+  const BENEFITS = [
+    { icon: 'image-outline' as const, text: t('highlightsPaywall.benefit1') },
+    { icon: 'cloud-outline' as const, text: t('highlightsPaywall.benefit2') },
+    { icon: 'infinite-outline' as const, text: t('highlightsPaywall.benefit3') },
+    { icon: 'people-outline' as const, text: t('highlightsPaywall.benefit4') },
+  ];
   const [offering, setOffering] = useState<PurchasesOffering | null>(null);
   const [loadingOffering, setLoadingOffering] = useState(true);
   const [selected, setSelected] = useState<PurchasesPackage | null>(null);
@@ -75,7 +77,7 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
       }
     } catch (e: any) {
       if (!e?.userCancelled) {
-        Alert.alert('Acquisto non riuscito', e?.message || 'Riprova più tardi.');
+        Alert.alert(t('highlightsPaywall.purchaseFailedTitle'), e?.message || t('highlightsPaywall.purchaseFailedGeneric'));
       }
     } finally {
       setPurchasing(false);
@@ -90,10 +92,10 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
         await refreshBackendPlan();
         onSubscribed();
       } else {
-        Alert.alert('Nessun abbonamento trovato', 'Non risultano acquisti da ripristinare per questo account.');
+        Alert.alert(t('highlightsPaywall.noSubscriptionTitle'), t('highlightsPaywall.noSubscriptionMessage'));
       }
     } catch (e: any) {
-      Alert.alert('Ripristino non riuscito', e?.message || 'Riprova più tardi.');
+      Alert.alert(t('highlightsPaywall.restoreFailedTitle'), e?.message || t('highlightsPaywall.purchaseFailedGeneric'));
     } finally {
       setRestoring(false);
     }
@@ -110,11 +112,11 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
 
           <View style={styles.badge}>
             <Ionicons name="star" size={14} color="#FFF" />
-            <Text style={styles.badgeText}>PLUS</Text>
+            <Text style={styles.badgeText}>{t('highlightsPaywall.badge')}</Text>
           </View>
-          <Text style={styles.title}>Highlights Plus</Text>
+          <Text style={styles.title}>{t('highlightsPaywall.title')}</Text>
           <Text style={styles.subtitle}>
-            Sblocca il caricamento di foto e video per i tuoi tornei
+            {t('highlightsPaywall.subtitle')}
           </Text>
 
           <View style={styles.benefitsList}>
@@ -132,7 +134,7 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
             </View>
           ) : !offering || offering.availablePackages.length === 0 ? (
             <Text style={styles.unavailableText}>
-              Abbonamento non disponibile al momento. Riprova più tardi.
+              {t('highlightsPaywall.unavailable')}
             </Text>
           ) : (
             <View style={styles.packagesRow}>
@@ -144,11 +146,11 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
                 >
                   {pkg.packageType === 'ANNUAL' && (
                     <View style={styles.saveBadge}>
-                      <Text style={styles.saveBadgeText}>Risparmi</Text>
+                      <Text style={styles.saveBadgeText}>{t('highlightsPaywall.save')}</Text>
                     </View>
                   )}
                   <Text style={[styles.packageLabel, selected?.identifier === pkg.identifier && styles.packageLabelActive]}>
-                    {pkg.packageType === 'ANNUAL' ? 'Annuale' : pkg.packageType === 'MONTHLY' ? 'Mensile' : pkg.identifier}
+                    {pkg.packageType === 'ANNUAL' ? t('highlightsPaywall.annual') : pkg.packageType === 'MONTHLY' ? t('highlightsPaywall.monthly') : pkg.identifier}
                   </Text>
                   <Text style={[styles.packagePrice, selected?.identifier === pkg.identifier && styles.packagePriceActive]}>
                     {pkg.product.priceString}
@@ -167,13 +169,13 @@ export function HighlightsPaywallModal({ visible, onClose, onSubscribed }: Highl
             {purchasing ? (
               <ActivityIndicator color="#FFF" />
             ) : (
-              <Text style={styles.subscribeButtonText}>Abbonati</Text>
+              <Text style={styles.subscribeButtonText}>{t('highlightsPaywall.subscribe')}</Text>
             )}
           </TouchableOpacity>
 
           <TouchableOpacity onPress={handleRestore} disabled={restoring} style={styles.restoreLink}>
             <Text style={styles.restoreLinkText}>
-              {restoring ? 'Ripristino...' : 'Ripristina acquisti'}
+              {restoring ? t('highlightsPaywall.restoring') : t('highlightsPaywall.restorePurchases')}
             </Text>
           </TouchableOpacity>
         </View>

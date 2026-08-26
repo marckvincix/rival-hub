@@ -18,12 +18,13 @@ import { useAuthStore } from '../../src/store/authStore';
 import { useTranslation } from '../../src/i18n';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import * as AppleAuthentication from 'expo-apple-authentication';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login } = useAuthStore();
+  const { login, appleLogin } = useAuthStore();
   const { t } = useTranslation();
   
   const [email, setEmail] = useState('');
@@ -57,25 +58,51 @@ export default function LoginScreen() {
     try {
       // For web platform, use window.location.origin for proper redirect
       // For mobile, use EXPO_PUBLIC_BACKEND_URL to ensure it works across environments
-      const callbackUrl = Platform.OS === 'web' 
-        ? `${window.location.origin}/(auth)/callback`
-        : `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace('/api', '') || window.location.origin}/(auth)/callback`;
-      const authUrl = `https://auth.emergentagent.com/?redirect=${encodeURIComponent(callbackUrl)}`;
+      // No parentheses here: this string is sent to Google as redirect_uri
+      // and re-echoed back verbatim in its 302 — Google's own URL handling
+      // re-encodes "(" / ")" in a way that breaks openAuthSessionAsync's
+      // plain string-prefix match against the returned URL, so this has to
+      // stay a plain path even though it doesn't correspond to a real
+      // Expo Router screen (the in-app navigation target below is separate).
+      const callbackUrl = Platform.OS === 'web'
+        ? `${window.location.origin}/auth-callback`
+        : `${process.env.EXPO_PUBLIC_BACKEND_URL?.replace('/api', '') || window.location.origin}/auth-callback`;
+      const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID || '')}&redirect_uri=${encodeURIComponent(callbackUrl)}&response_type=code&scope=${encodeURIComponent('openid email profile')}&prompt=select_account`;
       const result = await WebBrowser.openAuthSessionAsync(authUrl, callbackUrl);
       if (result.type === 'success' && result.url) {
         const url = result.url;
-        const hashIndex = url.indexOf('#');
-        if (hashIndex !== -1) {
-          const hash = url.substring(hashIndex + 1);
-          const params = new URLSearchParams(hash);
-          const sessionId = params.get('session_id');
-          if (sessionId) {
-            router.push({ pathname: '/(auth)/callback', params: { session_id: sessionId } });
+        const queryIndex = url.indexOf('?');
+        if (queryIndex !== -1) {
+          const query = url.substring(queryIndex + 1);
+          const params = new URLSearchParams(query);
+          const code = params.get('code');
+          if (code) {
+            router.push({ pathname: '/(auth)/callback', params: { code, redirect_uri: callbackUrl } });
           }
         }
       }
     } catch (error) {
       Alert.alert(t('common.error', 'Error'), t('auth.loginError', 'Google login failed'));
+    }
+  };
+
+  const handleAppleLogin = async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) throw new Error('no identity token');
+      const fullName = credential.fullName
+        ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
+        : undefined;
+      await appleLogin(credential.identityToken, fullName);
+      router.replace('/(tabs)');
+    } catch (error: any) {
+      if (error.code === 'ERR_REQUEST_CANCELED') return;
+      Alert.alert(t('common.error', 'Error'), t('alerts.errorLoginApple', 'Apple login failed'));
     }
   };
 
@@ -108,6 +135,17 @@ export default function LoginScreen() {
             <Ionicons name="logo-google" size={20} color="#000" />
             <Text style={styles.googleButtonText}>{t('auth.continueWithGoogle', 'Continue with Google')}</Text>
           </TouchableOpacity>
+
+          {/* Apple Login (iOS only) */}
+          {Platform.OS === 'ios' && (
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.SIGN_IN}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={12}
+              style={styles.appleButton}
+              onPress={handleAppleLogin}
+            />
+          )}
 
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
@@ -214,6 +252,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#000',
     marginLeft: 12,
+  },
+  appleButton: {
+    height: 50,
+    marginBottom: 24,
   },
   divider: {
     flexDirection: 'row',

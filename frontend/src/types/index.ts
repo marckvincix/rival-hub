@@ -146,6 +146,7 @@ export interface User {
   picture?: string;
   plan?: 'free' | 'plus';
   plan_expiry?: string | null;
+  plan_type?: 'monthly' | 'annual' | null;
 }
 
 export interface Tournament {

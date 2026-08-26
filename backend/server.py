@@ -49,7 +49,7 @@ HIGHLIGHTS_RETENTION_DAYS = 365
 # in-app purchase, never Stripe/web checkout directly — Apple/Google require
 # their own billing for a subscription that unlocks a feature inside the app).
 # Must match the entitlement identifier created in the RevenueCat dashboard.
-HIGHLIGHTS_PLUS_ENTITLEMENT = os.environ.get("REVENUECAT_ENTITLEMENT_ID", "Rival Hub Pro")
+HIGHLIGHTS_PLUS_ENTITLEMENT = os.environ.get("REVENUECAT_ENTITLEMENT_ID", "rival_hub_pro")
 REVENUECAT_WEBHOOK_SECRET = os.environ.get("REVENUECAT_WEBHOOK_SECRET", "")
 
 # Supabase connection (initialized in the startup event, since acreate_client is async)
@@ -77,6 +77,81 @@ async def get_highlight_signed_url(file_path: str) -> str:
 SECRET_KEY = os.environ.get('JWT_SECRET', 'goalmanager-secret-key-change-in-production')
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_DAYS = 7
+
+# --- Sign in with Apple / Google: shared OIDC identity-token verification ---
+# Both providers issue a signed JWT ("identity token" / "id_token") whose
+# signature we check against the provider's own public JWKS rather than
+# trusting anything the client sends unverified.
+_oidc_jwks_cache: Dict[str, Dict[str, Any]] = {}
+
+async def get_oidc_jwks(jwks_url: str) -> list:
+    """A provider's public signing keys, refetched at most once every 6 hours."""
+    now = datetime.now(timezone.utc)
+    cached = _oidc_jwks_cache.get(jwks_url)
+    if cached and (now - cached["fetched_at"]) < timedelta(hours=6):
+        return cached["keys"]
+    async with httpx.AsyncClient() as client:
+        resp = await client.get(jwks_url)
+        resp.raise_for_status()
+        keys = resp.json()["keys"]
+    _oidc_jwks_cache[jwks_url] = {"keys": keys, "fetched_at": now}
+    return keys
+
+async def verify_oidc_identity_token(identity_token: str, jwks_url: str, audience: str, valid_issuers: List[str], provider_name: str) -> dict:
+    """Verify an OIDC identity token (Apple or Google) against the provider's
+    public keys and return its decoded payload (sub, email, ...). Issuer is
+    checked manually against valid_issuers rather than via jose's built-in
+    check, since some providers (Google) legally use more than one exact
+    issuer string across tokens."""
+    try:
+        unverified_header = jwt.get_unverified_header(identity_token)
+    except JWTError:
+        raise HTTPException(status_code=401, detail=f"Token {provider_name} non valido")
+    keys = await get_oidc_jwks(jwks_url)
+    matching_key = next((k for k in keys if k.get("kid") == unverified_header.get("kid")), None)
+    if not matching_key:
+        raise HTTPException(status_code=401, detail=f"Chiave {provider_name} non trovata")
+    try:
+        payload = jwt.decode(
+            identity_token,
+            matching_key,
+            algorithms=["RS256"],
+            audience=audience,
+            options={"verify_iss": False},
+        )
+    except JWTError as e:
+        logger.error(f"{provider_name} token verification failed: {e}")
+        raise HTTPException(status_code=401, detail=f"Token {provider_name} non valido")
+    if payload.get("iss") not in valid_issuers:
+        raise HTTPException(status_code=401, detail=f"Token {provider_name} non valido")
+    return payload
+
+# Sign in with Apple: the iOS app's bundle ID, which must match the identity
+# token's "aud" claim.
+APPLE_BUNDLE_ID = os.environ.get("APPLE_BUNDLE_ID", "app.emergent.profilisquadretestfb21fa61")
+
+async def verify_apple_identity_token(identity_token: str) -> dict:
+    return await verify_oidc_identity_token(
+        identity_token,
+        jwks_url="https://appleid.apple.com/auth/keys",
+        audience=APPLE_BUNDLE_ID,
+        valid_issuers=["https://appleid.apple.com"],
+        provider_name="Apple",
+    )
+
+# Google Sign-In: OAuth client credentials for the "Web application" client
+# used by the in-app browser login flow (frontend/app/(auth)/login.tsx).
+GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", "")
+
+async def verify_google_id_token(id_token: str) -> dict:
+    return await verify_oidc_identity_token(
+        id_token,
+        jwks_url="https://www.googleapis.com/oauth2/v3/certs",
+        audience=GOOGLE_CLIENT_ID,
+        valid_issuers=["https://accounts.google.com", "accounts.google.com"],
+        provider_name="Google",
+    )
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -110,6 +185,14 @@ class UserLogin(BaseModel):
     email: str
     password: str
 
+class AppleAuthRequest(BaseModel):
+    identity_token: str
+    full_name: Optional[str] = None  # only provided by the client on the user's first-ever Apple sign-in
+
+class GoogleAuthRequest(BaseModel):
+    code: str
+    redirect_uri: str  # must exactly match the redirect_uri used to obtain the code
+
 class User(BaseModel):
     user_id: str
     email: str
@@ -118,6 +201,7 @@ class User(BaseModel):
     created_at: datetime
     plan: str = "free"  # free | plus
     plan_expiry: Optional[datetime] = None
+    plan_type: Optional[str] = None  # monthly | annual
 
 class UserResponse(BaseModel):
     user_id: str
@@ -126,6 +210,7 @@ class UserResponse(BaseModel):
     picture: Optional[str] = None
     plan: str = "free"
     plan_expiry: Optional[datetime] = None
+    plan_type: Optional[str] = None
 
 # Tournament Models
 class TournamentCreate(BaseModel):
@@ -752,17 +837,22 @@ async def get_optional_user(
     except HTTPException:
         return None
 
-def user_has_highlights_plus(user: User) -> bool:
-    """Whether a user's Highlights Plus subscription is currently active.
-    Re-derived from plan/plan_expiry on every call rather than trusting a
+def _plan_is_active(plan: Optional[str], plan_expiry) -> bool:
+    """Whether a plan/plan_expiry pair represents a currently-active Highlights
+    Plus subscription. Re-derived on every call rather than trusting a stored
     boolean flag, so it self-heals from whatever the last RevenueCat webhook
     reported instead of needing a separate "is it still valid" sync step."""
-    if user.plan != "plus" or not user.plan_expiry:
+    if plan != "plus" or not plan_expiry:
         return False
-    expiry = user.plan_expiry
-    if expiry.tzinfo is None:
-        expiry = expiry.replace(tzinfo=timezone.utc)
-    return expiry > datetime.now(timezone.utc)
+    if isinstance(plan_expiry, str):
+        plan_expiry = datetime.fromisoformat(plan_expiry)
+    if plan_expiry.tzinfo is None:
+        plan_expiry = plan_expiry.replace(tzinfo=timezone.utc)
+    return plan_expiry > datetime.now(timezone.utc)
+
+def user_has_highlights_plus(user: User) -> bool:
+    """Whether a user's Highlights Plus subscription is currently active."""
+    return _plan_is_active(user.plan, user.plan_expiry)
 
 # ===================== AUTH ENDPOINTS =====================
 
@@ -862,56 +952,68 @@ async def login(user_data: UserLogin):
     
     return response
 
-@api_router.post("/auth/session")
-async def exchange_session(request: Request):
-    """Exchange Emergent OAuth session_id for session_token"""
-    body = await request.json()
-    session_id = body.get("session_id")
-    
-    if not session_id:
-        raise HTTPException(status_code=400, detail="session_id richiesto")
-    
-    # Exchange session_id with Emergent Auth
-    oauth_session_url = os.getenv("OAUTH_SESSION_URL", "https://demobackend.emergentagent.com/auth/v1/env/oauth/session-data")
+@api_router.post("/auth/google")
+async def google_login(data: GoogleAuthRequest):
+    """Sign in with Google: exchange the authorization code from the in-app
+    browser flow for tokens, verify the id_token, and find-or-create the
+    user. Replaces the old Emergent OAuth broker (auth.emergentagent.com),
+    which added a third-party middleman with no benefit over talking to
+    Google directly."""
     async with httpx.AsyncClient() as client:
-        try:
-            resp = await client.get(
-                oauth_session_url,
-                headers={"X-Session-ID": session_id}
-            )
-            if resp.status_code != 200:
-                raise HTTPException(status_code=401, detail="Session ID non valido")
-            
-            auth_data = resp.json()
-        except Exception as e:
-            logger.error(f"Error exchanging session: {e}")
-            raise HTTPException(status_code=401, detail="Errore autenticazione")
-    
+        resp = await client.post("https://oauth2.googleapis.com/token", data={
+            "client_id": GOOGLE_CLIENT_ID,
+            "client_secret": GOOGLE_CLIENT_SECRET,
+            "code": data.code,
+            "grant_type": "authorization_code",
+            "redirect_uri": data.redirect_uri,
+        })
+    if resp.status_code != 200:
+        logger.error(f"Google token exchange failed: {resp.status_code} {resp.text}")
+        raise HTTPException(status_code=401, detail="Errore autenticazione Google")
+
+    id_token = resp.json().get("id_token")
+    if not id_token:
+        raise HTTPException(status_code=401, detail="Errore autenticazione Google")
+
+    payload = await verify_google_id_token(id_token)
+    google_user_id = payload.get("sub")
+    email = payload.get("email")
+    if not google_user_id or not email:
+        raise HTTPException(status_code=401, detail="Token Google non valido")
+
     now = datetime.now(timezone.utc)
-    
-    # Check if user exists
-    user_doc = await db.users.find_one({"email": auth_data["email"]}, {"_id": 0})
-    
+
+    user_doc = await db.users.find_one({"google_user_id": google_user_id}, {"_id": 0})
+
+    if not user_doc:
+        # Link to an existing account with the same email (e.g. registered
+        # earlier with a password, via Apple, or via the old Emergent broker).
+        existing = await db.users.find_one({"email": email}, {"_id": 0})
+        if existing:
+            await db.users.update_one({"user_id": existing["user_id"]}, {"$set": {"google_user_id": google_user_id}})
+            user_doc = existing
+
+    name = payload.get("name") or (user_doc.get("name") if user_doc else email.split("@")[0])
+    picture = payload.get("picture") or (user_doc.get("picture") if user_doc else None)
+
     if user_doc:
-        # Update existing user
-        await db.users.update_one(
-            {"email": auth_data["email"]},
-            {"$set": {"name": auth_data["name"], "picture": auth_data.get("picture")}}
-        )
         user_id = user_doc["user_id"]
+        await db.users.update_one({"user_id": user_id}, {"$set": {"name": name, "picture": picture}})
     else:
-        # Create new user
         user_id = f"user_{uuid.uuid4().hex[:12]}"
         user_doc = {
             "user_id": user_id,
-            "email": auth_data["email"],
-            "name": auth_data["name"],
-            "picture": auth_data.get("picture"),
-            "created_at": now
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "google_user_id": google_user_id,
+            "plan": "free",
+            "plan_expiry": None,
+            "plan_type": None,
+            "created_at": now,
         }
         await db.users.insert_one(user_doc)
-    
-    # Create session
+
     session_token = f"session_{uuid.uuid4().hex}"
     session_doc = {
         "user_id": user_id,
@@ -920,15 +1022,15 @@ async def exchange_session(request: Request):
         "created_at": now
     }
     await db.user_sessions.insert_one(session_doc)
-    
+
     response = JSONResponse(content={
         "user_id": user_id,
-        "email": auth_data["email"],
-        "name": auth_data["name"],
-        "picture": auth_data.get("picture"),
+        "email": email,
+        "name": name,
+        "picture": picture,
         "session_token": session_token
     })
-    
+
     response.set_cookie(
         key="session_token",
         value=session_token,
@@ -938,7 +1040,78 @@ async def exchange_session(request: Request):
         path="/",
         max_age=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
     )
-    
+
+    return response
+
+@api_router.post("/auth/apple")
+async def apple_login(data: AppleAuthRequest):
+    """Sign in with Apple: verify the identity token and find-or-create the user."""
+    payload = await verify_apple_identity_token(data.identity_token)
+    apple_user_id = payload.get("sub")
+    email = payload.get("email")
+    if not apple_user_id:
+        raise HTTPException(status_code=401, detail="Token Apple non valido")
+
+    now = datetime.now(timezone.utc)
+
+    user_doc = await db.users.find_one({"apple_user_id": apple_user_id}, {"_id": 0})
+
+    if not user_doc and email:
+        # Link to an existing account with the same email (e.g. registered
+        # earlier with a password, or via the Google/Emergent broker).
+        existing = await db.users.find_one({"email": email}, {"_id": 0})
+        if existing:
+            await db.users.update_one({"user_id": existing["user_id"]}, {"$set": {"apple_user_id": apple_user_id}})
+            user_doc = existing
+
+    if user_doc:
+        user_id = user_doc["user_id"]
+        name = user_doc.get("name")
+        picture = user_doc.get("picture")
+    else:
+        user_id = f"user_{uuid.uuid4().hex[:12]}"
+        name = data.full_name or (email.split("@")[0] if email else "Utente Apple")
+        picture = None
+        user_doc = {
+            "user_id": user_id,
+            "email": email,
+            "name": name,
+            "picture": picture,
+            "apple_user_id": apple_user_id,
+            "plan": "free",
+            "plan_expiry": None,
+            "plan_type": None,
+            "created_at": now,
+        }
+        await db.users.insert_one(user_doc)
+
+    session_token = f"session_{uuid.uuid4().hex}"
+    session_doc = {
+        "user_id": user_id,
+        "session_token": session_token,
+        "expires_at": now + timedelta(days=ACCESS_TOKEN_EXPIRE_DAYS),
+        "created_at": now
+    }
+    await db.user_sessions.insert_one(session_doc)
+
+    response = JSONResponse(content={
+        "user_id": user_id,
+        "email": email,
+        "name": name,
+        "picture": picture,
+        "session_token": session_token
+    })
+
+    response.set_cookie(
+        key="session_token",
+        value=session_token,
+        httponly=True,
+        secure=True,
+        samesite="none",
+        path="/",
+        max_age=ACCESS_TOKEN_EXPIRE_DAYS * 24 * 60 * 60
+    )
+
     return response
 
 @api_router.get("/auth/me")
@@ -950,8 +1123,52 @@ async def get_me(current_user: User = Depends(get_current_user)):
         name=current_user.name,
         picture=current_user.picture,
         plan=current_user.plan,
-        plan_expiry=current_user.plan_expiry
+        plan_expiry=current_user.plan_expiry,
+        plan_type=current_user.plan_type
     )
+
+@api_router.delete("/auth/me")
+async def delete_account(current_user: User = Depends(get_current_user)):
+    """Permanently delete the current user's account and everything tied to
+    it: tournaments they organize (and those tournaments' teams, players,
+    matches, news, highlights), their own favorites and push tokens, every
+    session, and the user record itself. Required for App Store review
+    (Guideline 5.1.1(v) — apps that support account creation must also let
+    the user delete the account from within the app)."""
+    user_id = current_user.user_id
+
+    tournaments = await db.tournaments.find({"organizer_id": user_id}, {"_id": 0}).to_list(1000)
+    tournament_ids = [t["id"] for t in tournaments]
+
+    if tournament_ids:
+        await db.matches.delete_many({"tournament_id": {"$in": tournament_ids}})
+        await db.match_events.delete_many({"tournament_id": {"$in": tournament_ids}})
+        await db.news.delete_many({"tournament_id": {"$in": tournament_ids}})
+
+        highlights = await db.highlights.find({"tournament_id": {"$in": tournament_ids}}, {"_id": 0}).to_list(10000)
+        if highlights:
+            paths = [h["file_path"] for h in highlights]
+            await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(paths)
+            await db.highlights.delete_many({"tournament_id": {"$in": tournament_ids}})
+
+        teams = await db.teams.find({"tournament_id": {"$in": tournament_ids}}, {"_id": 0}).to_list(1000)
+        team_ids = [t["id"] for t in teams]
+        if team_ids:
+            await db.players.delete_many({"team_id": {"$in": team_ids}})
+            await db.user_favorites.delete_many({"type": "team", "reference_id": {"$in": team_ids}})
+        await db.teams.delete_many({"tournament_id": {"$in": tournament_ids}})
+
+        await db.user_favorites.delete_many({"type": "tournament", "reference_id": {"$in": tournament_ids}})
+        await db.tournaments.delete_many({"organizer_id": user_id})
+
+    await db.user_favorites.delete_many({"user_id": user_id})
+    await db.push_tokens.delete_many({"user_id": user_id})
+    await db.user_sessions.delete_many({"user_id": user_id})
+    await db.users.delete_one({"user_id": user_id})
+
+    response = JSONResponse(content={"message": "Account eliminato"})
+    response.delete_cookie(key="session_token", path="/")
+    return response
 
 @api_router.post("/auth/logout")
 async def logout(request: Request):
@@ -3083,9 +3300,19 @@ async def revenuecat_webhook(request: Request):
     expiry = datetime.fromtimestamp(expiration_ms / 1000, tz=timezone.utc) if expiration_ms else None
     is_active = expiry is not None and expiry > datetime.now(timezone.utc)
 
+    # product_id looks like "rivalhub_highlights_plus_annual" on iOS or
+    # "highlights_plus:annual" (subscription:base_plan) on Android — a
+    # substring check is robust to both without hardcoding either format.
+    product_id = (event.get("product_id") or "").lower()
+    plan_type = "annual" if "annual" in product_id or "yearly" in product_id else "monthly"
+
     await db.users.update_one(
         {"user_id": user_id},
-        {"$set": {"plan": "plus" if is_active else "free", "plan_expiry": expiry}}
+        {"$set": {
+            "plan": "plus" if is_active else "free",
+            "plan_expiry": expiry,
+            "plan_type": plan_type if is_active else None
+        }}
     )
 
     return {"status": "ok"}
@@ -3478,7 +3705,23 @@ async def get_highlights(
         {"tournament_id": tournament_id},
         {"_id": 0}
     ).sort([("round", 1), ("created_at", 1)]).to_list(1000)
-    
+
+    # Content uploaded under a monthly plan only stays visible while the
+    # organizer's subscription is currently active — it's not deleted on
+    # lapse, just hidden, and reappears the moment they resubscribe. Content
+    # uploaded under an annual plan keeps its full 365-day retention
+    # regardless of what happens to the subscription afterwards, since
+    # that's the guarantee the annual plan is sold on. Highlights predating
+    # this distinction have no uploaded_under_plan and are treated the same
+    # as annual (never retroactively hidden).
+    organizer_doc = await db.users.find_one({"user_id": tournament["organizer_id"]}, {"_id": 0})
+    organizer_has_active_plus = _plan_is_active(
+        organizer_doc.get("plan") if organizer_doc else None,
+        organizer_doc.get("plan_expiry") if organizer_doc else None
+    )
+    if not organizer_has_active_plus:
+        highlights = [h for h in highlights if h.get("uploaded_under_plan") != "monthly"]
+
     # Group by round
     rounds_data: Dict[str, Dict] = {}
     for h in highlights:
@@ -3656,6 +3899,7 @@ async def upload_highlight(
         "file_size": file_size,
         "duration_seconds": duration_seconds,
         "uploaded_by": current_user.user_id,
+        "uploaded_under_plan": current_user.plan_type,
         "created_at": now,
         "expires_at": now + timedelta(days=HIGHLIGHTS_RETENTION_DAYS)
     }
@@ -3783,6 +4027,36 @@ async def notify_team_followers(team_id: str, title: str, body: str, data: dict 
 
 # Include the router
 app.include_router(api_router)
+
+# Google's OAuth redirect lands here as a plain https request (not something
+# Expo Router/the mobile app itself can intercept mid-navigation on iOS
+# without an Associated Domains entitlement we don't have). So this bridge
+# page renders a real response instead of a bare 404, and hands off to the
+# app via its own custom URL scheme, which iOS *can* always route directly.
+@app.get("/auth-callback", response_class=HTMLResponse, include_in_schema=False)
+async def auth_callback_bridge(request: Request):
+    from urllib.parse import quote
+    code = request.query_params.get("code", "")
+    error = request.query_params.get("error", "")
+    if code:
+        redirect_uri = str(request.url).split("?")[0]
+        deep_link = f"rivalhub://callback?code={quote(code)}&redirect_uri={quote(redirect_uri)}"
+        heading = "Accesso completato"
+    else:
+        deep_link = f"rivalhub://callback?error={quote(error or 'unknown_error')}"
+        heading = "Accesso non riuscito"
+    html = f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rival Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{{font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center;padding:60px 24px;background:#fff;color:#000}}
+a{{display:inline-block;margin-top:24px;padding:14px 28px;background:#000;color:#fff;border-radius:12px;text-decoration:none;font-weight:700}}</style>
+</head><body>
+<h2>{heading}</h2>
+<p>Tocca il pulsante per tornare all'app.</p>
+<a href="{deep_link}">Torna all'app</a>
+<script>window.location.replace("{deep_link}");</script>
+</body></html>"""
+    return HTMLResponse(content=html)
 
 # ===================== WEB APP STATIC FILES =====================
 # Serve the built web app from /app/frontend/dist

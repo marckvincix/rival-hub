@@ -10,14 +10,24 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
+      "bundleIdentifier": "app.emergent.profilisquadretestfb21fa61",
       "infoPlist": {
-        "NSCameraUsageDescription": "Per caricare foto del torneo",
-        "NSPhotoLibraryUsageDescription": "Per selezionare immagini dalla galleria"
+        "NSCameraUsageDescription": "To take photos to upload in your tournaments",
+        "NSPhotoLibraryUsageDescription": "To select photos and videos from your library to upload in your tournaments"
       }
+    },
+    "locales": {
+      "it": "./languages/it.json",
+      "en": "./languages/en.json",
+      "fr": "./languages/fr.json",
+      "de": "./languages/de.json",
+      "es": "./languages/es.json",
+      "pt": "./languages/pt.json",
+      "ar": "./languages/ar.json"
     },
     "android": {
       "package": "app.emergent.torneolive4d62a32b",
-      "versionCode": 100,
+      "versionCode": 1028,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -54,6 +64,7 @@
         }
       ],
       "expo-build-properties",
+      "expo-apple-authentication",
       [
         "expo-notifications",
         {

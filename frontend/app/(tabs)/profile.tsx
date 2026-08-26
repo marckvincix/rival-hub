@@ -23,7 +23,7 @@ import { useLanguage } from '../../src/contexts/LanguageContext';
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, logout } = useAuthStore();
+  const { user, logout, deleteAccount } = useAuthStore();
   const { expoPushToken } = useNotifications();
   const { t } = useTranslation();
   const { currentLanguage, languages } = useLanguage();
@@ -138,6 +138,29 @@ export default function ProfileScreen() {
         await logout();
       }}
     ]);
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert(
+      t('profile.deleteAccount', 'Delete Account'),
+      t('profile.deleteAccountWarning', 'This will permanently delete your account and all associated data.'),
+      [
+        { text: t('common.cancel', 'Cancel'), style: 'cancel' },
+        {
+          text: t('common.delete', 'Delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              // Don't navigate here either: (tabs)/_layout.tsx redirects once
+              // isAuthenticated flips to false, same as logout.
+              await deleteAccount();
+            } catch (error) {
+              Alert.alert(t('common.error', 'Error'), t('errors.somethingWentWrong', 'Something went wrong'));
+            }
+          }
+        }
+      ]
+    );
   };
 
   const firstName = user?.name?.split(' ')[0] || t('common.player', 'User');
@@ -314,6 +337,14 @@ export default function ProfileScreen() {
           <Button title={t('auth.logout')} onPress={handleLogout} variant="outline" icon="log-out-outline" fullWidth />
         </View>
 
+        {/* Delete Account */}
+        <View style={styles.section}>
+          <TouchableOpacity style={styles.deleteAccountButton} onPress={handleDeleteAccount}>
+            <Ionicons name="trash-outline" size={18} color="#FF3B30" />
+            <Text style={styles.deleteAccountText}>{t('profile.deleteAccount', 'Delete Account')}</Text>
+          </TouchableOpacity>
+        </View>
+
         {/* App Info */}
         <View style={styles.appInfo}>
           <Ionicons name="football" size={24} color="#999" />
@@ -440,6 +471,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#000',
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 14,
+    gap: 8,
+  },
+  deleteAccountText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FF3B30',
   },
   appInfo: {
     alignItems: 'center',
