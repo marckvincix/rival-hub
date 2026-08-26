@@ -411,6 +411,7 @@ const styles = StyleSheet.create({
   },
   scrollWrap: {
     flex: 1,
+    flexDirection: 'row',
     position: 'relative',
   },
   categoryScroll: {
