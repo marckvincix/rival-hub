@@ -6,6 +6,24 @@ export const HIGHLIGHTS_PLUS_ENTITLEMENT = 'rival_hub_pro';
 
 let configured = false;
 
+// Called once at app startup, before we know whether anyone is logged in,
+// so RevenueCat can already report real per-store prices (e.g. for the
+// "create a tournament" paywall preview shown to signed-out users).
+// configurePurchases() below correctly upgrades this anonymous session to
+// the real identified user via Purchases.logIn() once they authenticate,
+// rather than re-configuring — RevenueCat's standard anonymous-then-identify
+// flow, so nothing is lost by starting anonymous.
+export function configureAnonymousPurchases() {
+  if (configured) return;
+  const apiKey = Platform.select({
+    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,
+    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_KEY,
+  });
+  if (!apiKey) return;
+  Purchases.configure({ apiKey });
+  configured = true;
+}
+
 export function configurePurchases(appUserID: string) {
   const apiKey = Platform.select({
     ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_KEY,

@@ -3,7 +3,7 @@ import {
   View, 
   Text, 
   StyleSheet, 
-  ScrollView, 
+  ScrollView,
   TouchableOpacity,
   Share,
   RefreshControl,
@@ -11,7 +11,9 @@ import {
   Linking,
   Platform,
   Alert,
-  Image
+  Image,
+  TextInput,
+  KeyboardAvoidingView
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
@@ -134,6 +136,12 @@ export default function TournamentPublicPage() {
   const [selectedPlayerForStats, setSelectedPlayerForStats] = useState<any>(null);
   const [playerStatsData, setPlayerStatsData] = useState<any>(null);
   const [loadingPlayerStats, setLoadingPlayerStats] = useState(false);
+  // Private tournaments: 'needs_code' before any attempt, 'invalid_code'
+  // after a wrong one — kept distinct from a plain "not found" so the user
+  // sees a code-entry screen instead of a dead end.
+  const [privateAccess, setPrivateAccess] = useState<'unknown' | 'needs_code' | 'invalid_code'>('unknown');
+  const [accessCodeInput, setAccessCodeInput] = useState('');
+  const [checkingCode, setCheckingCode] = useState(false);
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
@@ -154,11 +162,14 @@ export default function TournamentPublicPage() {
     return () => clearInterval(pollInterval);
   }, [tournament?.id]);
 
-  const loadData = async () => {
+  const loadData = async (codeOverride?: string) => {
     try {
-      const tournamentRes = await api.get(`/api/tournaments/slug/${slug}`);
+      const code = codeOverride ?? accessCodeInput;
+      const url = `/api/tournaments/slug/${slug}${code ? `?code=${encodeURIComponent(code)}` : ''}`;
+      const tournamentRes = await api.get(url);
       const t = tournamentRes.data;
       setTournament(t);
+      setPrivateAccess('unknown');
       
       // Determine tournament sport type
       const isBasketball = t.sport === 'basket';
@@ -202,7 +213,24 @@ export default function TournamentPublicPage() {
         }));
         setTeamPlayers(playersData);
       }
-    } catch (error) { console.error('Error:', error); } finally { setLoading(false); setRefreshing(false); }
+    } catch (error: any) {
+      const detail = error?.response?.data?.detail;
+      if (detail === 'private_code_required') {
+        setPrivateAccess('needs_code');
+      } else if (detail === 'private_code_invalid') {
+        setPrivateAccess('invalid_code');
+      } else {
+        console.error('Error:', error);
+      }
+    } finally { setLoading(false); setRefreshing(false); }
+  };
+
+  const handleUnlockWithCode = async () => {
+    if (!accessCodeInput.trim()) return;
+    setCheckingCode(true);
+    setLoading(true);
+    await loadData(accessCodeInput.trim());
+    setCheckingCode(false);
   };
 
   const onRefresh = () => { setRefreshing(true); loadData(); };
@@ -280,13 +308,48 @@ export default function TournamentPublicPage() {
     return result || t('matches.dateTBD', 'Date TBD');
   };
 
+  // Player ratings bottom sheet — shows how each player was scored for a
+  // given match, in traditional lineup order (goalkeeper → defenders →
+  // midfielders → forwards), matching how translateRole's own mapping
+  // groups roles per sport.
+  const ROLE_SORT_ORDER: Record<string, number> = {
+    'Portiere': 0, 'Goalkeeper': 0,
+    'Difensore': 1, 'Defender': 1,
+    'Centrocampista': 2, 'Midfielder': 2,
+    'Attaccante': 3, 'Forward': 3,
+  };
+  const [showRatingsSheet, setShowRatingsSheet] = useState(false);
+  const [ratingsSheetMatch, setRatingsSheetMatch] = useState<Match | null>(null);
+  const [matchRatings, setMatchRatings] = useState<any[]>([]);
+  const [loadingRatings, setLoadingRatings] = useState(false);
+
+  const openRatingsSheet = async (match: Match) => {
+    setRatingsSheetMatch(match);
+    setShowRatingsSheet(true);
+    setLoadingRatings(true);
+    try {
+      const response = await api.get(`/api/matches/${match.id}/ratings`);
+      setMatchRatings(response.data || []);
+    } catch (error) {
+      setMatchRatings([]);
+    } finally {
+      setLoadingRatings(false);
+    }
+  };
+
   // Add to calendar function
   const handleAddToCalendar = async (match: Match) => {
     const homeTeam = getTeamName(match.home_team_id);
     const awayTeam = getTeamName(match.away_team_id);
     const title = `${homeTeam} vs ${awayTeam}`;
-    const location = tournament?.location || '';
-    
+
+    // A match can override the tournament's own venue with its own pitch —
+    // prefer that, and fall back through the tournament's venue name/
+    // address and finally its plain location string.
+    const venueName = match.venue_name || tournament?.venue_name || '';
+    const venueAddress = match.venue_address || tournament?.venue_address || '';
+    const location = [venueName, venueAddress].filter(Boolean).join(', ') || tournament?.location || '';
+
     // Parse date and time
     let startDate = new Date();
     if (match.match_date) {
@@ -296,16 +359,30 @@ export default function TournamentPublicPage() {
       const [hours, minutes] = match.match_time.split(':');
       startDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
     }
-    
+
     const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
-    
+
     // Format for calendar URLs
     const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, '');
     const startStr = formatDate(startDate);
     const endStr = formatDate(endDate);
-    
+
+    // Everything worth knowing about the match and its tournament, since
+    // the calendar app's "location" field isn't always tappable/mapped the
+    // same way on every platform — repeating it as plain text here means
+    // it's readable either way.
+    const detailsLines = [
+      `${homeTeam} vs ${awayTeam}`,
+      tournament?.name ? `Torneo: ${tournament.name}` : null,
+      tournament?.category ? `Categoria: ${tournament.category}` : null,
+      match.round ? `Turno: ${translateRoundName(match.round)}` : null,
+      venueName ? `Campo: ${venueName}` : null,
+      venueAddress ? `Indirizzo: ${venueAddress}` : null,
+      tournament?.slug ? `${(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '')}/tournament/${tournament.slug}` : null,
+    ].filter(Boolean).join('\n');
+
     // Create Google Calendar URL
-    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(`Partita del torneo ${tournament?.name || ''}`)}`;
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(detailsLines)}`;
     
     // For iOS, we can try to open the calendar app
     if (Platform.OS === 'ios') {
@@ -361,6 +438,38 @@ export default function TournamentPublicPage() {
   };
 
   if (loading) return <Loading message="Caricamento..." />;
+
+  if (privateAccess === 'needs_code' || privateAccess === 'invalid_code') {
+    return (
+      <SafeAreaView style={styles.container}>
+        <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+          <View style={styles.privateGateContainer}>
+            <View style={styles.privateGateIcon}>
+              <Ionicons name="lock-closed" size={28} color="#FFF" />
+            </View>
+            <Text style={styles.privateGateTitle}>{t('tournaments.privateTitle', 'Torneo privato')}</Text>
+            <Text style={styles.privateGateDesc}>{t('tournaments.privateDesc', "Questo torneo è privato. Inserisci il codice d'accesso per vederlo.")}</Text>
+            <TextInput
+              style={styles.privateGateInput}
+              value={accessCodeInput}
+              onChangeText={setAccessCodeInput}
+              placeholder={t('tournaments.enterCodePlaceholder', 'Codice a 6 caratteri')}
+              placeholderTextColor="#999"
+              autoCapitalize="characters"
+              autoCorrect={false}
+              maxLength={6}
+            />
+            {privateAccess === 'invalid_code' && (
+              <Text style={styles.privateGateError}>{t('tournaments.invalidCode', 'Codice non valido, riprova.')}</Text>
+            )}
+            <TouchableOpacity style={styles.privateGateButton} onPress={handleUnlockWithCode} disabled={checkingCode}>
+              <Text style={styles.privateGateButtonText}>{checkingCode ? '...' : t('tournaments.unlock', 'Sblocca')}</Text>
+            </TouchableOpacity>
+          </View>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    );
+  }
 
   if (!tournament) {
     return (
@@ -657,6 +766,14 @@ export default function TournamentPublicPage() {
                         </View>
                         {/* Date and Time */}
                         <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
+                        {/* Ratings — shown regardless of live/completed status, since
+                            the organizer can score players any time after the match. */}
+                        {tournament?.sport === 'calcio' && (
+                          <TouchableOpacity style={styles.ratingsSheetButton} onPress={() => openRatingsSheet(match)}>
+                            <Ionicons name="star-outline" size={16} color="#000" />
+                            <Text style={styles.ratingsSheetButtonText}>{t('soccer.ratings', 'Voti')}</Text>
+                          </TouchableOpacity>
+                        )}
                         {/* Action Buttons Row */}
                         {!isLive && (
                           <View style={styles.matchActionsRow}>
@@ -1647,12 +1764,99 @@ export default function TournamentPublicPage() {
           </TouchableOpacity>
         </TouchableOpacity>
       </Modal>
+
+      {/* Player Ratings Bottom Sheet */}
+      <Modal
+        visible={showRatingsSheet}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowRatingsSheet(false)}
+      >
+        <View style={styles.ratingsSheetOverlay}>
+          <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowRatingsSheet(false)} />
+          <View style={styles.ratingsSheet}>
+            <View style={styles.ratingsSheetHandle} />
+            <TouchableOpacity style={styles.ratingsSheetClose} onPress={() => setShowRatingsSheet(false)}>
+              <Ionicons name="close" size={22} color="#000" />
+            </TouchableOpacity>
+            <Text style={styles.ratingsSheetTitle}>{t('soccer.ratings', 'Voti')}</Text>
+            {ratingsSheetMatch && (
+              <Text style={styles.ratingsSheetSubtitle}>
+                {getTeamName(ratingsSheetMatch.home_team_id)} - {getTeamName(ratingsSheetMatch.away_team_id)}
+              </Text>
+            )}
+            <ScrollView style={styles.ratingsSheetScroll} showsVerticalScrollIndicator={false}>
+              {loadingRatings ? (
+                <Text style={styles.ratingsSheetEmpty}>{t('common.loading', 'Loading...')}</Text>
+              ) : matchRatings.length === 0 ? (
+                <Text style={styles.ratingsSheetEmpty}>{t('soccer.noRatingsYet', 'Nessun voto assegnato ancora per questa partita.')}</Text>
+              ) : (
+                [
+                  { teamId: ratingsSheetMatch?.home_team_id, label: getTeamName(ratingsSheetMatch?.home_team_id || '') },
+                  { teamId: ratingsSheetMatch?.away_team_id, label: getTeamName(ratingsSheetMatch?.away_team_id || '') },
+                ].map(({ teamId, label }) => {
+                  const teamRatings = matchRatings
+                    .filter((r) => r.team_id === teamId)
+                    .sort((a, b) => (ROLE_SORT_ORDER[a.role] ?? 99) - (ROLE_SORT_ORDER[b.role] ?? 99));
+                  if (teamRatings.length === 0) return null;
+                  return (
+                    <View key={teamId} style={styles.ratingsSheetTeamSection}>
+                      <Text style={styles.ratingsSheetTeamName}>{label}</Text>
+                      {teamRatings.map((r) => (
+                        <View key={r.player_id} style={styles.ratingsSheetRow}>
+                          <View style={styles.ratingsSheetPlayerInfo}>
+                            <Text style={styles.ratingsSheetPlayerNumber}>{r.player_number ?? '-'}</Text>
+                            <View>
+                              <Text style={styles.ratingsSheetPlayerName}>{r.player_name}</Text>
+                              <Text style={styles.ratingsSheetPlayerRole}>{translateRole(r.role || '')}</Text>
+                            </View>
+                          </View>
+                          <View style={styles.ratingsSheetValueBox}>
+                            <Text style={styles.ratingsSheetValue}>{r.rating}</Text>
+                          </View>
+                        </View>
+                      ))}
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#FFF' },
+  // Player ratings bottom sheet
+  ratingsSheetOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'flex-end' },
+  ratingsSheet: { backgroundColor: '#FFF', borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 12, paddingHorizontal: 20, maxHeight: '80%' },
+  ratingsSheetHandle: { width: 40, height: 4, borderRadius: 2, backgroundColor: '#DDD', alignSelf: 'center', marginBottom: 12 },
+  ratingsSheetClose: { position: 'absolute', top: 14, right: 16, width: 32, height: 32, borderRadius: 16, backgroundColor: '#F5F5F5', alignItems: 'center', justifyContent: 'center' },
+  ratingsSheetTitle: { fontSize: 20, fontWeight: '800', color: '#000', marginBottom: 2 },
+  ratingsSheetSubtitle: { fontSize: 14, color: '#666', marginBottom: 16 },
+  ratingsSheetScroll: { marginBottom: 12 },
+  ratingsSheetEmpty: { fontSize: 14, color: '#666', textAlign: 'center', paddingVertical: 32 },
+  ratingsSheetTeamSection: { marginBottom: 20 },
+  ratingsSheetTeamName: { fontSize: 15, fontWeight: '700', color: '#000', marginBottom: 10 },
+  ratingsSheetRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
+  ratingsSheetPlayerInfo: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  ratingsSheetPlayerNumber: { width: 28, textAlign: 'center', fontSize: 15, fontWeight: '700', color: '#000' },
+  ratingsSheetPlayerName: { fontSize: 15, fontWeight: '600', color: '#000' },
+  ratingsSheetPlayerRole: { fontSize: 12, color: '#888', marginTop: 1 },
+  ratingsSheetValueBox: { minWidth: 36, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, backgroundColor: '#000', alignItems: 'center' },
+  ratingsSheetValue: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  // Private-tournament access code gate
+  privateGateContainer: { flex: 1, justifyContent: 'center', padding: 28 },
+  privateGateIcon: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 18 },
+  privateGateTitle: { fontSize: 22, fontWeight: '800', color: '#000', textAlign: 'center', marginBottom: 8 },
+  privateGateDesc: { fontSize: 15, color: '#666', textAlign: 'center', lineHeight: 21, marginBottom: 24 },
+  privateGateInput: { borderWidth: 2, borderColor: '#000', borderRadius: 12, paddingVertical: 14, paddingHorizontal: 16, fontSize: 20, fontWeight: '700', letterSpacing: 4, textAlign: 'center', color: '#000' },
+  privateGateError: { color: '#D00', fontSize: 13, fontWeight: '600', textAlign: 'center', marginTop: 10 },
+  privateGateButton: { backgroundColor: '#000', borderRadius: 12, paddingVertical: 16, alignItems: 'center', marginTop: 20 },
+  privateGateButtonText: { color: '#FFF', fontSize: 16, fontWeight: '700' },
   header: { flexDirection: 'row', alignItems: 'center', padding: 16, borderBottomWidth: 2, borderBottomColor: '#000' },
   backButton: { width: 48, height: 48, borderWidth: 2, borderColor: '#000', borderRadius: 12, alignItems: 'center', justifyContent: 'center', marginRight: 12 },
   headerInfo: { flex: 1 },
@@ -1692,6 +1896,8 @@ const styles = StyleSheet.create({
   tennisPointScore: { fontSize: 14, fontWeight: '700', color: '#2D8A2E', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginTop: 2 },
   matchDateTime: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 8 },
   matchActionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 10 },
+  ratingsSheetButton: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: 6, borderWidth: 1.5, borderColor: '#000', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 14, marginTop: 10 },
+  ratingsSheetButtonText: { fontSize: 13, fontWeight: '700', color: '#000' },
   calendarButton: { width: 40, height: 40, borderRadius: 10, borderWidth: 1, borderColor: '#E0E0E0', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5' },
   scorerCard: { borderWidth: 2, borderColor: '#000', borderRadius: 12, padding: 14, marginBottom: 8, flexDirection: 'row', alignItems: 'center' },
   scorerPosition: { width: 32, height: 32, borderRadius: 16, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center', marginRight: 12 },

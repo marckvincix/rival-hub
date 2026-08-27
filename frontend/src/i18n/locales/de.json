@@ -91,14 +91,16 @@
     "viewAll": "Alle anzeigen",
     "all": "Alle",
     "field": "Feld",
-    "other": "Andere"
+    "other": "Andere",
+    "continue": "Weiter"
   },
   "dashboard": {
     "hello": "Hallo",
     "manageYourTournaments": "Verwalte deine Turniere",
     "newTournament": "Neues Turnier",
     "yourTournaments": "Deine Turniere",
-    "upcoming": "Anstehend"
+    "upcoming": "Anstehend",
+    "takeTour": "Tour starten"
   },
   "languageSelection": {
     "title": "Wähle deine Sprache",
@@ -130,7 +132,7 @@
   },
   "home": {
     "title": "Erstelle und verwalte deine Turniere",
-    "subtitle": "Die Plattform zum Erstellen, Verfolgen und Organisieren von Sportturnieren",
+    "subtitle": "Fußball, Basketball, Padel, Tennis, Volleyball, Rugby und mehr — alles in einer App.",
     "startNow": "Jetzt starten",
     "searchTournament": "Turnier suchen",
     "tournamentName": "Turniername...",
@@ -158,7 +160,10 @@
     "selectDate": "Datum auswählen",
     "selectSport": "Sportart auswählen",
     "selectFormat": "Format auswählen",
-    "selectCategory": "Kategorie auswählen"
+    "selectCategory": "Kategorie auswählen",
+    "organizeSectionTitle": "Organisierst du ein Turnier?",
+    "organizeSectionDesc": "Erstelle und verwalte dein Turnier in wenigen Minuten: Fußball, Basketball, Padel, Tennis, Volleyball, Rugby und mehr.",
+    "organizeSectionCta": "Turnier erstellen"
   },
   "categories": {
     "open": "Offen",
@@ -230,6 +235,18 @@
     "formatGroupsKnockout": "Gruppen + K.o.",
     "formatChampionship": "Meisterschaft",
     "format": "Format",
+    "visibility": "Sichtbarkeit",
+    "public": "Öffentlich",
+    "private": "Privat",
+    "privateHint": "Es wird ein Zugangscode erstellt, den du mit den Personen teilen kannst, die das Turnier sehen sollen.",
+    "accessCode": "Zugangscode",
+    "accessCodeHint": "Teile diesen Code mit den Personen, die das Turnier sehen sollen — ohne ihn können sie keine Teams, Spiele oder Tabelle sehen.",
+    "enterCode": "Code eingeben",
+    "enterCodePlaceholder": "6-stelliger Code",
+    "privateTitle": "Privates Turnier",
+    "privateDesc": "Dieses Turnier ist privat. Gib den Zugangscode ein, um es zu sehen.",
+    "invalidCode": "Ungültiger Code, versuche es erneut.",
+    "unlock": "Freischalten",
     "matchStructure": "Spielstruktur",
     "singles": "Einzel",
     "doubles": "Doppel",
@@ -756,6 +773,7 @@
     "subOut": "aus",
     "subIn": "ein",
     "ratings": "Noten",
+    "noRatingsYet": "Für dieses Spiel wurden noch keine Noten vergeben.",
     "quickRatings": "Schnelle Noten",
     "scorers": "Torschützen",
     "topScorers": "Torschützen",
@@ -1037,5 +1055,47 @@
     "section23Title": "23. Änderungen",
     "section23Text1": "Der Verantwortliche kann diese Bedingungen und die Datenschutzrichtlinie ändern.",
     "section23Text2": "Änderungen werden über die Plattform kommuniziert."
+  },
+  "createTournamentModal": {
+    "title": "Erstelle dein Turnier",
+    "subtitle": "Fußball, Basketball, Padel, Tennis, Volleyball, Rugby und mehr",
+    "benefit1": "Verwalte Teams, Spielplan und Tabelle in einer App",
+    "benefit2": "Aktualisiere Ergebnisse und Statistiken in Echtzeit",
+    "benefit3": "Teilnehmer verfolgen das Turnier bequem vom Handy aus",
+    "highlightsHint": "Mit dem Highlights Plus Abo kannst du außerdem Fotos und Videos für jeden Spieltag hochladen.",
+    "highlightsTitle": "Möchtest du Fotos und Videos hochladen?",
+    "subscribeAndContinue": "Abonnieren und weiter",
+    "continueWithout": "Weiter ohne Highlights",
+    "priceLineBoth": "{{monthly}}/Monat oder {{annual}}/Jahr",
+    "priceLineMonthly": "ab {{price}}/Monat",
+    "priceLineAnnual": "ab {{price}}/Jahr"
+  },
+  "tour": {
+    "welcomeTitle": "Willkommen bei Rival Hub!",
+    "welcomeDesc": "Wir führen dich Schritt für Schritt durch die Erstellung deines ersten Turniers: Teams, Spieler, Spiele und Tabelle.",
+    "start": "Geführte Tour starten",
+    "skipForNow": "Überspringen, ich erkunde selbst",
+    "skip": "Tour überspringen",
+    "next": "Weiter",
+    "stepSport": "Wähle die Sportart deines Turniers, um zu beginnen.",
+    "stepFieldName": "Das wird der Turniername, den die Nutzer sehen.",
+    "stepFieldLocation": "Gib die Stadt oder Gegend an, in der das Turnier stattfindet.",
+    "stepFieldVenueName": "Der Name des Sportzentrums oder der Anlage, die das Turnier ausrichtet (optional).",
+    "stepFieldVenueAddress": "Die Adresse der Anlage, damit die Teilnehmer sie finden (optional).",
+    "stepFieldDate": "Wähle das Startdatum des Turniers.",
+    "stepFieldGameFormat": "Wähle das Spielformat, z. B. 11 gegen 11 oder 5 gegen 5.",
+    "stepFieldCategory": "Wähle die Altersklasse oder das Niveau des Turniers.",
+    "stepFieldFormat": "Wähle das Turnierformat: Liga, K.o.-System oder Gruppen.",
+    "stepFieldVisibility": "Wähle, ob das Turnier öffentlich oder privat ist: Für private Turniere ist ein Code nötig.",
+    "stepCreateForm": "Fülle die Angaben aus und tippe hier, um das Turnier zu erstellen.",
+    "stepAddTeam": "Tippe hier, um dein erstes Team hinzuzufügen.",
+    "stepAddPlayer": "Tippe jetzt hier, um einen Spieler zum Team hinzuzufügen.",
+    "stepFormation": "Tippe hier, um die Aufstellung des Teams auf dem Feld festzulegen.",
+    "stepGoToMatches": "Tippe auf „Spiele“, um ein Spiel zu erstellen.",
+    "stepAddMatch": "Tippe hier, um ein Spiel zu erstellen (ein zweites Team wird benötigt).",
+    "stepGoToResults": "Tippe auf „Ergebnisse“, um ein Spiel live zu verwalten.",
+    "stepOpenMatch": "Tippe auf ein Spiel, um es zu öffnen und den Spielstand live zu aktualisieren.",
+    "stepExtra": "Tippe hier, um Torschützen, Karten und andere Spielereignisse hinzuzufügen.",
+    "stepStandings": "Letzter Schritt: Tippe hier, um die öffentliche Turnierseite mit der Tabelle zu sehen."
   }
 }

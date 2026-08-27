@@ -91,14 +91,16 @@
     "viewAll": "View all",
     "all": "All",
     "field": "Field",
-    "other": "Other"
+    "other": "Other",
+    "continue": "Continue"
   },
   "dashboard": {
     "hello": "Hello",
     "manageYourTournaments": "Manage your tournaments",
     "newTournament": "New Tournament",
     "yourTournaments": "Your Tournaments",
-    "upcoming": "Upcoming"
+    "upcoming": "Upcoming",
+    "takeTour": "Take the tour"
   },
   "languageSelection": {
     "title": "Choose Your Language",
@@ -130,7 +132,7 @@
   },
   "home": {
     "title": "Create and manage your tournaments",
-    "subtitle": "The platform to create, follow and organize sports tournaments",
+    "subtitle": "Football, basketball, padel, tennis, volleyball, rugby and more — all in one app.",
     "startNow": "Start Now",
     "searchTournament": "Search Tournament",
     "tournamentName": "Tournament name...",
@@ -158,7 +160,10 @@
     "selectDate": "Select Date",
     "selectSport": "Select Sport",
     "selectFormat": "Select Format",
-    "selectCategory": "Select Category"
+    "selectCategory": "Select Category",
+    "organizeSectionTitle": "Organizing a tournament?",
+    "organizeSectionDesc": "Create and manage your tournament in minutes: football, basketball, padel, tennis, volleyball, rugby and more.",
+    "organizeSectionCta": "Create your tournament"
   },
   "categories": {
     "open": "Open",
@@ -229,6 +234,18 @@
     "formatKnockout": "Knockout",
     "formatGroupsKnockout": "Groups + Knockout",
     "formatChampionship": "Championship",
+    "visibility": "Visibility",
+    "public": "Public",
+    "private": "Private",
+    "privateHint": "An access code will be generated to share with whoever you want to let see the tournament.",
+    "accessCode": "Access code",
+    "accessCodeHint": "Share this code with whoever you want to let see the tournament — without it, they can't see teams, matches, or standings.",
+    "enterCode": "Enter the code",
+    "enterCodePlaceholder": "6-character code",
+    "privateTitle": "Private tournament",
+    "privateDesc": "This tournament is private. Enter the access code to view it.",
+    "invalidCode": "Invalid code, try again.",
+    "unlock": "Unlock",
     "matchStructure": "Match Structure",
     "singles": "Singles",
     "doubles": "Doubles",
@@ -756,6 +773,7 @@
     "subOut": "out",
     "subIn": "in",
     "ratings": "Ratings",
+    "noRatingsYet": "No ratings assigned for this match yet.",
     "quickRatings": "Quick ratings",
     "scorers": "Scorers",
     "topScorers": "Scorers",
@@ -1080,5 +1098,47 @@
     "categoryAccessories": "Accessories",
     "noResults": "No products found for these filters",
     "genderUnisex": "Unisex"
+  },
+  "createTournamentModal": {
+    "title": "Create your tournament",
+    "subtitle": "Football, basketball, padel, tennis, volleyball, rugby and more",
+    "benefit1": "Manage teams, schedule and standings from one app",
+    "benefit2": "Update results and stats in real time",
+    "benefit3": "Participants follow the tournament right from their phone",
+    "highlightsHint": "With the Highlights Plus subscription you can also upload photos and videos for every matchday.",
+    "highlightsTitle": "Want to upload photos and videos?",
+    "subscribeAndContinue": "Subscribe and continue",
+    "continueWithout": "Continue without Highlights",
+    "priceLineBoth": "{{monthly}}/month or {{annual}}/year",
+    "priceLineMonthly": "from {{price}}/month",
+    "priceLineAnnual": "from {{price}}/year"
+  },
+  "tour": {
+    "welcomeTitle": "Welcome to Rival Hub!",
+    "welcomeDesc": "We'll guide you step by step through creating your first tournament: teams, players, matches and standings.",
+    "start": "Start the guided tour",
+    "skipForNow": "Skip, I'll explore on my own",
+    "skip": "Skip tour",
+    "next": "Next",
+    "stepSport": "Choose your tournament's sport to get started.",
+    "stepFieldName": "This will be the tournament name shown to users.",
+    "stepFieldLocation": "Enter the city or area where the tournament will take place.",
+    "stepFieldVenueName": "The name of the sports center or venue hosting the tournament (optional).",
+    "stepFieldVenueAddress": "The venue's address, so participants can find it (optional).",
+    "stepFieldDate": "Choose the tournament's start date.",
+    "stepFieldGameFormat": "Choose the game format, e.g. 11 vs 11 or 5 vs 5.",
+    "stepFieldCategory": "Select the tournament's age category or level.",
+    "stepFieldFormat": "Choose the tournament format: league, knockout, or groups.",
+    "stepFieldVisibility": "Choose whether the tournament is public or private: private ones need a code to view.",
+    "stepCreateForm": "Fill in the details and tap here to create the tournament.",
+    "stepAddTeam": "Tap here to add your first team.",
+    "stepAddPlayer": "Now tap here to add a player to the team.",
+    "stepFormation": "Tap here to set the team's on-field formation.",
+    "stepGoToMatches": "Tap 'Matches' to create a match.",
+    "stepAddMatch": "Tap here to create a match (you'll need a second team).",
+    "stepGoToResults": "Tap 'Results' to manage a match live.",
+    "stepOpenMatch": "Tap a match to open it and update the score live.",
+    "stepExtra": "Tap here to add scorers, cards and other match events.",
+    "stepStandings": "Last step: tap here to see the tournament's public page with the standings."
   }
 }

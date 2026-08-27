@@ -91,14 +91,16 @@
     "viewAll": "Vedi tutti",
     "all": "Tutti",
     "field": "Campo",
-    "other": "Altro"
+    "other": "Altro",
+    "continue": "Continua"
   },
   "dashboard": {
     "hello": "Ciao",
     "manageYourTournaments": "Gestisci i tuoi tornei",
     "newTournament": "Nuovo torneo",
     "yourTournaments": "I tuoi tornei",
-    "upcoming": "Da giocare"
+    "upcoming": "Da giocare",
+    "takeTour": "Fai il tour"
   },
   "languageSelection": {
     "title": "Scegli la Lingua",
@@ -130,7 +132,7 @@
   },
   "home": {
     "title": "Crea e gestisci i tuoi tornei",
-    "subtitle": "La piattaforma per creare, seguire ed organizzare tornei sportivi",
+    "subtitle": "Calcio, basket, padel, tennis, pallavolo, rugby e altro: tutto in un'unica app.",
     "startNow": "Inizia ora",
     "searchTournament": "Cerca Torneo",
     "tournamentName": "Nome del torneo...",
@@ -158,7 +160,10 @@
     "selectDate": "Seleziona Data",
     "selectSport": "Seleziona Sport",
     "selectFormat": "Seleziona Formato",
-    "selectCategory": "Seleziona Categoria"
+    "selectCategory": "Seleziona Categoria",
+    "organizeSectionTitle": "Organizzi un torneo?",
+    "organizeSectionDesc": "Crea e gestisci il tuo torneo in pochi minuti: calcio, basket, padel, tennis, pallavolo, rugby e altro ancora.",
+    "organizeSectionCta": "Crea il tuo torneo"
   },
   "categories": {
     "open": "Open",
@@ -230,6 +235,18 @@
     "formatGroupsKnockout": "Gironi + Eliminazione",
     "formatChampionship": "Campionato",
     "format": "Formato",
+    "visibility": "Visibilità",
+    "public": "Pubblico",
+    "private": "Privato",
+    "privateHint": "Verrà generato un codice d'accesso da condividere con chi vuoi far vedere il torneo.",
+    "accessCode": "Codice d'accesso",
+    "accessCodeHint": "Condividi questo codice con chi vuoi far vedere il torneo: senza, non potrà vedere squadre, partite o classifica.",
+    "enterCode": "Inserisci il codice",
+    "enterCodePlaceholder": "Codice a 6 caratteri",
+    "privateTitle": "Torneo privato",
+    "privateDesc": "Questo torneo è privato. Inserisci il codice d'accesso per vederlo.",
+    "invalidCode": "Codice non valido, riprova.",
+    "unlock": "Sblocca",
     "matchStructure": "Struttura Partita",
     "singles": "Singolo",
     "doubles": "Doppio",
@@ -757,6 +774,7 @@
     "subOut": "esce",
     "subIn": "entra",
     "ratings": "Voti",
+    "noRatingsYet": "Nessun voto assegnato ancora per questa partita.",
     "quickRatings": "Voti rapidi",
     "scorers": "Marcatori",
     "topScorers": "Marcatori",
@@ -1081,5 +1099,47 @@
     "categoryAccessories": "Accessori",
     "noResults": "Nessun prodotto trovato con questi filtri",
     "genderUnisex": "Unisex"
+  },
+  "createTournamentModal": {
+    "title": "Crea il tuo torneo",
+    "subtitle": "Calcio, basket, padel, tennis, pallavolo, rugby e altro ancora",
+    "benefit1": "Gestisci squadre, calendario e classifica da un'unica app",
+    "benefit2": "Aggiorna risultati e statistiche in tempo reale",
+    "benefit3": "I partecipanti seguono il torneo comodamente dal telefono",
+    "highlightsHint": "Con l'abbonamento Highlights Plus puoi anche caricare foto e video di ogni giornata del torneo.",
+    "highlightsTitle": "Vuoi caricare foto e video?",
+    "subscribeAndContinue": "Abbonati e continua",
+    "continueWithout": "Continua senza Highlights",
+    "priceLineBoth": "{{monthly}}/mese oppure {{annual}}/anno",
+    "priceLineMonthly": "da {{price}}/mese",
+    "priceLineAnnual": "da {{price}}/anno"
+  },
+  "tour": {
+    "welcomeTitle": "Benvenuto in Rival Hub!",
+    "welcomeDesc": "Ti guidiamo passo passo nella creazione del tuo primo torneo: squadre, giocatori, partite e classifica.",
+    "start": "Inizia il tour guidato",
+    "skipForNow": "Salta, esplorerò da solo",
+    "skip": "Salta tour",
+    "next": "Avanti",
+    "stepSport": "Scegli lo sport del tuo torneo per iniziare.",
+    "stepFieldName": "Questo sarà il nome del torneo che comparirà agli utenti.",
+    "stepFieldLocation": "Indica la città o la zona dove si svolgerà il torneo.",
+    "stepFieldVenueName": "Il nome del centro sportivo o della struttura che ospita il torneo (facoltativo).",
+    "stepFieldVenueAddress": "L'indirizzo della struttura, utile ai partecipanti per raggiungerla (facoltativo).",
+    "stepFieldDate": "Scegli la data di inizio del torneo.",
+    "stepFieldGameFormat": "Scegli il formato di gioco, ad esempio 11 contro 11 o 5 contro 5.",
+    "stepFieldCategory": "Seleziona la categoria d'età o il livello del torneo.",
+    "stepFieldFormat": "Scegli il formato del torneo: campionato, eliminazione diretta o gironi.",
+    "stepFieldVisibility": "Scegli se il torneo è pubblico o privato: se privato, servirà un codice per vederlo.",
+    "stepCreateForm": "Compila i dati e tocca qui per creare il torneo.",
+    "stepAddTeam": "Tocca qui per aggiungere la tua prima squadra.",
+    "stepAddPlayer": "Ora tocca qui per aggiungere un giocatore alla squadra.",
+    "stepFormation": "Tocca qui per impostare la formazione della squadra in campo.",
+    "stepGoToMatches": "Tocca su 'Partite' per creare una partita.",
+    "stepAddMatch": "Tocca qui per creare una partita (serve almeno una seconda squadra).",
+    "stepGoToResults": "Tocca su 'Risultati' per gestire una partita dal vivo.",
+    "stepOpenMatch": "Tocca una partita per aprirla ed aggiornare il punteggio dal vivo.",
+    "stepExtra": "Tocca qui per aggiungere marcatori, cartellini e altri eventi della partita.",
+    "stepStandings": "Ultimo passo: tocca qui per vedere la pagina pubblica del torneo con la classifica."
   }
 }

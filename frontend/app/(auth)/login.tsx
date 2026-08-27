@@ -13,24 +13,85 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input } from '../../src/components';
+import { Button, Input, HighlightsPaywallModal, WelcomeTourModal } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
+import { useTourStore } from '../../src/store/tourStore';
+import { shouldShowHighlightsPaywall } from '../../src/utils/paywallGate';
 import { useTranslation } from '../../src/i18n';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
+const ONBOARDING_SEEN_KEY_PREFIX = '@rival_hub_onboarding_seen_';
 
 export default function LoginScreen() {
   const router = useRouter();
   const { login, appleLogin } = useAuthStore();
   const { t } = useTranslation();
-  
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{email?: string; password?: string}>({});
+  const [showWelcomeTour, setShowWelcomeTour] = useState(false);
+  const [showHighlightsPaywall, setShowHighlightsPaywall] = useState(false);
+
+  // Second step: existing users who log in without an active subscription
+  // see the Highlights Plus paywall once (tracked per-account so it doesn't
+  // nag them on every login) — on top of it already being reachable any
+  // time from the Highlights section itself.
+  const maybeShowPaywallThenNavigate = async () => {
+    const show = await shouldShowHighlightsPaywall();
+    if (show) {
+      setShowHighlightsPaywall(true);
+    } else {
+      router.replace('/(tabs)');
+    }
+  };
+
+  // First step: anyone whose account has never seen the welcome/tour prompt
+  // (new signups, and any existing account logging in for the first time
+  // since this was added) sees it once before the Highlights paywall check.
+  const afterLogin = async () => {
+    const { user } = useAuthStore.getState();
+    if (!user?.user_id) {
+      router.replace('/(tabs)');
+      return;
+    }
+    const onboardingKey = `${ONBOARDING_SEEN_KEY_PREFIX}${user.user_id}`;
+    let onboardingSeen = false;
+    try {
+      onboardingSeen = (await AsyncStorage.getItem(onboardingKey)) === 'true';
+    } catch {
+      // ignore storage errors, default to showing it
+    }
+    if (onboardingSeen) {
+      await maybeShowPaywallThenNavigate();
+    } else {
+      try { await AsyncStorage.setItem(onboardingKey, 'true'); } catch { /* ignore */ }
+      setShowWelcomeTour(true);
+    }
+  };
+
+  // "Salta" on the welcome prompt: skip the tour, fall through to the same
+  // once-per-account paywall check a returning user who's already seen the
+  // prompt gets.
+  const skipTour = () => {
+    setShowWelcomeTour(false);
+    maybeShowPaywallThenNavigate();
+  };
+
+  // "Inizia il tour": jump into tournament creation with the guided tour
+  // active. The Highlights paywall is deferred until the tour finishes (see
+  // the global watcher in app/_layout.tsx) since this screen is long
+  // unmounted by then.
+  const startTour = () => {
+    setShowWelcomeTour(false);
+    useTourStore.getState().start();
+    router.replace('/(tabs)/tournaments?create=true' as any);
+  };
 
   const validate = () => {
     const newErrors: {email?: string; password?: string} = {};
@@ -46,7 +107,7 @@ export default function LoginScreen() {
     try {
       setLoading(true);
       await login(email, password);
-      router.replace('/(tabs)');
+      await afterLogin();
     } catch (error: any) {
       Alert.alert(t('common.error', 'Error'), error.message || t('auth.loginError', 'Login failed'));
     } finally {
@@ -99,7 +160,7 @@ export default function LoginScreen() {
         ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
         : undefined;
       await appleLogin(credential.identityToken, fullName);
-      router.replace('/(tabs)');
+      await afterLogin();
     } catch (error: any) {
       if (error.code === 'ERR_REQUEST_CANCELED') return;
       Alert.alert(t('common.error', 'Error'), t('alerts.errorLoginApple', 'Apple login failed'));
@@ -192,6 +253,24 @@ export default function LoginScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <WelcomeTourModal
+        visible={showWelcomeTour}
+        onStart={startTour}
+        onSkip={skipTour}
+      />
+
+      <HighlightsPaywallModal
+        visible={showHighlightsPaywall}
+        onClose={() => {
+          setShowHighlightsPaywall(false);
+          router.replace('/(tabs)');
+        }}
+        onSubscribed={() => {
+          setShowHighlightsPaywall(false);
+          router.replace('/(tabs)');
+        }}
+      />
     </SafeAreaView>
   );
 }

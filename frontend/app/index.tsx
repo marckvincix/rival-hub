@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef, useCallback } from 'react';
 import { 
   View, 
   Text, 
@@ -11,7 +11,7 @@ import {
   Platform
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../src/store/authStore';
@@ -19,6 +19,7 @@ import api from '../src/utils/api';
 import { Tournament, getSportEmoji } from '../src/types';
 import { parseFlexibleDate } from '../src/utils/helpers';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { CreateTournamentInfoModal } from '../src/components';
 
 const RivalHubLogo = require('../assets/images/rival-hub-logo.jpg');
 const RivalHubLogoWhite = require('../assets/images/rival-hub-logo-white.png');
@@ -195,15 +196,29 @@ export default function LandingPage() {
   const [showSportPicker, setShowSportPicker] = useState(false);
   const [showFormatPicker, setShowFormatPicker] = useState(false);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showCreateInfoModal, setShowCreateInfoModal] = useState(false);
   
   // Tournaments
   const [allTournaments, setAllTournaments] = useState<Tournament[]>([]);
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/(tabs)');
-    }
-  }, [isAuthenticated]);
+  // Scroll-to-search, used by the hero's "Cerca torneo" button
+  const scrollViewRef = useRef<ScrollView>(null);
+  const [searchSectionY, setSearchSectionY] = useState(0);
+
+  // useFocusEffect (not a plain useEffect) so this only fires while the
+  // home screen is actually the visible/focused route. Login and register
+  // are pushed on top of this screen rather than replacing it, so it stays
+  // mounted underneath them; a plain useEffect here would fire the instant
+  // isAuthenticated flips true from a nested register/login action and
+  // immediately replace the whole stack, racing ahead of (and destroying)
+  // the onboarding/paywall modals those screens still need to show first.
+  useFocusEffect(
+    useCallback(() => {
+      if (isAuthenticated) {
+        router.replace('/(tabs)');
+      }
+    }, [isAuthenticated])
+  );
 
   useEffect(() => {
     loadTournaments();
@@ -322,11 +337,21 @@ export default function LandingPage() {
     }
     
     // Always sort by created_at descending
-    return result.sort((a, b) => {
+    const sorted = result.sort((a, b) => {
       const dateA = new Date(a.created_at || 0).getTime();
       const dateB = new Date(b.created_at || 0).getTime();
       return dateB - dateA;
     });
+
+    // With no search/filter active, cap the browse list to the 20 most
+    // recent tournaments — narrowing down via search or any filter lifts
+    // the cap, since at that point the user is looking for something
+    // specific rather than just browsing.
+    const isFiltering = !!(
+      searchQuery.trim() || locationQuery.trim() ||
+      selectedDate || selectedSport || selectedFormat || selectedCategory
+    );
+    return isFiltering ? sorted : sorted.slice(0, 20);
   }, [allTournaments, searchQuery, locationQuery, selectedDate, selectedSport, selectedFormat, selectedCategory]);
 
   // Check if any filter is active
@@ -353,26 +378,20 @@ export default function LandingPage() {
     setShowSportPicker(false);
   };
 
-  const formatDate = (date: Date) => {
-    const locale = i18n.language === 'it' ? 'it-IT' : 
-                   i18n.language === 'fr' ? 'fr-FR' :
-                   i18n.language === 'de' ? 'de-DE' :
-                   i18n.language === 'es' ? 'es-ES' :
-                   i18n.language === 'pt' ? 'pt-PT' :
-                   i18n.language === 'ar' ? 'ar-SA' : 'en-US';
-    return date.toLocaleDateString(locale, { day: '2-digit', month: '2-digit', year: 'numeric' });
-  };
+  const pickerLocale = i18n.language === 'it' ? 'it-IT' :
+                 i18n.language === 'fr' ? 'fr-FR' :
+                 i18n.language === 'de' ? 'de-DE' :
+                 i18n.language === 'es' ? 'es-ES' :
+                 i18n.language === 'pt' ? 'pt-PT' :
+                 i18n.language === 'ar' ? 'ar-SA' : 'en-US';
 
-  const features = [
-    { icon: 'trophy-outline' as const, title: t('home.featureTournaments', 'Tournament Management'), desc: t('home.featureTournamentsDesc', 'Create and manage tournaments of any sport') },
-    { icon: 'people-outline' as const, title: t('home.featureTeams', 'Teams'), desc: t('home.featureTeamsDesc', 'Organize rosters and statistics') },
-    { icon: 'stats-chart-outline' as const, title: t('home.featureStandings', 'Standings'), desc: t('home.featureStandingsDesc', 'Real-time standings and results') },
-    { icon: 'newspaper-outline' as const, title: t('home.featureNews', 'News'), desc: t('home.featureNewsDesc', 'Publish updates') },
-  ];
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString(pickerLocale, { day: '2-digit', month: '2-digit', year: 'numeric' });
+  };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.logoContainer}>
@@ -392,19 +411,27 @@ export default function LandingPage() {
           <Text style={styles.heroSubtitle}>
             {t('home.subtitle')}
           </Text>
+          <View style={styles.heroButtonRow}>
+            <TouchableOpacity
+              style={styles.heroButtonSecondary}
+              onPress={() => scrollViewRef.current?.scrollTo({ y: searchSectionY, animated: true })}
+            >
+              <Text style={styles.heroButtonSecondaryText} numberOfLines={1}>{t('home.searchTournament')}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.heroButtonPrimary}
+              onPress={() => setShowCreateInfoModal(true)}
+            >
+              <Text style={styles.heroButtonPrimaryText} numberOfLines={1}>{t('home.organizeSectionCta', 'Crea il tuo torneo')}</Text>
+            </TouchableOpacity>
+          </View>
           <View style={styles.heroImageContainer}>
             <Image source={HeroIllustration} style={styles.heroImage} resizeMode="contain" />
-            <TouchableOpacity
-              style={styles.heroButton}
-              onPress={() => router.push('/(auth)/register')}
-            >
-              <Text style={styles.heroButtonText}>{t('home.startNow')}</Text>
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* Search Section */}
-        <View style={styles.section}>
+        <View style={styles.section} onLayout={(e) => setSearchSectionY(e.nativeEvent.layout.y)}>
           <Text style={styles.sectionTitle}>{t('home.searchTournament')}</Text>
           
           {/* Search by Name */}
@@ -577,22 +604,6 @@ export default function LandingPage() {
           )}
         </View>
 
-        {/* Features Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('home.features', 'Features')}</Text>
-          <View style={styles.featuresGrid}>
-            {features.map((feature, index) => (
-              <View key={index} style={styles.featureCard}>
-                <View style={styles.featureIconContainer}>
-                  <Ionicons name={feature.icon} size={28} color="#000" />
-                </View>
-                <Text style={styles.featureTitle}>{feature.title}</Text>
-                <Text style={styles.featureDesc}>{feature.desc}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
-
         {/* Footer */}
         <View style={styles.footer}>
           <View style={styles.footerLogo}>
@@ -618,6 +629,7 @@ export default function LandingPage() {
                   value={selectedDate || new Date()}
                   mode="date"
                   display="spinner"
+                  locale={pickerLocale}
                   onChange={(event, date) => {
                     if (date) setSelectedDate(date);
                   }}
@@ -637,6 +649,7 @@ export default function LandingPage() {
             value={selectedDate || new Date()}
             mode="date"
             display="default"
+            locale={pickerLocale}
             onChange={(event, date) => {
               setShowDatePicker(false);
               if (date && event.type === 'set') setSelectedDate(date);
@@ -738,6 +751,20 @@ export default function LandingPage() {
           </View>
         </View>
       </Modal>
+
+      <CreateTournamentInfoModal
+        visible={showCreateInfoModal}
+        onClose={() => setShowCreateInfoModal(false)}
+        onContinue={() => {
+          setShowCreateInfoModal(false);
+          // Already signed in: straight to tournament creation. Not signed
+          // in: register first — the register screen itself opens the
+          // Highlights Plus paywall right after the account is created
+          // (for every new signup, not just this flow), then continues on
+          // to tournament creation since that's what brought them here.
+          router.push(isAuthenticated ? '/(tabs)/tournaments?create=true' : '/(auth)/register?from=create');
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -798,27 +825,44 @@ const styles = StyleSheet.create({
   heroImageContainer: {
     width: '100%',
     position: 'relative',
-    marginTop: 0,
+    marginTop: 20,
   },
   heroImage: {
     width: '100%',
     height: 400,
   },
-  heroButton: {
-    position: 'absolute',
-    bottom: 80,
-    left: 0,
+  heroButtonRow: {
+    marginTop: 20,
+    flexDirection: 'row',
+    gap: 10,
+  },
+  heroButtonSecondary: {
+    flex: 1,
     borderWidth: 1.5,
     borderColor: '#CCC',
     borderRadius: 30,
-    paddingHorizontal: 24,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     backgroundColor: '#FFF',
+    alignItems: 'center',
   },
-  heroButtonText: {
-    fontSize: 15,
-    fontWeight: '500',
+  heroButtonSecondaryText: {
+    fontSize: 14,
+    fontWeight: '600',
     color: '#000',
+  },
+  heroButtonPrimary: {
+    flex: 1,
+    borderRadius: 30,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    backgroundColor: '#000',
+    alignItems: 'center',
+  },
+  heroButtonPrimaryText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFF',
   },
   section: {
     padding: 16,
@@ -994,35 +1038,6 @@ const styles = StyleSheet.create({
     color: '#FFF',
   },
   // Features
-  featuresGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -6,
-  },
-  featureCard: {
-    width: '50%',
-    padding: 6,
-  },
-  featureIconContainer: {
-    width: 56,
-    height: 56,
-    borderWidth: 2,
-    borderColor: '#000',
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  featureTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#000',
-    marginBottom: 4,
-  },
-  featureDesc: {
-    fontSize: 13,
-    color: '#666',
-  },
   // Footer
   footer: {
     padding: 24,

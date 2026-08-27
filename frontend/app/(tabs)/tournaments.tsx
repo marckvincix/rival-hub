@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -12,19 +12,23 @@ import {
   Platform,
   Image,
   ActivityIndicator,
-  FlatList
+  FlatList,
+  Dimensions,
+  Keyboard
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, HighlightsPaywallModal } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, HighlightsPaywallModal, TourCoachmark, useTourTarget } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal, HighlightsUploadModal } from '../../src/components';
+import { useTourStore } from '../../src/store/tourStore';
+import * as Clipboard from 'expo-clipboard';
 
 const CATEGORIES = ['U8', 'U10', 'U12', 'U14', 'U16', 'U18', 'Senior', 'Open'];
 
@@ -35,6 +39,7 @@ export default function TournamentsScreen() {
   const params = useLocalSearchParams();
   const { user } = useAuthStore();
   const { t, i18n } = useTranslation();
+  const pickerLocale = i18n.language === 'ar' ? 'ar-SA' : i18n.language + '-' + i18n.language.toUpperCase();
 
   // Translation helper functions
   const getStatusLabel = (status: string) => {
@@ -86,6 +91,7 @@ export default function TournamentsScreen() {
     venue_address: '',
     start_date: '',
     start_time: '',
+    is_public: true,
   });
   const [formLoading, setFormLoading] = useState(false);
   // Tournament date/time picker states
@@ -93,6 +99,97 @@ export default function TournamentsScreen() {
   const [showTournamentTimePicker, setShowTournamentTimePicker] = useState(false);
   const [tournamentDate, setTournamentDate] = useState<Date | null>(null);
   const [tournamentTime, setTournamentTime] = useState<Date | null>(null);
+
+  // Guided "create your first tournament" tour
+  const tourActive = useTourStore((s) => s.active);
+  const tourStep = useTourStore((s) => s.step);
+  const sportStepActive = tourActive && tourStep === 'sport';
+  const createFormStepActive = tourActive && tourStep === 'create-form';
+  const skipTour = () => useTourStore.getState().finish();
+
+  // Within 'create-form', walk through each field before the submit button
+  // — same step id, a local sub-step index. Reset whenever the step starts.
+  const CREATE_FIELDS = ['name', 'location', 'venueName', 'venueAddress', 'date', 'gameFormat', 'category', 'format', 'visibility'] as const;
+  type CreateFieldId = typeof CREATE_FIELDS[number];
+  const [createFieldIndex, setCreateFieldIndex] = useState(0);
+  useEffect(() => {
+    if (createFormStepActive) setCreateFieldIndex(0);
+  }, [createFormStepActive]);
+  const currentCreateField: CreateFieldId | null = createFormStepActive && createFieldIndex < CREATE_FIELDS.length ? CREATE_FIELDS[createFieldIndex] : null;
+  const submitStepActive = createFormStepActive && createFieldIndex >= CREATE_FIELDS.length;
+  const nextCreateField = () => setCreateFieldIndex((i) => i + 1);
+
+  // Every field/button here sits inside one long scrollable form, mostly
+  // below the fold — measuring a target without first scrolling it into
+  // view produced a spotlight positioned past the bottom of the viewport
+  // (the whole screen just looked uniformly dimmed, nothing visible to tap
+  // or read). `createFormScrollY` tracks the live scroll offset so each
+  // step can compute exactly how far to scroll a field into a readable
+  // position before measuring it for real.
+  const createFormScrollRef = useRef<ScrollView>(null);
+  const createFormScrollY = useRef(0);
+  const scrollFieldIntoView = (ref: React.RefObject<View | null>) => {
+    ref.current?.measureInWindow((x, y) => {
+      const idealY = Dimensions.get('window').height * 0.3;
+      const delta = y - idealY;
+      if (Math.abs(delta) > 12) {
+        createFormScrollRef.current?.scrollTo({ y: Math.max(0, createFormScrollY.current + delta), animated: true });
+      }
+    });
+  };
+
+  const nameTarget = useTourTarget(currentCreateField === 'name', 400);
+  const locationTarget = useTourTarget(currentCreateField === 'location', 400);
+  const venueNameTarget = useTourTarget(currentCreateField === 'venueName', 400);
+  const venueAddressTarget = useTourTarget(currentCreateField === 'venueAddress', 400);
+  const dateFieldTarget = useTourTarget(currentCreateField === 'date', 400);
+  const gameFormatTarget = useTourTarget(currentCreateField === 'gameFormat', 400);
+  const categoryTarget = useTourTarget(currentCreateField === 'category', 400);
+  const formatTarget = useTourTarget(currentCreateField === 'format', 400);
+  const visibilityTarget = useTourTarget(currentCreateField === 'visibility', 400);
+
+  useEffect(() => {
+    if (!currentCreateField) return;
+    const refByField: Record<CreateFieldId, React.RefObject<View | null>> = {
+      name: nameTarget.ref, location: locationTarget.ref, venueName: venueNameTarget.ref,
+      venueAddress: venueAddressTarget.ref, date: dateFieldTarget.ref, gameFormat: gameFormatTarget.ref,
+      category: categoryTarget.ref, format: formatTarget.ref, visibility: visibilityTarget.ref,
+    };
+    scrollFieldIntoView(refByField[currentCreateField]);
+  }, [currentCreateField]);
+
+  // Keyboard focus doesn't follow the tour on its own — without this, typing
+  // after "Avanti" kept landing in whichever text field the user was last
+  // actually focused on (e.g. still "Nome Torneo") instead of the one the
+  // coachmark had already moved on to. Give the field TypeScript is now
+  // pointing at real keyboard focus, and drop it for non-text steps so a
+  // stale keyboard doesn't linger (and eat the first tap) on the next
+  // screen once the form is done.
+  const nameInputRef = useRef<TextInput>(null);
+  const locationInputRef = useRef<TextInput>(null);
+  const venueNameInputRef = useRef<TextInput>(null);
+  const venueAddressInputRef = useRef<TextInput>(null);
+  useEffect(() => {
+    if (!currentCreateField) return;
+    const textInputByField: Partial<Record<CreateFieldId, React.RefObject<TextInput | null>>> = {
+      name: nameInputRef, location: locationInputRef, venueName: venueNameInputRef, venueAddress: venueAddressInputRef,
+    };
+    const inputRef = textInputByField[currentCreateField];
+    if (inputRef) {
+      const timer = setTimeout(() => inputRef.current?.focus(), 400);
+      return () => clearTimeout(timer);
+    }
+    Keyboard.dismiss();
+  }, [currentCreateField]);
+
+  // The submit button sits at the very end — once every field has been
+  // walked through, scroll all the way down and measure it as before.
+  const createSubmitTarget = useTourTarget(submitStepActive, 450);
+  useEffect(() => {
+    if (submitStepActive) {
+      createFormScrollRef.current?.scrollToEnd({ animated: true });
+    }
+  }, [submitStepActive]);
 
   const loadTournaments = async () => {
     try {
@@ -112,6 +209,16 @@ export default function TournamentsScreen() {
 
   useFocusEffect(useCallback(() => { loadTournaments(); }, [params.id]));
 
+  // Deep link from the home screen's "create a tournament" section — opens
+  // the same sport-selector step a manual tap on "+" would.
+  const openedCreateFromParam = useRef(false);
+  useEffect(() => {
+    if (params.create === 'true' && !openedCreateFromParam.current) {
+      openedCreateFromParam.current = true;
+      setShowSportSelector(true);
+    }
+  }, [params.create]);
+
   const onRefresh = () => { setRefreshing(true); loadTournaments(); };
 
   const handleCreateTournament = async () => {
@@ -125,8 +232,14 @@ export default function TournamentsScreen() {
       setTournaments([response.data, ...tournaments]);
       setShowCreateModal(false);
       setSelectedSport(null);
-      setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', venue_name: '', venue_address: '', start_date: '', start_time: '' });
+      setFormData({ name: '', description: '', sport: 'calcio' as Sport, category: 'Open', format: 'league', game_format: '11v11', game_structure: '', custom_players_per_side: 11, location: '', venue_name: '', venue_address: '', start_date: '', start_time: '', is_public: true });
       setSelectedTournament(response.data);
+      // Defensive: make sure no leftover keyboard focus from the form
+      // follows into the tournament detail screen and eats its first tap.
+      Keyboard.dismiss();
+      if (useTourStore.getState().active && useTourStore.getState().step === 'create-form') {
+        useTourStore.getState().goTo('add-team');
+      }
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.createFailed', 'Creation failed'));
     } finally {
@@ -173,6 +286,9 @@ export default function TournamentsScreen() {
     });
     setShowSportSelector(false);
     setShowCreateModal(true);
+    if (useTourStore.getState().active && useTourStore.getState().step === 'sport') {
+      useTourStore.getState().goTo('create-form');
+    }
   };
 
   // Filter tournaments by sport
@@ -185,10 +301,18 @@ export default function TournamentsScreen() {
 
   if (showSportSelector) {
     return (
-      <SportSelector
-        onSelectSport={handleSportSelect}
-        onBack={() => setShowSportSelector(false)}
-      />
+      <View style={{ flex: 1 }}>
+        <SportSelector
+          onSelectSport={handleSportSelect}
+          onBack={() => setShowSportSelector(false)}
+        />
+        <TourCoachmark
+          visible={sportStepActive}
+          target={null}
+          text={t('tour.stepSport', 'Scegli lo sport del tuo torneo per iniziare.')}
+          onSkip={skipTour}
+        />
+      </View>
     );
   }
 
@@ -315,15 +439,30 @@ export default function TournamentsScreen() {
             </Text>
             <View style={{ width: 60 }} />
           </View>
-          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <Input label={t('tournaments.tournamentNameLabel', 'Tournament Name *')} placeholder={t('tournaments.tournamentNamePlaceholder', 'e.g. Spring Tournament 2025')} value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
-            <Input label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
-            <Input label={t('tournaments.venueName', 'Nome struttura')} placeholder={t('tournaments.venueNamePlaceholder', 'es. Centro Sportivo San Siro')} value={formData.venue_name} onChangeText={(text) => setFormData({ ...formData, venue_name: text })} />
-            <Input label={t('tournaments.venueAddress', 'Indirizzo struttura')} placeholder={t('tournaments.venueAddressPlaceholder', 'es. Via Piccolomini 5, Milano')} value={formData.venue_address} onChangeText={(text) => setFormData({ ...formData, venue_address: text })} />
+          <ScrollView
+            ref={createFormScrollRef}
+            style={styles.modalContent}
+            showsVerticalScrollIndicator={false}
+            onScroll={(e) => { createFormScrollY.current = e.nativeEvent.contentOffset.y; }}
+            scrollEventThrottle={16}
+          >
+            <View ref={nameTarget.ref} collapsable={false}>
+              <Input ref={nameInputRef} label={t('tournaments.tournamentNameLabel', 'Tournament Name *')} placeholder={t('tournaments.tournamentNamePlaceholder', 'e.g. Spring Tournament 2025')} value={formData.name} onChangeText={(text) => setFormData({ ...formData, name: text })} />
+            </View>
+            <View ref={locationTarget.ref} collapsable={false}>
+              <Input ref={locationInputRef} label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
+            </View>
+            <View ref={venueNameTarget.ref} collapsable={false}>
+              <Input ref={venueNameInputRef} label={t('tournaments.venueName', 'Nome struttura')} placeholder={t('tournaments.venueNamePlaceholder', 'es. Centro Sportivo San Siro')} value={formData.venue_name} onChangeText={(text) => setFormData({ ...formData, venue_name: text })} />
+            </View>
+            <View ref={venueAddressTarget.ref} collapsable={false}>
+              <Input ref={venueAddressInputRef} label={t('tournaments.venueAddress', 'Indirizzo struttura')} placeholder={t('tournaments.venueAddressPlaceholder', 'es. Via Piccolomini 5, Milano')} value={formData.venue_address} onChangeText={(text) => setFormData({ ...formData, venue_address: text })} />
+            </View>
 
             {/* Data Field */}
             <Text style={styles.inputLabel}>{t('tournaments.startDate', 'Date')}</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
+              ref={dateFieldTarget.ref}
               style={styles.newMatchInputWithIcon}
               onPress={() => setShowTournamentDatePicker(true)}
             >
@@ -360,6 +499,7 @@ export default function TournamentsScreen() {
                       value={tournamentDate || new Date()}
                       mode="date"
                       display="spinner"
+                      locale={pickerLocale}
                       onChange={(event, selectedDate) => {
                         if (selectedDate) {
                           setTournamentDate(selectedDate);
@@ -382,6 +522,7 @@ export default function TournamentsScreen() {
                 value={tournamentDate || new Date()}
                 mode="date"
                 display="default"
+                locale={pickerLocale}
                 onChange={(event, selectedDate) => {
                   setShowTournamentDatePicker(false);
                   if (event.type === 'set' && selectedDate) {
@@ -399,7 +540,7 @@ export default function TournamentsScreen() {
             {selectedSport && getSportConfig(selectedSport)?.formats && (
               <>
                 <Text style={styles.inputLabel}>{t('home.format')}</Text>
-                <View style={styles.gameFormatContainer}>
+                <View ref={gameFormatTarget.ref} collapsable={false} style={styles.gameFormatContainer}>
                   {getSportConfig(selectedSport)?.formats.map((gf) => {
                     // Translate game format label
                     const formatLabelMap: Record<string, string> = {
@@ -466,7 +607,7 @@ export default function TournamentsScreen() {
             )}
 
             <Text style={styles.inputLabel}>{t('home.category')}</Text>
-            <View style={styles.chipContainer}>
+            <View ref={categoryTarget.ref} collapsable={false} style={styles.chipContainer}>
               {CATEGORIES.map((cat) => {
                 const categoryLabelMap: Record<string, string> = {
                   'Open': t('categories.open', 'Open'),
@@ -487,7 +628,7 @@ export default function TournamentsScreen() {
             </View>
 
             <Text style={styles.inputLabel}>{t('tournaments.format', 'Format')}</Text>
-            <View style={styles.formatContainer}>
+            <View ref={formatTarget.ref} collapsable={false} style={styles.formatContainer}>
               {FORMATS.map((format) => (
                 <TouchableOpacity key={format.value} style={[styles.formatOption, formData.format === format.value && styles.formatSelected]} onPress={() => setFormData({ ...formData, format: format.value })}>
                   <Text style={[styles.formatText, formData.format === format.value && styles.formatTextSelected]}>{format.label}</Text>
@@ -495,11 +636,98 @@ export default function TournamentsScreen() {
               ))}
             </View>
 
-            <View style={{ marginTop: 24 }}>
+            <Text style={styles.inputLabel}>{t('tournaments.visibility', 'Visibilità')}</Text>
+            <View ref={visibilityTarget.ref} collapsable={false} style={styles.formatContainer}>
+              <TouchableOpacity style={[styles.formatOption, formData.is_public && styles.formatSelected]} onPress={() => setFormData({ ...formData, is_public: true })}>
+                <Text style={[styles.formatText, formData.is_public && styles.formatTextSelected]}>{t('tournaments.public', 'Pubblico')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.formatOption, !formData.is_public && styles.formatSelected]} onPress={() => setFormData({ ...formData, is_public: false })}>
+                <Text style={[styles.formatText, !formData.is_public && styles.formatTextSelected]}>{t('tournaments.private', 'Privato')}</Text>
+              </TouchableOpacity>
+            </View>
+            {!formData.is_public && (
+              <Text style={styles.warningText}>{t('tournaments.privateHint', "Verrà generato un codice d'accesso da condividere con chi vuoi far vedere il torneo.")}</Text>
+            )}
+
+            <View style={{ marginTop: 24 }} ref={createSubmitTarget.ref} collapsable={false}>
               <Button title={t('tournaments.createTournament')} onPress={handleCreateTournament} loading={formLoading} fullWidth size="large" />
             </View>
           </ScrollView>
         </SafeAreaView>
+        {/* Rendered inside this Modal (not after it) — Modal opens its own
+            native window, so a coachmark outside it would paint underneath
+            and never be seen. One coachmark per field, walked through in
+            order via "Avanti", then the submit button uses the existing
+            "advance on real success" pattern like every other tour step. */}
+        <TourCoachmark
+          visible={currentCreateField === 'name'}
+          target={nameTarget.rect}
+          text={t('tour.stepFieldName', 'Questo sarà il nome del torneo che comparirà agli utenti.')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'location'}
+          target={locationTarget.rect}
+          text={t('tour.stepFieldLocation', 'Indica la città o la zona dove si svolgerà il torneo.')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'venueName'}
+          target={venueNameTarget.rect}
+          text={t('tour.stepFieldVenueName', 'Il nome del centro sportivo o della struttura che ospita il torneo (facoltativo).')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'venueAddress'}
+          target={venueAddressTarget.rect}
+          text={t('tour.stepFieldVenueAddress', "L'indirizzo della struttura, utile ai partecipanti per raggiungerla (facoltativo).")}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'date'}
+          target={dateFieldTarget.rect}
+          text={t('tour.stepFieldDate', 'Scegli la data di inizio del torneo.')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'gameFormat'}
+          target={gameFormatTarget.rect}
+          text={t('tour.stepFieldGameFormat', 'Scegli il formato di gioco, ad esempio 11 contro 11 o 5 contro 5.')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'category'}
+          target={categoryTarget.rect}
+          text={t('tour.stepFieldCategory', "Seleziona la categoria d'età o il livello del torneo.")}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'format'}
+          target={formatTarget.rect}
+          text={t('tour.stepFieldFormat', 'Scegli il formato del torneo: campionato, eliminazione diretta o gironi.')}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={currentCreateField === 'visibility'}
+          target={visibilityTarget.rect}
+          text={t('tour.stepFieldVisibility', "Scegli se il torneo è pubblico o privato: se privato, servirà un codice per vederlo.")}
+          onSkip={skipTour}
+          onNext={nextCreateField}
+        />
+        <TourCoachmark
+          visible={submitStepActive}
+          target={createSubmitTarget.rect}
+          text={t('tour.stepCreateForm', 'Compila i dati e tocca qui per creare il torneo.')}
+          onSkip={skipTour}
+        />
       </Modal>
     </SafeAreaView>
   );
@@ -509,11 +737,76 @@ export default function TournamentsScreen() {
 function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefresh }: any) {
   const router = useRouter();
   const { t, i18n } = useTranslation();
+  const pickerLocale = i18n.language === 'en' ? 'en-GB' : i18n.language === 'ar' ? 'ar-SA' : i18n.language + '-' + i18n.language.toUpperCase();
   const { user } = useAuthStore();
   const [activeTab, setActiveTab] = useState('teams');
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  // Visibility (public/private + access code), kept as local state rather
+  // than threading a new prop/callback up through TournamentsScreen — this
+  // component already owns plenty of its own tournament-adjacent state.
+  const [visibility, setVisibility] = useState<{ is_public: boolean; access_code?: string | null }>({
+    is_public: tournament.is_public ?? true,
+    access_code: tournament.access_code,
+  });
+  const [visibilitySaving, setVisibilitySaving] = useState(false);
+  const handleToggleVisibility = async (isPublic: boolean) => {
+    if (isPublic === visibility.is_public) return;
+    setVisibilitySaving(true);
+    try {
+      const response = await api.put(`/api/tournaments/${tournament.id}`, { is_public: isPublic });
+      setVisibility({ is_public: response.data.is_public, access_code: response.data.access_code });
+    } catch (error) {
+      Alert.alert(t('common.error'), t('errors.updateFailed', 'Update failed'));
+    } finally {
+      setVisibilitySaving(false);
+    }
+  };
+
+  // Guided "create your first tournament" tour — steps that live in this
+  // screen. 'add-match' and 'open-match' each cover two targets: first the
+  // tab pill to switch to (while not yet on that tab), then the real button
+  // once the tab is active — same step id, different anchor.
+  const tourActive = useTourStore((s) => s.active);
+  const tourStep = useTourStore((s) => s.step);
+
+  // Standalone, repeatable per-section tours ("Fai il tour" at the bottom
+  // of Teams/Matches/Results), reusing the exact same targets/coachmarks as
+  // the guided first-tournament flow above — a step is shown whenever
+  // EITHER that global tour or this local one is on the matching step.
+  // Kept as local state (not the global tourStore) since these are scoped
+  // to this screen and meant to be re-run any time, not just once.
+  const [sectionTour, setSectionTour] = useState<{ type: 'teams' | 'matches' | 'results'; step: number } | null>(null);
+  const skipTour = () => {
+    useTourStore.getState().finish();
+    setSectionTour(null);
+  };
+  const addTeamStepActive = (tourActive && tourStep === 'add-team' && activeTab === 'teams')
+    || (sectionTour?.type === 'teams' && sectionTour.step === 0 && activeTab === 'teams');
+  const addPlayerStepActive = ((tourActive && tourStep === 'add-player') || (sectionTour?.type === 'teams' && sectionTour.step === 1))
+    && activeTab === 'teams' && teams.length > 0;
+  const formationStepActive = sectionTour?.type === 'teams' && sectionTour.step === 2 && activeTab === 'teams' && teams.length > 0;
+  const matchesTabStepActive = tourActive && tourStep === 'add-match' && activeTab !== 'matches';
+  const addMatchBtnStepActive = ((tourActive && tourStep === 'add-match') || (sectionTour?.type === 'matches' && sectionTour.step === 0))
+    && activeTab === 'matches';
+  const resultsTabStepActive = tourActive && tourStep === 'open-match' && activeTab !== 'results';
+  const firstMatchCardStepActive = ((tourActive && tourStep === 'open-match') || (sectionTour?.type === 'results' && sectionTour.step === 0))
+    && activeTab === 'results';
+  // Results-tour only: once the (football) match modal is open, point at
+  // its "Extra" button to explain adding scorers/cards/other events.
+  const extraBtnStepActive = sectionTour?.type === 'results' && sectionTour.step === 1;
+  const standingsStepActive = tourActive && tourStep === 'standings';
+
+  const addTeamTarget = useTourTarget(addTeamStepActive);
+  const addPlayerTarget = useTourTarget(addPlayerStepActive);
+  const formationTarget = useTourTarget(formationStepActive);
+  const matchesTabTarget = useTourTarget(matchesTabStepActive);
+  const addMatchBtnTarget = useTourTarget(addMatchBtnStepActive);
+  const resultsTabTarget = useTourTarget(resultsTabStepActive);
+  const firstMatchCardTarget = useTourTarget(firstMatchCardStepActive);
+  const extraBtnTarget = useTourTarget(extraBtnStepActive, 400);
+  const eyeIconTarget = useTourTarget(standingsStepActive);
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showAddMatchModal, setShowAddMatchModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
@@ -538,8 +831,17 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [customRounds, setCustomRounds] = useState<string[]>([]);
   const [selectedMatch, setSelectedMatch] = useState<any>(null);
   const [showExtraModal, setShowExtraModal] = useState(false);
+  // Results-tour: reaching the Extra modal (scorers/cards) is the natural
+  // end of this walkthrough.
+  useEffect(() => {
+    if (showExtraModal && sectionTour?.type === 'results' && sectionTour.step === 1) {
+      setSectionTour(null);
+    }
+  }, [showExtraModal]);
   const [matchEvents, setMatchEvents] = useState<any[]>([]);
-  const [playerRatings, setPlayerRatings] = useState<Record<string, Record<string, number>>>({});
+  // player_id -> rating (flat) — matches both TeamRatingsAccordion's own
+  // `ratings` prop type and what the backend actually stores/expects.
+  const [playerRatings, setPlayerRatings] = useState<Record<string, number>>({});
   // Teams & Players state
   const [expandedTeamId, setExpandedTeamId] = useState<string | null>(null);
   const [showAddPlayerModal, setShowAddPlayerModal] = useState(false);
@@ -566,6 +868,14 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [loadingMatchStats, setLoadingMatchStats] = useState(false);
   // Inline live events shown directly under each team name on the match card
   const [matchEventsMap, setMatchEventsMap] = useState<Record<string, any[]>>({});
+  // Ratings-only modal — the "Voti" shortcut on a match card (any status,
+  // including completed) goes straight to the player list, skipping the
+  // full live-match/Extra flow entirely. Decoupled from `selectedMatch` on
+  // purpose so it never also opens that heavier modal.
+  const [showRatingsOnlyModal, setShowRatingsOnlyModal] = useState(false);
+  const [ratingsOnlyMatch, setRatingsOnlyMatch] = useState<any>(null);
+  const [loadingRatingsOnly, setLoadingRatingsOnly] = useState(false);
+  const [savingRatingsOnly, setSavingRatingsOnly] = useState(false);
   // Basketball Match Modal state
   const [showBasketballMatchModal, setShowBasketballMatchModal] = useState(false);
   const [selectedBasketballMatch, setSelectedBasketballMatch] = useState<any>(null);
@@ -581,6 +891,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // Rugby Match Modal state
   const [showRugbyMatchModal, setShowRugbyMatchModal] = useState(false);
   const [selectedRugbyMatch, setSelectedRugbyMatch] = useState<any>(null);
+
+  // Advance the tour once any per-sport live-match modal opens (or the
+  // plain football one, tracked via `selectedMatch`) — handleOpenMatchResult
+  // branches by sport into one of these, so watching the booleans together
+  // is simpler than patching every branch.
+  useEffect(() => {
+    const anyMatchModalOpen = showBasketballMatchModal || showTennisMatchModal || showPadelMatchModal || showVolleyballMatchModal || showRugbyMatchModal || !!selectedMatch;
+    if (anyMatchModalOpen && useTourStore.getState().active && useTourStore.getState().step === 'open-match') {
+      useTourStore.getState().goTo('standings');
+    }
+    if (anyMatchModalOpen && sectionTour?.type === 'results' && sectionTour.step === 0) {
+      // Football's plain match modal has an "Extra" button for scorers/
+      // cards/other events worth walking through too — the per-sport modals
+      // (basketball, tennis, padel, volleyball, rugby) have their own
+      // separate UI for that, so for those the tour just ends here for now.
+      setSectionTour(selectedMatch ? { type: 'results', step: 1 } : null);
+    }
+  }, [showBasketballMatchModal, showTennisMatchModal, showPadelMatchModal, showVolleyballMatchModal, showRugbyMatchModal, selectedMatch]);
+
   // Extra Modal state for match events
   const [homeTeamPlayers, setHomeTeamPlayers] = useState<any[]>([]);
   const [awayTeamPlayers, setAwayTeamPlayers] = useState<any[]>([]);
@@ -953,6 +1282,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setTeams([...teams, response.data]);
       setShowAddTeamModal(false);
       setNewTeamName('');
+      if (useTourStore.getState().active && useTourStore.getState().step === 'add-team') {
+        useTourStore.getState().goTo('add-player');
+      }
+      if (sectionTour?.type === 'teams' && sectionTour.step === 0) {
+        setSectionTour({ type: 'teams', step: 1 });
+      }
     } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
   };
 
@@ -978,6 +1313,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setMatchTime(null);
       setShowHomeDropdown(false);
       setShowAwayDropdown(false);
+      if (useTourStore.getState().active && useTourStore.getState().step === 'add-match') {
+        useTourStore.getState().goTo('open-match');
+      }
+      if (sectionTour?.type === 'matches' && sectionTour.step === 0) {
+        setSectionTour(null);
+      }
     } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
   };
 
@@ -1129,6 +1470,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setShowAddPlayerModal(false);
       setNewPlayerData({ name: '', number: '', role: '', photo: '', birthDate: '' });
       Alert.alert(t('common.success'), t('success.playerAdded', 'Player added'));
+      if (useTourStore.getState().active && useTourStore.getState().step === 'add-player') {
+        useTourStore.getState().goTo('add-match');
+      }
+      if (sectionTour?.type === 'teams' && sectionTour.step === 1) {
+        setSectionTour({ type: 'teams', step: 2 });
+      }
     } catch (error: any) {
       Alert.alert(t('common.error'), error.response?.data?.detail || 'Impossibile aggiungere giocatore');
     }
@@ -1162,6 +1509,39 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       setAwayTeamPlayers(mapPlayers(awayRes.data));
     } catch (error) {
       console.error('Error loading players for extra modal:', error);
+    }
+  };
+
+  // "Voti" shortcut: straight to the player rating list for this match,
+  // any status included — the same accordion layout as inside Extra, just
+  // without the score card / events editor around it.
+  const handleOpenRatingsOnly = async (match: any) => {
+    setRatingsOnlyMatch(match);
+    setShowRatingsOnlyModal(true);
+    setLoadingRatingsOnly(true);
+    try {
+      await loadPlayersForExtraModal(match.home_team_id, match.away_team_id);
+      const ratingsRes = await api.get(`/api/matches/${match.id}/ratings`);
+      const ratingsMap: Record<string, number> = {};
+      (ratingsRes.data || []).forEach((r: any) => { ratingsMap[r.player_id] = r.rating; });
+      setPlayerRatings(ratingsMap);
+    } catch (error) {
+      console.error('Error loading ratings:', error);
+    } finally {
+      setLoadingRatingsOnly(false);
+    }
+  };
+
+  const handleSaveRatingsOnly = async () => {
+    if (!ratingsOnlyMatch) return;
+    setSavingRatingsOnly(true);
+    try {
+      await api.post(`/api/matches/${ratingsOnlyMatch.id}/ratings`, { ratings: playerRatings });
+      setShowRatingsOnlyModal(false);
+    } catch (error) {
+      Alert.alert(t('common.error'), 'Impossibile salvare i voti');
+    } finally {
+      setSavingRatingsOnly(false);
     }
   };
 
@@ -1584,6 +1964,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     await loadTeamFormation(team.id);
     setSelectedTeamForFormation(team);
     setShowFormationModal(true);
+    if (sectionTour?.type === 'teams' && sectionTour.step === 2) {
+      setSectionTour(null);
+    }
   };
 
   // Handle formation save
@@ -1743,7 +2126,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           <Text style={styles.detailTitle} numberOfLines={1}>{tournament.name}</Text>
           <Text style={styles.detailMeta}>{tournament.category}</Text>
         </View>
-        <TouchableOpacity onPress={() => router.push(`/tournament/${tournament.slug}`)}>
+        <TouchableOpacity
+          ref={eyeIconTarget.ref}
+          onPress={() => {
+            useTourStore.getState().finish();
+            router.push(`/tournament/${tournament.slug}`);
+          }}
+        >
           <Ionicons name="eye-outline" size={24} color="#000" />
         </TouchableOpacity>
       </View>
@@ -1751,7 +2140,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
       <View style={styles.tabsContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {tabs.map((tab) => (
-            <TouchableOpacity key={tab.id} style={[styles.tab, activeTab === tab.id && styles.tabActive]} onPress={() => setActiveTab(tab.id)}>
+            <TouchableOpacity
+              key={tab.id}
+              ref={tab.id === 'matches' ? matchesTabTarget.ref : tab.id === 'results' ? resultsTabTarget.ref : undefined}
+              style={[styles.tab, activeTab === tab.id && styles.tabActive]}
+              onPress={() => setActiveTab(tab.id)}
+            >
               <Ionicons name={tab.icon} size={18} color={activeTab === tab.id ? '#FFF' : '#000'} />
               <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>{tab.label}</Text>
             </TouchableOpacity>
@@ -1764,13 +2158,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           <>
             {activeTab === 'teams' && (
               <View>
-                <TouchableOpacity style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
+                <TouchableOpacity ref={addTeamTarget.ref} style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
                   <Ionicons name="add" size={22} color="#FFF" />
                   <Text style={styles.addTeamBtnText}>{t('common.add', 'Add')} {getTeamLabel()}</Text>
                 </TouchableOpacity>
                 <View style={{ height: 16 }} />
                 {teams.length === 0 ? <EmptyState icon="people-outline" title={t('tournaments.noTeams')} /> : (
-                  teams.map((team) => (
+                  teams.map((team, teamIdx) => (
                     <View key={team.id} style={styles.teamCardNew}>
                       {/* Team Row with all elements */}
                       <View style={styles.teamRowFull}>
@@ -1788,11 +2182,19 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         <View style={styles.teamActionBtns}>
                           {/* For Tennis singles, hide add player button after 1 player, for doubles after 2 */}
                           {(!isTennisSport || (teamPlayers[team.id]?.length || 0) < (isDoubles ? 2 : 1)) && (
-                            <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleOpenAddPlayer(team)}>
+                            <TouchableOpacity
+                              ref={teamIdx === 0 ? addPlayerTarget.ref : undefined}
+                              style={styles.teamActionBtn}
+                              onPress={() => handleOpenAddPlayer(team)}
+                            >
                               <Ionicons name="add" size={20} color="#FFF" />
                             </TouchableOpacity>
                           )}
-                          <TouchableOpacity style={styles.formationBtn} onPress={() => handleOpenFormation(team)}>
+                          <TouchableOpacity
+                            ref={teamIdx === 0 ? formationTarget.ref : undefined}
+                            style={styles.formationBtn}
+                            onPress={() => handleOpenFormation(team)}
+                          >
                             <Ionicons name="grid" size={18} color="#FFF" />
                           </TouchableOpacity>
                           <TouchableOpacity style={styles.teamActionBtn} onPress={() => handleDeleteTeamConfirm(team.id, team.name)}>
@@ -1857,17 +2259,25 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </View>
                   ))
                 )}
+                {!tourActive && (
+                  <TouchableOpacity style={styles.sectionTourButton} onPress={() => setSectionTour({ type: 'teams', step: 0 })}>
+                    <Ionicons name="compass-outline" size={18} color="#000" />
+                    <Text style={styles.sectionTourButtonText}>{t('dashboard.takeTour', 'Fai il tour')}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
             )}
 
             {activeTab === 'matches' && (
               <View>
-                <Button title={t('matches.addMatch', 'Add Match')} onPress={() => {
-                  setMatchDate(null);
-                  setMatchTime(null);
-                  setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
-                  setShowAddMatchModal(true);
-                }} icon="add" fullWidth disabled={teams.length < 2} />
+                <View ref={addMatchBtnTarget.ref} collapsable={false}>
+                  <Button title={t('matches.addMatch', 'Add Match')} onPress={() => {
+                    setMatchDate(null);
+                    setMatchTime(null);
+                    setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
+                    setShowAddMatchModal(true);
+                  }} icon="add" fullWidth disabled={teams.length < 2} />
+                </View>
                 {teams.length < 2 && <Text style={styles.warningText}>{t('common.add', 'Add')} almeno 2 squadre</Text>}
                 <View style={{ height: 16 }} />
                 {matches.length === 0 ? <EmptyState icon={`${sportIcon}-outline` as any} title={t('matches.noMatchesScheduled')} /> : (
@@ -1938,6 +2348,15 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             {formatMatchDateTime(match) ? (
                               <Text style={styles.matchPillDateTime}>{formatMatchDateTime(match)}</Text>
                             ) : null}
+                            {/* Ratings stay editable even after the match ends — the
+                                organizer often wants to score players once the game is
+                                over and there's time to review it, not just while live. */}
+                            {tournament?.sport === 'calcio' && (
+                              <TouchableOpacity style={styles.matchPillRatingsBtn} onPress={() => handleOpenRatingsOnly(match)}>
+                                <Ionicons name="star-outline" size={16} color="#000" />
+                                <Text style={styles.matchPillRatingsBtnText}>{t('soccer.ratings', 'Voti')}</Text>
+                              </TouchableOpacity>
+                            )}
                             {tournament?.sport && (
                               <View style={styles.matchPillCarouselWrap}>
                                 <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
@@ -1948,6 +2367,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       })}
                     </View>
                   )})
+                )}
+                {!tourActive && (
+                  <TouchableOpacity style={styles.sectionTourButton} onPress={() => setSectionTour({ type: 'matches', step: 0 })}>
+                    <Ionicons name="compass-outline" size={18} color="#000" />
+                    <Text style={styles.sectionTourButtonText}>{t('dashboard.takeTour', 'Fai il tour')}</Text>
+                  </TouchableOpacity>
                 )}
               </View>
             )}
@@ -1965,9 +2390,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   return (
                     <>
                       <Text style={styles.resultsTitle}>{t('matches.selectMatch', 'Select match to manage')}</Text>
-                      {matchesInCorso.map((match) => (
-                        <TouchableOpacity 
-                          key={match.id} 
+                      {matchesInCorso.map((match, matchIdx) => (
+                        <TouchableOpacity
+                          key={match.id}
+                          ref={matchIdx === 0 ? firstMatchCardTarget.ref : undefined}
                           style={styles.matchSelectCard}
                           onPress={() => handleOpenMatchResult(match)}
                         >
@@ -1993,6 +2419,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           </View>
                         </TouchableOpacity>
                       ))}
+                      {!tourActive && (
+                        <TouchableOpacity style={styles.sectionTourButton} onPress={() => setSectionTour({ type: 'results', step: 0 })}>
+                          <Ionicons name="compass-outline" size={18} color="#000" />
+                          <Text style={styles.sectionTourButtonText}>{t('dashboard.takeTour', 'Fai il tour')}</Text>
+                        </TouchableOpacity>
+                      )}
                     </>
                   );
                 })()}
@@ -2142,6 +2574,39 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       </TouchableOpacity>
                     ))}
                   </View>
+                </View>
+                <View style={styles.settingsCard}>
+                  <Text style={styles.settingsLabel}>{t('tournaments.visibility', 'Visibilità')}</Text>
+                  <View style={styles.statusOptions}>
+                    <TouchableOpacity
+                      style={[styles.statusOption, visibility.is_public && styles.statusOptionActive]}
+                      onPress={() => handleToggleVisibility(true)}
+                      disabled={visibilitySaving}
+                    >
+                      <Text style={[styles.statusOptionText, visibility.is_public && styles.statusOptionTextActive]}>{t('tournaments.public', 'Pubblico')}</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.statusOption, !visibility.is_public && styles.statusOptionActive]}
+                      onPress={() => handleToggleVisibility(false)}
+                      disabled={visibilitySaving}
+                    >
+                      <Text style={[styles.statusOptionText, !visibility.is_public && styles.statusOptionTextActive]}>{t('tournaments.private', 'Privato')}</Text>
+                    </TouchableOpacity>
+                  </View>
+                  {!visibility.is_public && visibility.access_code && (
+                    <View style={styles.linkContainer}>
+                      <View>
+                        <Text style={styles.settingsHint}>{t('tournaments.accessCode', "Codice d'accesso")}</Text>
+                        <Text style={styles.linkText}>{visibility.access_code}</Text>
+                      </View>
+                      <TouchableOpacity onPress={() => Clipboard.setStringAsync(visibility.access_code || '')}>
+                        <Ionicons name="copy-outline" size={20} color="#000" />
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                  {!visibility.is_public && (
+                    <Text style={styles.settingsHint}>{t('tournaments.accessCodeHint', "Condividi questo codice con chi vuoi far vedere il torneo: senza, non potrà vedere squadre, partite o classifica.")}</Text>
+                  )}
                 </View>
                 <View style={styles.settingsCard}>
                   <Text style={styles.settingsLabel}>{t('tournaments.publicLink', 'Public Link')}</Text>
@@ -2322,6 +2787,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                         value={selectedDate || new Date(2000, 0, 1)}
                         mode="date"
                         display="spinner"
+                        locale={pickerLocale}
                         onChange={onDateChange}
                         maximumDate={new Date()}
                         minimumDate={new Date(1950, 0, 1)}
@@ -2334,6 +2800,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                   value={selectedDate || new Date(2000, 0, 1)}
                   mode="date"
                   display="default"
+                  locale={pickerLocale}
                   onChange={onDateChange}
                   maximumDate={new Date()}
                   minimumDate={new Date(1950, 0, 1)}
@@ -2735,6 +3202,59 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </TouchableOpacity>
       </Modal>
 
+      {/* Ratings-only Modal — the "Voti" shortcut, any match status */}
+      <Modal visible={showRatingsOnlyModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowRatingsOnlyModal(false)}>
+        <SafeAreaView style={styles.modalContainer} edges={['top', 'bottom']}>
+          <ScrollView style={styles.extraModalContent} showsVerticalScrollIndicator={false}>
+            <View style={styles.extraHeaderBox}>
+              <View style={{ width: 40 }} />
+              <Text style={styles.extraHeaderText}>{t('soccer.ratings', 'Voti')}</Text>
+              <TouchableOpacity onPress={() => setShowRatingsOnlyModal(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            {ratingsOnlyMatch && (
+              <Text style={styles.ratingsOnlySubtitle}>
+                {getTeamName(ratingsOnlyMatch.home_team_id)} - {getTeamName(ratingsOnlyMatch.away_team_id)}
+              </Text>
+            )}
+
+            {loadingRatingsOnly ? (
+              <Loading />
+            ) : ratingsOnlyMatch ? (
+              <View style={styles.votiSection}>
+                <TeamRatingsAccordion
+                  teamName={getTeamName(ratingsOnlyMatch.home_team_id)}
+                  teamLetter={getTeamName(ratingsOnlyMatch.home_team_id).charAt(0)}
+                  players={homeTeamPlayers}
+                  ratings={playerRatings}
+                  onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({ ...prev, [playerId]: rating }))}
+                  sport={tournament?.sport || 'calcio'}
+                />
+                <TeamRatingsAccordion
+                  teamName={getTeamName(ratingsOnlyMatch.away_team_id)}
+                  teamLetter={getTeamName(ratingsOnlyMatch.away_team_id).charAt(0)}
+                  players={awayTeamPlayers}
+                  ratings={playerRatings}
+                  onRatingChange={(playerId, rating) => setPlayerRatings(prev => ({ ...prev, [playerId]: rating }))}
+                  sport={tournament?.sport || 'calcio'}
+                />
+              </View>
+            ) : null}
+
+            <Button
+              title={t('common.save', 'Salva')}
+              onPress={handleSaveRatingsOnly}
+              loading={savingRatingsOnly}
+              disabled={loadingRatingsOnly}
+              fullWidth
+              size="large"
+            />
+          </ScrollView>
+        </SafeAreaView>
+      </Modal>
+
       {/* Add Match Modal - Redesigned */}
       <Modal visible={showAddMatchModal} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowAddMatchModal(false)}>
         <SafeAreaView style={styles.modalContainer}>
@@ -2886,6 +3406,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       value={matchDate || new Date()}
                       mode="date"
                       display="spinner"
+                      locale={pickerLocale}
                       onChange={(event, selectedDate) => {
                         if (selectedDate) {
                           setMatchDate(selectedDate);
@@ -2908,6 +3429,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 value={matchDate || new Date()}
                 mode="date"
                 display="default"
+                locale={pickerLocale}
                 onChange={(event, selectedDate) => {
                   setShowMatchDatePicker(false);
                   if (event.type === 'set' && selectedDate) {
@@ -2949,6 +3471,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       mode="time"
                       is24Hour={true}
                       display="spinner"
+                      locale={pickerLocale}
                       onChange={(event, selectedTime) => {
                         if (selectedTime) {
                           setMatchTime(selectedTime);
@@ -2972,6 +3495,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 mode="time"
                 is24Hour={true}
                 display="default"
+                locale={pickerLocale}
                 onChange={(event, selectedTime) => {
                   setShowMatchTimePicker(false);
                   if (event.type === 'set' && selectedTime) {
@@ -3149,7 +3673,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     <Ionicons name="checkmark" size={22} color="#FFF" />
                     <Text style={styles.finePartitaBtnText}>{t('matches.endMatch')}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity 
+                  <TouchableOpacity
+                    ref={extraBtnTarget.ref}
                     style={styles.extraBtn}
                     onPress={handleOpenExtraModal}
                   >
@@ -3427,6 +3952,15 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </SafeAreaView>
         </Modal>
         </SafeAreaProvider>
+        {/* Inside this Modal (not after it), same reasoning as the
+            create-tournament form's coachmark — Modal opens its own native
+            window. */}
+        <TourCoachmark
+          visible={extraBtnStepActive}
+          target={extraBtnTarget.rect}
+          text={t('tour.stepExtra', 'Tocca qui per aggiungere marcatori, cartellini e altri eventi della partita.')}
+          onSkip={skipTour}
+        />
       </Modal>
 
       {/* Formation Modal */}
@@ -3676,6 +4210,55 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           setShowHighlightsPaywall(false);
           setShowHighlightsModal(true);
         }}
+      />
+
+      <TourCoachmark
+        visible={addTeamStepActive}
+        target={addTeamTarget.rect}
+        text={t('tour.stepAddTeam', 'Tocca qui per aggiungere la tua prima squadra.')}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={addPlayerStepActive}
+        target={addPlayerTarget.rect}
+        text={t('tour.stepAddPlayer', 'Ora tocca qui per aggiungere un giocatore alla squadra.')}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={formationStepActive}
+        target={formationTarget.rect}
+        text={t('tour.stepFormation', 'Tocca qui per impostare la formazione della squadra in campo.')}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={matchesTabStepActive}
+        target={matchesTabTarget.rect}
+        text={t('tour.stepGoToMatches', "Tocca su 'Partite' per creare una partita.")}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={addMatchBtnStepActive}
+        target={addMatchBtnTarget.rect}
+        text={t('tour.stepAddMatch', 'Tocca qui per creare una partita (serve almeno una seconda squadra).')}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={resultsTabStepActive}
+        target={resultsTabTarget.rect}
+        text={t('tour.stepGoToResults', "Tocca su 'Risultati' per gestire una partita dal vivo.")}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={firstMatchCardStepActive}
+        target={firstMatchCardTarget.rect}
+        text={t('tour.stepOpenMatch', 'Tocca una partita per aprirla ed aggiornare il punteggio dal vivo.')}
+        onSkip={skipTour}
+      />
+      <TourCoachmark
+        visible={standingsStepActive}
+        target={eyeIconTarget.rect}
+        text={t('tour.stepStandings', 'Ultimo passo: tocca qui per vedere la pagina pubblica del torneo con la classifica.')}
+        onSkip={skipTour}
       />
     </SafeAreaView>
   );
@@ -4133,6 +4716,8 @@ const styles = StyleSheet.create({
   matchDayHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 },
   matchDayTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
   matchPillCard: { flexDirection: 'column', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 20, paddingVertical: 12, paddingHorizontal: 16, marginBottom: 12, overflow: 'hidden' },
+  matchPillRatingsBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderColor: '#000', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 14, marginTop: 10 },
+  matchPillRatingsBtnText: { fontSize: 13, fontWeight: '700', color: '#000' },
   matchPillCarouselWrap: { alignSelf: 'stretch', marginHorizontal: -16 },
   matchPillCardLive: { borderColor: '#E53935', backgroundColor: '#FFF5F5' },
   matchPillLiveBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'center', backgroundColor: '#E53935', paddingHorizontal: 10, paddingVertical: 3, borderRadius: 10, marginBottom: 8 },
@@ -4161,7 +4746,8 @@ const styles = StyleSheet.create({
   statusOptionText: { fontSize: 13, fontWeight: '600', color: '#000' },
   statusOptionTextActive: { color: '#FFF' },
   linkContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8 },
-  linkText: { fontSize: 14, color: '#000', flex: 1 },
+  linkText: { fontSize: 14, color: '#000', flex: 1, fontWeight: '700', letterSpacing: 1 },
+  settingsHint: { fontSize: 12, color: '#666', marginTop: 8, lineHeight: 17 },
   teamSelector: { marginBottom: 16 },
   teamSelectorItem: { padding: 14, borderRadius: 10, borderWidth: 2, borderColor: '#000', marginBottom: 8 },
   teamSelectorItemActive: { backgroundColor: '#000' },
@@ -4341,6 +4927,7 @@ const styles = StyleSheet.create({
   salvaBtn: { backgroundColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 14, borderRadius: 16, gap: 8, marginBottom: 20 },
   salvaBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
   // Voti Section
+  ratingsOnlySubtitle: { fontSize: 15, fontWeight: '600', color: '#666', textAlign: 'center', marginBottom: 16 },
   votiSection: { marginBottom: 16 },
   votiHeader: { backgroundColor: '#000', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 12, borderRadius: 12, gap: 8, marginBottom: 12 },
   votiHeaderText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
@@ -4380,6 +4967,8 @@ const styles = StyleSheet.create({
   // New Teams Screen Styles
   addTeamBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', paddingVertical: 16, borderRadius: 16, gap: 8 },
   addTeamBtnText: { fontSize: 16, fontWeight: '700', color: '#FFF' },
+  sectionTourButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingVertical: 16, backgroundColor: '#FFF', marginTop: 16 },
+  sectionTourButtonText: { color: '#000', fontSize: 15, fontWeight: '700' },
   teamCardNew: { borderWidth: 2, borderColor: '#000', borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
   teamRowFull: { flexDirection: 'row', alignItems: 'center', padding: 16 },
   teamLeftSection: { flexDirection: 'row', alignItems: 'center', flex: 1 },

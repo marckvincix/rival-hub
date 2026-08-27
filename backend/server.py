@@ -268,6 +268,7 @@ class Tournament(BaseModel):
     venue_address: Optional[str] = None
     logo: Optional[str] = None
     is_public: bool = True
+    access_code: Optional[str] = None
     created_at: datetime
 
 # Team Models
@@ -317,6 +318,12 @@ class MatchCreate(BaseModel):
     match_date: Optional[str] = None
     match_time: Optional[str] = None
     venue: Optional[str] = None
+    # The frontend's add-match form sends these instead of (or alongside)
+    # `venue`, letting a match override the tournament's default location
+    # with its own pitch name/address — used e.g. to build a proper Google
+    # Calendar entry.
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     round: str = "Giornata 1"
 
 class MatchUpdate(BaseModel):
@@ -327,6 +334,8 @@ class MatchUpdate(BaseModel):
     match_date: Optional[str] = None
     match_time: Optional[str] = None
     venue: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     round: Optional[str] = None
     status: Optional[str] = None
     # Basketball specific fields
@@ -359,6 +368,8 @@ class Match(BaseModel):
     match_date: Optional[str] = None
     match_time: Optional[str] = None
     venue: Optional[str] = None
+    venue_name: Optional[str] = None
+    venue_address: Optional[str] = None
     round: str = "Giornata 1"
     status: str = "scheduled"  # scheduled, in_progress, completed
     # Basketball specific fields
@@ -404,6 +415,14 @@ class MatchEvent(BaseModel):
     period: Optional[str] = None
     points_value: Optional[int] = None
     created_at: datetime
+
+# Ratings-only save — deliberately separate from MatchEventsBatchSave,
+# which deletes+reinserts ALL of a match's events on every save. Reusing
+# that endpoint just to add ratings would wipe out any goals/cards already
+# recorded unless the caller resent them too; this one only ever touches
+# player_ratings.
+class MatchRatingsSave(BaseModel):
+    ratings: Dict[str, float] = {}  # player_id -> rating
 
 # Match Events Batch Save Model
 class MatchEventsBatchSave(BaseModel):
@@ -1215,6 +1234,9 @@ async def create_tournament(
         "logo": tournament_data.logo,
         "is_public": tournament_data.is_public,
         "highlights_code": generate_highlights_code(),  # Auto-generate access code
+        # Always generated, not just when private, so switching a tournament
+        # to private later (via PUT) doesn't need special-casing here.
+        "access_code": generate_highlights_code(),
         "created_at": now
     }
     
@@ -1262,21 +1284,31 @@ async def get_public_tournaments(
     return [Tournament(**t) for t in tournaments]
 
 @api_router.get("/tournaments/slug/{slug}")
-async def get_tournament_by_slug(slug: str):
-    """Get tournament by slug (public)"""
+async def get_tournament_by_slug(slug: str, code: Optional[str] = None):
+    """Get tournament by slug (public). Private tournaments require the
+    organizer's access code, passed as ?code=... — a missing or wrong code
+    both come back as 403 but with a distinct `detail` so the frontend can
+    tell "show the code entry screen" apart from "that code was wrong"."""
     tournament = await db.tournaments.find_one({"slug": slug}, {"_id": 0})
 
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
 
     if not tournament.get("is_public", True):
-        raise HTTPException(status_code=403, detail="Torneo privato")
+        expected_code = tournament.get("access_code")
+        if not code:
+            raise HTTPException(status_code=403, detail="private_code_required")
+        if not expected_code or code.strip().upper() != expected_code.upper():
+            raise HTTPException(status_code=403, detail="private_code_invalid")
 
     effective_status = compute_effective_status(tournament["status"], tournament.get("start_date"))
     if effective_status != tournament["status"]:
         tournament["status"] = effective_status
         await db.tournaments.update_one({"id": tournament["id"]}, {"$set": {"status": effective_status}})
 
+    # Don't leak the access code itself in the public payload — it's only
+    # meant to be read back by the organizer via their authenticated routes.
+    tournament.pop("access_code", None)
     return Tournament(**tournament)
 
 @api_router.get("/tournaments/{tournament_id}", response_model=Tournament)
@@ -1316,13 +1348,19 @@ async def update_tournament(
         raise HTTPException(status_code=404, detail="Torneo non trovato")
     
     update_data = {k: v for k, v in tournament_data.dict().items() if v is not None}
-    
+
+    # A tournament created before access codes existed (or one made public
+    # then private again) might not have one yet — generate it lazily
+    # rather than requiring every old row to be migrated.
+    if update_data.get("is_public") is False and not tournament.get("access_code"):
+        update_data["access_code"] = generate_highlights_code()
+
     if update_data:
         await db.tournaments.update_one(
             {"id": tournament_id},
             {"$set": update_data}
         )
-    
+
     updated = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
     return Tournament(**updated)
 
@@ -1739,6 +1777,8 @@ async def create_match(
         "match_date": match_data.match_date,
         "match_time": match_data.match_time,
         "venue": match_data.venue,
+        "venue_name": match_data.venue_name,
+        "venue_address": match_data.venue_address,
         "round": match_data.round,
         "status": "scheduled",
         "created_at": now
@@ -2297,6 +2337,63 @@ async def save_match_events_batch(
         "match": updated_match,
         "events_count": len(created_events)
     }
+
+@api_router.get("/matches/{match_id}/ratings")
+async def get_match_ratings(match_id: str):
+    """Get all player ratings for a match, enriched with player name/number/
+    role/team (public — same access level as /events, used on both the
+    organizer's match screen and the public tournament page)."""
+    ratings = await db.player_ratings.find({"match_id": match_id}, {"_id": 0}).to_list(1000)
+
+    enriched = []
+    for r in ratings:
+        player = await db.players.find_one({"id": r.get("player_id")}, {"_id": 0})
+        if not player:
+            continue
+        enriched.append({
+            "player_id": r.get("player_id"),
+            "player_name": player.get("full_name"),
+            "player_number": player.get("number"),
+            "role": player.get("role"),
+            "team_id": player.get("team_id"),
+            "rating": r.get("rating"),
+        })
+    return enriched
+
+@api_router.post("/matches/{match_id}/ratings")
+async def save_match_ratings(
+    match_id: str,
+    data: MatchRatingsSave,
+    current_user: User = Depends(get_current_user)
+):
+    """Save/update player ratings for a match on their own, independent of
+    match events or status — lets the organizer score players any time,
+    including after the match is completed, from the "Voti" shortcut."""
+    match = await db.matches.find_one({"id": match_id}, {"_id": 0})
+    if not match:
+        raise HTTPException(status_code=404, detail="Partita non trovata")
+
+    tournament = await db.tournaments.find_one(
+        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
+        {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+
+    now = datetime.now(timezone.utc)
+    for player_id, rating in data.ratings.items():
+        await db.player_ratings.update_one(
+            {"match_id": match_id, "player_id": player_id},
+            {"$set": {
+                "match_id": match_id,
+                "player_id": player_id,
+                "tournament_id": match["tournament_id"],
+                "rating": rating,
+                "created_at": now
+            }},
+            upsert=True
+        )
+    return {"message": "Voti salvati con successo"}
 
 @api_router.get("/matches/{match_id}/events")
 async def get_match_events(match_id: str):

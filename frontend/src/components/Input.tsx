@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
 import { View, Text, TextInput, StyleSheet, TextInputProps } from 'react-native';
 
 interface InputProps extends TextInputProps {
@@ -6,11 +6,16 @@ interface InputProps extends TextInputProps {
   error?: string;
 }
 
-export const Input: React.FC<InputProps> = ({ label, error, style, ...props }) => {
+// forwardRef so callers can call .focus() on the underlying TextInput
+// directly (e.g. the guided tour moving keyboard focus to whichever field
+// it's currently pointing at) — a plain function component can't be given
+// a ref at all, so it silently did nothing before this.
+export const Input = forwardRef<TextInput, InputProps>(({ label, error, style, ...props }, ref) => {
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
+        ref={ref}
         style={[
           styles.input,
           error && styles.inputError,
@@ -22,7 +27,7 @@ export const Input: React.FC<InputProps> = ({ label, error, style, ...props }) =
       {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {

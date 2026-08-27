@@ -1,10 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { Tabs, useRouter, usePathname } from 'expo-router';
+import { Tabs, useRouter, usePathname, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../src/store/authStore';
-import { useEffect } from 'react';
 import { useTranslation } from '../../src/i18n';
 
 function CustomTabBar() {
@@ -56,19 +55,13 @@ function CustomTabBar() {
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuthStore();
-  const router = useRouter();
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      // Use setTimeout to avoid the maximum update depth error
-      setTimeout(() => {
-        router.replace('/');
-      }, 0);
-    }
-  }, [isAuthenticated, isLoading]);
-
-  if (isLoading || !isAuthenticated) {
+  if (isLoading) {
     return null;
+  }
+
+  if (!isAuthenticated) {
+    return <Redirect href="/" />;
   }
 
   return (

@@ -169,6 +169,7 @@ export interface Tournament {
   venue_address?: string;
   logo?: string;
   is_public: boolean;
+  access_code?: string;
   created_at: string;
 }
 
@@ -201,6 +202,8 @@ export interface Match {
   match_date?: string;
   match_time?: string;
   venue?: string;
+  venue_name?: string;
+  venue_address?: string;
   round: string;
   status: 'scheduled' | 'live' | 'completed';
   // Basketball specific fields
