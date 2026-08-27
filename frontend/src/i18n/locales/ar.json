@@ -277,7 +277,8 @@
     "category": "الفئة",
     "inProgress": "جارية",
     "viewField": "عرض الملعب",
-    "pending": "معلقة"
+    "pending": "معلقة",
+    "venueNamePlaceholder": "مثال: اسم المركز الرياضي"
   },
   "teams": {
     "title": "الفرق",
@@ -286,7 +287,7 @@
     "editTeam": "تعديل الفريق",
     "deleteTeam": "حذف الفريق",
     "teamName": "اسم الفريق",
-    "teamNamePlaceholder": "مثال: الهلال",
+    "teamNamePlaceholder": "مثال: اسم الفريق",
     "teamLogo": "شعار الفريق",
     "players": "اللاعبون",
     "player": "لاعب",
@@ -1097,5 +1098,24 @@
     "stepOpenMatch": "اضغط على مباراة لفتحها وتحديث النتيجة مباشرة.",
     "stepExtra": "اضغط هنا لإضافة الهدافين والبطاقات وأحداث أخرى للمباراة.",
     "stepStandings": "الخطوة الأخيرة: اضغط هنا لرؤية الصفحة العامة للبطولة مع الترتيب."
+  },
+  "collaborators": {
+    "title": "إدارة المتعاونين",
+    "generateCode": "إنشاء رمز جديد",
+    "invitesTitle": "رموز الدعوة",
+    "active": "نشطة",
+    "noInvites": "لا يوجد رمز نشط",
+    "fullAccess": "وصول كامل",
+    "collaboratorsTitle": "المتعاونون",
+    "noCollaborators": "لا يوجد متعاونون بعد",
+    "remove": "إزالة المتعاون",
+    "removeConfirm": "إزالة هذا المتعاون؟ سيفقد الوصول إلى البطولة.",
+    "assignTeams": "تعيين الفرق",
+    "assignTeamsHint": "لا تحديد = وصول كامل إلى البطولة.",
+    "redeemEntry": "رمز المتعاون",
+    "redeemTitle": "انضم كمتعاون",
+    "redeemHint": "أدخل الرمز الذي حصلت عليه من منظم البطولة.",
+    "redeemAction": "انضمام",
+    "redeemFailed": "رمز غير صالح"
   }
 }

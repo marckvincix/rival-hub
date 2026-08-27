@@ -237,7 +237,15 @@ export default function TournamentPublicPage() {
 
   const handleShare = async () => {
     if (!tournament) return;
-    try { await Share.share({ message: `Segui "${tournament.name}" su Rival Hub!` }); } catch (e) {}
+    const publicUrl = `${(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '')}/tournament/${tournament.slug}`;
+    const message = `Segui "${tournament.name}" su Rival Hub!\n${publicUrl}`;
+    try {
+      // `url` only does anything on iOS (its own share sheet field, kept
+      // separate from the message there) — Android and the fallback text
+      // share both ignore it, so the link has to live in `message` too for
+      // it to actually show up everywhere.
+      await Share.share({ message, url: publicUrl, title: tournament.name });
+    } catch (e) {}
   };
 
   const getTeamName = (teamId: string) => teams.find(t => t.id === teamId)?.name || t('teams.team', 'Team');
@@ -309,15 +317,43 @@ export default function TournamentPublicPage() {
   };
 
   // Player ratings bottom sheet — shows how each player was scored for a
-  // given match, in traditional lineup order (goalkeeper → defenders →
-  // midfielders → forwards), matching how translateRole's own mapping
-  // groups roles per sport.
-  const ROLE_SORT_ORDER: Record<string, number> = {
-    'Portiere': 0, 'Goalkeeper': 0,
-    'Difensore': 1, 'Defender': 1,
-    'Centrocampista': 2, 'Midfielder': 2,
-    'Attaccante': 3, 'Forward': 3,
+  // given match, in traditional lineup order per sport (e.g. for calcio:
+  // goalkeeper → defenders → midfielders → forwards), matching how
+  // translateRole's own per-sport mapping groups roles. Keyed by sport
+  // (not a single flat role→order map) since the same role name can mean
+  // different things in different sports (e.g. "Centro" in basket vs rugby).
+  const ROLE_SORT_ORDER_BY_SPORT: Record<string, Record<string, number>> = {
+    calcio: {
+      'Portiere': 0, 'Goalkeeper': 0,
+      'Difensore': 1, 'Defender': 1,
+      'Centrocampista': 2, 'Midfielder': 2,
+      'Attaccante': 3, 'Forward': 3,
+    },
+    basket: {
+      'Playmaker': 0, 'Point Guard': 0,
+      'Guardia': 1, 'Guard': 1,
+      'Ala Piccola': 2, 'Small Forward': 2,
+      'Ala Grande': 3, 'Power Forward': 3,
+      'Centro': 4, 'Center': 4,
+    },
+    pallavolo: {
+      'Palleggiatore': 0, 'Setter': 0,
+      'Libero': 1,
+      'Centrale': 2, 'Middle Blocker': 2,
+      'Schiacciatore': 3, 'Outside Hitter': 3,
+      'Opposto': 4, 'Opposite': 4,
+    },
+    rugby: {
+      'Pilone': 0, 'Prop': 0,
+      'Tallonatore': 1, 'Hooker': 1,
+      'Mediano di mischia': 2, 'Scrum Half': 2,
+      'Flanker': 3,
+      'Centro': 4, 'Centre': 4,
+      'Ala': 5, 'Winger': 5,
+      'Estremo': 6, 'Fullback': 6,
+    },
   };
+  const ROLE_SORT_ORDER = ROLE_SORT_ORDER_BY_SPORT[tournament?.sport || 'calcio'] || ROLE_SORT_ORDER_BY_SPORT.calcio;
   const [showRatingsSheet, setShowRatingsSheet] = useState(false);
   const [ratingsSheetMatch, setRatingsSheetMatch] = useState<Match | null>(null);
   const [matchRatings, setMatchRatings] = useState<any[]>([]);
@@ -767,13 +803,13 @@ export default function TournamentPublicPage() {
                         {/* Date and Time */}
                         <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
                         {/* Ratings — shown regardless of live/completed status, since
-                            the organizer can score players any time after the match. */}
-                        {tournament?.sport === 'calcio' && (
-                          <TouchableOpacity style={styles.ratingsSheetButton} onPress={() => openRatingsSheet(match)}>
-                            <Ionicons name="star-outline" size={16} color="#000" />
-                            <Text style={styles.ratingsSheetButtonText}>{t('soccer.ratings', 'Voti')}</Text>
-                          </TouchableOpacity>
-                        )}
+                            the organizer can score players any time after the match.
+                            Not calcio-specific: role-based sorting/labels already
+                            adapt to whatever sport the tournament is. */}
+                        <TouchableOpacity style={styles.ratingsSheetButton} onPress={() => openRatingsSheet(match)}>
+                          <Ionicons name="star-outline" size={16} color="#000" />
+                          <Text style={styles.ratingsSheetButtonText}>{t('soccer.ratings', 'Voti')}</Text>
+                        </TouchableOpacity>
                         {/* Action Buttons Row */}
                         {!isLive && (
                           <View style={styles.matchActionsRow}>

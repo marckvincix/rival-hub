@@ -277,7 +277,8 @@
     "category": "Categoria",
     "inProgress": "Em curso",
     "viewField": "Ver campo",
-    "pending": "Pendente"
+    "pending": "Pendente",
+    "venueNamePlaceholder": "ex. Nome do centro desportivo"
   },
   "teams": {
     "title": "Equipas",
@@ -286,7 +287,7 @@
     "editTeam": "Editar equipa",
     "deleteTeam": "Eliminar equipa",
     "teamName": "Nome da equipa",
-    "teamNamePlaceholder": "ex. Benfica",
+    "teamNamePlaceholder": "ex. Nome da equipa",
     "teamLogo": "Logótipo da equipa",
     "players": "Jogadores",
     "player": "Jogador",
@@ -1097,5 +1098,24 @@
     "stepOpenMatch": "Toca num jogo para o abrir e atualizar o resultado ao vivo.",
     "stepExtra": "Toca aqui para adicionar marcadores, cartões e outros eventos do jogo.",
     "stepStandings": "Último passo: toca aqui para ver a página pública do torneio com a classificação."
+  },
+  "collaborators": {
+    "title": "Gestão de Colaboradores",
+    "generateCode": "Gerar novo código",
+    "invitesTitle": "Códigos de convite",
+    "active": "ativos",
+    "noInvites": "Nenhum código ativo",
+    "fullAccess": "Acesso completo",
+    "collaboratorsTitle": "Colaboradores",
+    "noCollaborators": "Ainda sem colaboradores",
+    "remove": "Remover colaborador",
+    "removeConfirm": "Remover este colaborador? Vai perder o acesso ao torneio.",
+    "assignTeams": "Atribuir equipas",
+    "assignTeamsHint": "Nenhuma seleção = acesso completo ao torneio.",
+    "redeemEntry": "Código de colaborador",
+    "redeemTitle": "Juntar-te como colaborador",
+    "redeemHint": "Introduz o código recebido do organizador do torneio.",
+    "redeemAction": "Juntar-te",
+    "redeemFailed": "Código inválido"
   }
 }

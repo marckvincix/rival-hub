@@ -21,7 +21,7 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, HighlightsPaywallModal, TourCoachmark, useTourTarget } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, TourCoachmark, useTourTarget } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
 import * as ImagePicker from 'expo-image-picker';
@@ -453,7 +453,7 @@ export default function TournamentsScreen() {
               <Input ref={locationInputRef} label={t('tournaments.location')} placeholder={t('tournaments.locationPlaceholder', 'e.g. Milan, Field XYZ')} value={formData.location} onChangeText={(text) => setFormData({ ...formData, location: text })} />
             </View>
             <View ref={venueNameTarget.ref} collapsable={false}>
-              <Input ref={venueNameInputRef} label={t('tournaments.venueName', 'Nome struttura')} placeholder={t('tournaments.venueNamePlaceholder', 'es. Centro Sportivo San Siro')} value={formData.venue_name} onChangeText={(text) => setFormData({ ...formData, venue_name: text })} />
+              <Input ref={venueNameInputRef} label={t('tournaments.venueName', 'Nome struttura')} placeholder={t('tournaments.venueNamePlaceholder', 'e.g. Sports Center Name')} value={formData.venue_name} onChangeText={(text) => setFormData({ ...formData, venue_name: text })} />
             </View>
             <View ref={venueAddressTarget.ref} collapsable={false}>
               <Input ref={venueAddressInputRef} label={t('tournaments.venueAddress', 'Indirizzo struttura')} placeholder={t('tournaments.venueAddressPlaceholder', 'es. Via Piccolomini 5, Milano')} value={formData.venue_address} onChangeText={(text) => setFormData({ ...formData, venue_address: text })} />
@@ -757,10 +757,86 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     try {
       const response = await api.put(`/api/tournaments/${tournament.id}`, { is_public: isPublic });
       setVisibility({ is_public: response.data.is_public, access_code: response.data.access_code });
-    } catch (error) {
-      Alert.alert(t('common.error'), t('errors.updateFailed', 'Update failed'));
+    } catch (error: any) {
+      console.error('Error toggling visibility:', error?.response?.status, error?.response?.data || error);
+      Alert.alert(t('common.error'), error?.response?.data?.detail || t('errors.updateFailed', 'Update failed'));
     } finally {
       setVisibilitySaving(false);
+    }
+  };
+  // Self-heal a tournament that's already private but missing its code —
+  // e.g. one switched to private before this backend supported access
+  // codes at all, or whose `tournament` prop was cached from before that.
+  // Toggling "Privato" again is a no-op once it's already selected (see the
+  // early return above), so without this the code could stay missing
+  // forever with no action left in the UI to fix it.
+  useEffect(() => {
+    if (visibility.is_public || visibility.access_code) return;
+    api.get(`/api/tournaments/${tournament.id}`)
+      .then((res) => setVisibility({ is_public: res.data.is_public, access_code: res.data.access_code }))
+      .catch(() => {});
+  }, []);
+
+  // Collaborators — invite people to help manage the tournament, either
+  // with full access or limited to specific teams. Loaded lazily, only
+  // once Settings is actually opened, same as News/Highlights.
+  const [collaborators, setCollaborators] = useState<any[]>([]);
+  const [loadingCollaborators, setLoadingCollaborators] = useState(false);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+  const [teamPickerCollaborator, setTeamPickerCollaborator] = useState<any>(null);
+
+  const loadCollaborators = async () => {
+    setLoadingCollaborators(true);
+    try {
+      const res = await api.get(`/api/tournaments/${tournament.id}/collaborators`);
+      setCollaborators(res.data || []);
+    } catch (error) {
+      console.error('Error loading collaborators:', error);
+    } finally {
+      setLoadingCollaborators(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'settings') loadCollaborators();
+  }, [activeTab]);
+
+  const handleGenerateInvite = async () => {
+    setGeneratingInvite(true);
+    try {
+      await api.post(`/api/tournaments/${tournament.id}/collaborators/invite`, { team_ids: [] });
+      await loadCollaborators();
+    } catch (error) {
+      Alert.alert(t('common.error'), 'Impossibile generare il codice');
+    } finally {
+      setGeneratingInvite(false);
+    }
+  };
+
+  const handleRemoveCollaborator = (collab: any) => {
+    Alert.alert(
+      t('collaborators.remove', 'Rimuovi collaboratore'),
+      t('collaborators.removeConfirm', 'Rimuovere questo collaboratore? Perderà l\'accesso al torneo.'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('common.delete'), style: 'destructive', onPress: async () => {
+          try {
+            await api.delete(`/api/tournaments/${tournament.id}/collaborators/${collab.id}`);
+            setCollaborators(prev => prev.filter((c) => c.id !== collab.id));
+          } catch (error) {
+            Alert.alert(t('common.error'));
+          }
+        }}
+      ]
+    );
+  };
+
+  const handleToggleCollaboratorTeams = async (collab: any, newTeamIds: string[]) => {
+    try {
+      const res = await api.put(`/api/tournaments/${tournament.id}/collaborators/${collab.id}`, { team_ids: newTeamIds });
+      setCollaborators(prev => prev.map((c) => (c.id === collab.id ? res.data : c)));
+    } catch (error) {
+      Alert.alert(t('common.error'));
     }
   };
 
@@ -949,11 +1025,21 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   
   // Highlights Management state
   const [showHighlightsModal, setShowHighlightsModal] = useState(false);
-  const [showHighlightsPaywall, setShowHighlightsPaywall] = useState(false);
   const [tournamentHighlights, setTournamentHighlights] = useState<any[]>([]);
   const [highlightsLoading, setHighlightsLoading] = useState(false);
 
   useEffect(() => { loadData(); }, [tournament.id]);
+
+  // A collaborator restricted to specific teams only manages those, not the
+  // whole tournament — null means full access (organizer or an
+  // unrestricted collaborator), a list means "only these team ids".
+  const [myTeamRestriction, setMyTeamRestriction] = useState<string[] | null>(null);
+  useEffect(() => {
+    api.get(`/api/tournaments/${tournament.id}/my-access`)
+      .then((res) => setMyTeamRestriction(res.data?.team_ids ?? null))
+      .catch(() => setMyTeamRestriction(null));
+  }, [tournament.id]);
+  const visibleTeams = myTeamRestriction ? teams.filter((t) => myTeamRestriction.includes(t.id)) : teams;
 
   const loadData = async () => {
     try {
@@ -1538,8 +1624,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     try {
       await api.post(`/api/matches/${ratingsOnlyMatch.id}/ratings`, { ratings: playerRatings });
       setShowRatingsOnlyModal(false);
-    } catch (error) {
-      Alert.alert(t('common.error'), 'Impossibile salvare i voti');
+      Alert.alert(t('common.success'), t('success.ratingsSaved', 'Voti salvati'));
+    } catch (error: any) {
+      console.error('Error saving ratings:', error?.response?.data || error);
+      Alert.alert(t('common.error'), error?.response?.data?.detail || 'Impossibile salvare i voti');
     } finally {
       setSavingRatingsOnly(false);
     }
@@ -2158,13 +2246,18 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           <>
             {activeTab === 'teams' && (
               <View>
-                <TouchableOpacity ref={addTeamTarget.ref} style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
-                  <Ionicons name="add" size={22} color="#FFF" />
-                  <Text style={styles.addTeamBtnText}>{t('common.add', 'Add')} {getTeamLabel()}</Text>
-                </TouchableOpacity>
+                {/* A collaborator restricted to specific teams manages only
+                    those — adding a whole new team is an organizer/full-access
+                    action. */}
+                {!myTeamRestriction && (
+                  <TouchableOpacity ref={addTeamTarget.ref} style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
+                    <Ionicons name="add" size={22} color="#FFF" />
+                    <Text style={styles.addTeamBtnText}>{t('common.add', 'Add')} {getTeamLabel()}</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={{ height: 16 }} />
-                {teams.length === 0 ? <EmptyState icon="people-outline" title={t('tournaments.noTeams')} /> : (
-                  teams.map((team, teamIdx) => (
+                {visibleTeams.length === 0 ? <EmptyState icon="people-outline" title={t('tournaments.noTeams')} /> : (
+                  visibleTeams.map((team, teamIdx) => (
                     <View key={team.id} style={styles.teamCardNew}>
                       {/* Team Row with all elements */}
                       <View style={styles.teamRowFull}>
@@ -2350,13 +2443,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             ) : null}
                             {/* Ratings stay editable even after the match ends — the
                                 organizer often wants to score players once the game is
-                                over and there's time to review it, not just while live. */}
-                            {tournament?.sport === 'calcio' && (
-                              <TouchableOpacity style={styles.matchPillRatingsBtn} onPress={() => handleOpenRatingsOnly(match)}>
-                                <Ionicons name="star-outline" size={16} color="#000" />
-                                <Text style={styles.matchPillRatingsBtnText}>{t('soccer.ratings', 'Voti')}</Text>
-                              </TouchableOpacity>
-                            )}
+                                over and there's time to review it, not just while live.
+                                Not calcio-specific: TeamRatingsAccordion and the ratings
+                                endpoints already take a sport for correct role labels. */}
+                            <TouchableOpacity style={styles.matchPillRatingsBtn} onPress={() => handleOpenRatingsOnly(match)}>
+                              <Ionicons name="star-outline" size={16} color="#000" />
+                              <Text style={styles.matchPillRatingsBtnText}>{t('soccer.ratings', 'Voti')}</Text>
+                            </TouchableOpacity>
                             {tournament?.sport && (
                               <View style={styles.matchPillCarouselWrap}>
                                 <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
@@ -2484,22 +2577,26 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             {/* Highlights Tab */}
             {activeTab === 'highlights' && (
               <View style={styles.highlightsTabContent}>
-                <TouchableOpacity
-                  style={styles.addNewsButton}
-                  onPress={() => {
-                    const expiry = user?.plan_expiry ? new Date(user.plan_expiry) : null;
-                    const hasPlus = user?.plan === 'plus' && !!expiry && expiry > new Date();
-                    if (hasPlus) {
-                      setShowHighlightsModal(true);
-                    } else {
-                      setShowHighlightsPaywall(true);
-                    }
-                  }}
-                >
-                  <Ionicons name="film" size={20} color="#FFF" />
-                  <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
-                </TouchableOpacity>
-                
+                {/* Shown only with an active Highlights Plus subscription —
+                    the paywall for getting one lives elsewhere (right after
+                    registration/login, and again from the Highlights tab
+                    itself), so gating this button too would just be a
+                    third, redundant prompt instead of just hiding it. */}
+                {(() => {
+                  const expiry = user?.plan_expiry ? new Date(user.plan_expiry) : null;
+                  const hasHighlightsPlus = user?.plan === 'plus' && !!expiry && expiry > new Date();
+                  if (!hasHighlightsPlus) return null;
+                  return (
+                    <TouchableOpacity
+                      style={styles.addNewsButton}
+                      onPress={() => setShowHighlightsModal(true)}
+                    >
+                      <Ionicons name="film" size={20} color="#FFF" />
+                      <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
+                    </TouchableOpacity>
+                  );
+                })()}
+
                 {highlightsLoading ? (
                   <View style={styles.highlightsLoadingContainer}>
                     <ActivityIndicator size="large" color="#000" />
@@ -2617,6 +2714,88 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </TouchableOpacity>
                   </View>
                 </View>
+
+                <View style={styles.settingsCard}>
+                  <View style={styles.collabHeader}>
+                    <Ionicons name="people-outline" size={20} color="#000" />
+                    <Text style={styles.settingsLabel}>{t('collaborators.title', 'Gestione Collaboratori')}</Text>
+                  </View>
+
+                  <TouchableOpacity style={styles.collabGenerateBtn} onPress={handleGenerateInvite} disabled={generatingInvite}>
+                    <Ionicons name="add-circle-outline" size={18} color="#FFF" />
+                    <Text style={styles.collabGenerateBtnText}>
+                      {generatingInvite ? t('common.loading', 'Loading...') : t('collaborators.generateCode', 'Genera nuovo codice')}
+                    </Text>
+                  </TouchableOpacity>
+
+                  {loadingCollaborators ? <Loading /> : (() => {
+                    const pending = collaborators.filter((c) => c.status === 'pending');
+                    const active = collaborators.filter((c) => c.status === 'active');
+                    return (
+                      <>
+                        <Text style={styles.collabSectionTitle}>
+                          {t('collaborators.invitesTitle', 'Codici di invito')} ({pending.length} {t('collaborators.active', 'attivi')})
+                        </Text>
+                        {pending.length === 0 ? (
+                          <Text style={styles.settingsHint}>{t('collaborators.noInvites', 'Nessun codice attivo')}</Text>
+                        ) : (
+                          pending.map((c) => (
+                            <View key={c.id} style={styles.collabInviteRow}>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.collabInviteCode}>{c.invite_code}</Text>
+                                <Text style={styles.collabInviteTeams}>
+                                  {(!c.team_ids || c.team_ids.length === 0)
+                                    ? t('collaborators.fullAccess', 'Accesso completo')
+                                    : `${t('teams.title', 'Squadre')}: ${c.team_ids.map((id: string) => getTeamName(id)).join(', ')}`}
+                                </Text>
+                              </View>
+                              <TouchableOpacity onPress={() => Clipboard.setStringAsync(c.invite_code)}>
+                                <Ionicons name="copy-outline" size={20} color="#000" />
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => handleRemoveCollaborator(c)} style={{ marginLeft: 12 }}>
+                                <Ionicons name="close-circle" size={22} color="#DC2626" />
+                              </TouchableOpacity>
+                            </View>
+                          ))
+                        )}
+
+                        <Text style={[styles.collabSectionTitle, { marginTop: 16 }]}>
+                          {t('collaborators.collaboratorsTitle', 'Collaboratori')} ({active.length})
+                        </Text>
+                        {active.length === 0 ? (
+                          <Text style={styles.settingsHint}>{t('collaborators.noCollaborators', 'Nessun collaboratore ancora')}</Text>
+                        ) : (
+                          active.map((c) => (
+                            <View key={c.id} style={styles.collabRow}>
+                              <View style={styles.collabAvatar}>
+                                <Text style={styles.collabAvatarText}>{(c.name || c.email || '?').charAt(0).toUpperCase()}</Text>
+                              </View>
+                              <View style={{ flex: 1 }}>
+                                <Text style={styles.collabName} numberOfLines={1}>{c.name || c.email}</Text>
+                                <Text style={styles.collabEmail} numberOfLines={1}>{c.email}</Text>
+                                <View style={styles.collabTeamBadge}>
+                                  <Ionicons name="shield-outline" size={12} color="#666" />
+                                  <Text style={styles.collabTeamBadgeText}>
+                                    {(!c.team_ids || c.team_ids.length === 0)
+                                      ? t('collaborators.fullAccess', 'Accesso completo')
+                                      : `${c.team_ids.length} ${c.team_ids.length === 1 ? t('teams.team', 'squadra') : t('teams.title', 'squadre')}`}
+                                  </Text>
+                                </View>
+                              </View>
+                              <TouchableOpacity onPress={() => setTeamPickerCollaborator(c)}>
+                                <Ionicons name="shield-outline" size={20} color="#000" />
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => handleRemoveCollaborator(c)} style={{ marginLeft: 12 }}>
+                                <Ionicons name="close-circle" size={22} color="#DC2626" />
+                              </TouchableOpacity>
+                            </View>
+                          ))
+                        )}
+                      </>
+                    );
+                  })()}
+                </View>
+
                 <Button title={t('tournaments.deleteTournament')} onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
               </View>
             )}
@@ -2647,9 +2826,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             <View style={styles.inputBoxSimple}>
               <TextInput
                 style={styles.inputTextSimple}
-                placeholder={isTennisSport 
-                  ? (isDoubles ? t('teams.doubleNamePlaceholder', 'e.g. Sinner/Berrettini') : t('teams.playerNamePlaceholder', 'e.g. Jannik Sinner'))
-                  : t('teams.teamNamePlaceholder', 'e.g. SSC Napoli')
+                placeholder={isTennisSport
+                  ? (isDoubles ? t('teams.doubleNamePlaceholder', 'e.g. Surname1/Surname2') : t('teams.playerNamePlaceholder', 'e.g. First Last'))
+                  : t('teams.teamNamePlaceholder', 'e.g. Team Name')
                 }
                 placeholderTextColor="#999"
                 value={newTeamName}
@@ -3200,6 +3379,47 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
             )}
           </TouchableOpacity>
         </TouchableOpacity>
+      </Modal>
+
+      {/* Collaborator team-picker — the "shield" toggle on an active
+          collaborator; no selection = full access to the whole tournament. */}
+      <Modal visible={!!teamPickerCollaborator} transparent animationType="fade" onRequestClose={() => setTeamPickerCollaborator(null)}>
+        <View style={styles.collabPickerOverlay}>
+          <View style={styles.collabPickerContent}>
+            <Text style={styles.collabPickerTitle}>{t('collaborators.assignTeams', 'Assegna squadre')}</Text>
+            <Text style={styles.settingsHint}>{t('collaborators.assignTeamsHint', "Nessuna selezione = accesso completo al torneo.")}</Text>
+            <ScrollView style={{ maxHeight: 320 }}>
+              {teams.map((team) => {
+                const selected = (teamPickerCollaborator?.team_ids || []).includes(team.id);
+                return (
+                  <TouchableOpacity
+                    key={team.id}
+                    style={styles.collabPickerRow}
+                    onPress={() => {
+                      const current: string[] = teamPickerCollaborator?.team_ids || [];
+                      const next = selected ? current.filter((id) => id !== team.id) : [...current, team.id];
+                      setTeamPickerCollaborator({ ...teamPickerCollaborator, team_ids: next });
+                    }}
+                  >
+                    <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={22} color="#000" />
+                    <Text style={styles.collabPickerRowText}>{team.name}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+            <Button
+              title={t('common.save', 'Salva')}
+              onPress={async () => {
+                await handleToggleCollaboratorTeams(teamPickerCollaborator, teamPickerCollaborator?.team_ids || []);
+                setTeamPickerCollaborator(null);
+              }}
+              fullWidth
+            />
+            <TouchableOpacity onPress={() => setTeamPickerCollaborator(null)} style={{ marginTop: 12, alignItems: 'center' }}>
+              <Text style={styles.settingsHint}>{t('common.cancel', 'Annulla')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
 
       {/* Ratings-only Modal — the "Voti" shortcut, any match status */}
@@ -4203,15 +4423,6 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         rounds={getRounds()}
       />
 
-      <HighlightsPaywallModal
-        visible={showHighlightsPaywall}
-        onClose={() => setShowHighlightsPaywall(false)}
-        onSubscribed={() => {
-          setShowHighlightsPaywall(false);
-          setShowHighlightsModal(true);
-        }}
-      />
-
       <TourCoachmark
         visible={addTeamStepActive}
         target={addTeamTarget.rect}
@@ -4748,6 +4959,26 @@ const styles = StyleSheet.create({
   linkContainer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F5F5', padding: 12, borderRadius: 8 },
   linkText: { fontSize: 14, color: '#000', flex: 1, fontWeight: '700', letterSpacing: 1 },
   settingsHint: { fontSize: 12, color: '#666', marginTop: 8, lineHeight: 17 },
+  // Collaborators
+  collabHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
+  collabGenerateBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#000', borderRadius: 12, paddingVertical: 14, marginBottom: 16 },
+  collabGenerateBtnText: { color: '#FFF', fontSize: 14, fontWeight: '700' },
+  collabSectionTitle: { fontSize: 13, fontWeight: '700', color: '#000', marginBottom: 8 },
+  collabInviteRow: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F5F5F5', borderRadius: 10, padding: 12, marginBottom: 8, gap: 10 },
+  collabInviteCode: { fontSize: 15, fontWeight: '700', color: '#000', letterSpacing: 1 },
+  collabInviteTeams: { fontSize: 12, color: '#666', marginTop: 2 },
+  collabRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#F0F0F0', gap: 12 },
+  collabAvatar: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
+  collabAvatarText: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+  collabName: { fontSize: 14, fontWeight: '700', color: '#000' },
+  collabEmail: { fontSize: 12, color: '#666', marginTop: 1 },
+  collabTeamBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, alignSelf: 'flex-start', backgroundColor: '#F0F0F0', borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
+  collabTeamBadgeText: { fontSize: 11, color: '#666', fontWeight: '600' },
+  collabPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  collabPickerContent: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, width: '100%', maxWidth: 380 },
+  collabPickerTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 4 },
+  collabPickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  collabPickerRowText: { fontSize: 15, color: '#000', fontWeight: '600' },
   teamSelector: { marginBottom: 16 },
   teamSelectorItem: { padding: 14, borderRadius: 10, borderWidth: 2, borderColor: '#000', marginBottom: 8 },
   teamSelectorItemActive: { backgroundColor: '#000' },

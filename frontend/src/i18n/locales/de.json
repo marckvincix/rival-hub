@@ -277,7 +277,8 @@
     "category": "Kategorie",
     "inProgress": "Laufend",
     "viewField": "Feld anzeigen",
-    "pending": "Ausstehend"
+    "pending": "Ausstehend",
+    "venueNamePlaceholder": "z.B. Name des Sportzentrums"
   },
   "teams": {
     "title": "Teams",
@@ -286,7 +287,7 @@
     "editTeam": "Team bearbeiten",
     "deleteTeam": "Team löschen",
     "teamName": "Teamname",
-    "teamNamePlaceholder": "z.B. FC Bayern",
+    "teamNamePlaceholder": "z.B. Vereinsname",
     "teamLogo": "Team-Logo",
     "players": "Spieler",
     "player": "Spieler",
@@ -1097,5 +1098,24 @@
     "stepOpenMatch": "Tippe auf ein Spiel, um es zu öffnen und den Spielstand live zu aktualisieren.",
     "stepExtra": "Tippe hier, um Torschützen, Karten und andere Spielereignisse hinzuzufügen.",
     "stepStandings": "Letzter Schritt: Tippe hier, um die öffentliche Turnierseite mit der Tabelle zu sehen."
+  },
+  "collaborators": {
+    "title": "Mitarbeiter verwalten",
+    "generateCode": "Neuen Code generieren",
+    "invitesTitle": "Einladungscodes",
+    "active": "aktiv",
+    "noInvites": "Kein aktiver Code",
+    "fullAccess": "Vollzugriff",
+    "collaboratorsTitle": "Mitarbeiter",
+    "noCollaborators": "Noch keine Mitarbeiter",
+    "remove": "Mitarbeiter entfernen",
+    "removeConfirm": "Diesen Mitarbeiter entfernen? Er verliert den Zugriff auf das Turnier.",
+    "assignTeams": "Teams zuweisen",
+    "assignTeamsHint": "Keine Auswahl = Vollzugriff auf das Turnier.",
+    "redeemEntry": "Mitarbeiter-Code",
+    "redeemTitle": "Als Mitarbeiter beitreten",
+    "redeemHint": "Gib den Code ein, den du vom Turnierorganisator erhalten hast.",
+    "redeemAction": "Beitreten",
+    "redeemFailed": "Ungültiger Code"
   }
 }

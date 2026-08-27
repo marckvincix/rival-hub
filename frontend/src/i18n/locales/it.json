@@ -279,7 +279,7 @@
     "viewField": "Vedi Campo",
     "pending": "In attesa",
     "venueName": "Nome struttura",
-    "venueNamePlaceholder": "es. Centro Sportivo San Siro",
+    "venueNamePlaceholder": "es. Centro Sportivo Comunale",
     "venueAddress": "Indirizzo struttura",
     "venueAddressPlaceholder": "es. Via Piccolomini 5, Milano"
   },
@@ -301,7 +301,7 @@
     "deletePlayer": "Elimina Giocatore",
     "double": "Coppia",
     "doubleName": "Nome Coppia",
-    "doubleNamePlaceholder": "es. Sinner/Berrettini",
+    "doubleNamePlaceholder": "es. Cognome1/Cognome2",
     "doubles": "Doppio",
     "homeDouble": "Coppia Casa",
     "homePlayer": "Giocatore Casa",
@@ -309,7 +309,7 @@
     "noPlayers": "Nessun giocatore",
     "noPlayersInRoster": "Nessun giocatore in rosa",
     "playerName": "Nome Giocatore",
-    "playerNamePlaceholder": "es. Jannik Sinner",
+    "playerNamePlaceholder": "es. Nome Cognome",
     "playerNumber": "Numero",
     "players": "Giocatori",
     "position": "Ruolo",
@@ -317,7 +317,7 @@
     "selectPlayer": "Seleziona giocatore",
     "selectRole": "Seleziona ruolo",
     "selectTeam": "Seleziona squadra",
-    "teamNamePlaceholder": "es. SSC Napoli"
+    "teamNamePlaceholder": "es. Nome Squadra"
   },
   "matches": {
     "title": "Partite",
@@ -1065,7 +1065,8 @@
     "newsDeleted": "News eliminata",
     "newsPublished": "News pubblicata!",
     "newsUpdated": "News aggiornata!",
-    "playerAdded": "Giocatore aggiunto"
+    "playerAdded": "Giocatore aggiunto",
+    "ratingsSaved": "Voti salvati"
   },
   "products": {
     "sponsoredTitle": "Prodotti consigliati",
@@ -1141,5 +1142,24 @@
     "stepOpenMatch": "Tocca una partita per aprirla ed aggiornare il punteggio dal vivo.",
     "stepExtra": "Tocca qui per aggiungere marcatori, cartellini e altri eventi della partita.",
     "stepStandings": "Ultimo passo: tocca qui per vedere la pagina pubblica del torneo con la classifica."
+  },
+  "collaborators": {
+    "title": "Gestione Collaboratori",
+    "generateCode": "Genera nuovo codice",
+    "invitesTitle": "Codici di invito",
+    "active": "attivi",
+    "noInvites": "Nessun codice attivo",
+    "fullAccess": "Accesso completo",
+    "collaboratorsTitle": "Collaboratori",
+    "noCollaborators": "Nessun collaboratore ancora",
+    "remove": "Rimuovi collaboratore",
+    "removeConfirm": "Rimuovere questo collaboratore? Perderà l'accesso al torneo.",
+    "assignTeams": "Assegna squadre",
+    "assignTeamsHint": "Nessuna selezione = accesso completo al torneo.",
+    "redeemEntry": "Codice collaboratore",
+    "redeemTitle": "Unisciti come collaboratore",
+    "redeemHint": "Inserisci il codice ricevuto dall'organizzatore del torneo.",
+    "redeemAction": "Unisciti",
+    "redeemFailed": "Codice non valido"
   }
 }

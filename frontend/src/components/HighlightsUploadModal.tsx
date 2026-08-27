@@ -510,7 +510,7 @@ export function HighlightsUploadModal({
                 <Text style={[styles.uploadButtonTitle, counts.videos >= MAX_VIDEOS && styles.uploadButtonTitleDisabled]}>
                   {counts.videos >= MAX_VIDEOS ? 'Limite video raggiunto' : t('highlights.uploadVideo')}
                 </Text>
-                <Text style={styles.uploadButtonSubtitle}>MP4, MOV · Max 30 sec · Max 100MB</Text>
+                <Text style={styles.uploadButtonSubtitle}>MP4, MOV · Max 100MB</Text>
               </View>
               <Ionicons name="chevron-forward" size={20} color="#999" />
             </TouchableOpacity>

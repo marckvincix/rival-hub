@@ -276,7 +276,8 @@
     "category": "Catégorie",
     "inProgress": "En cours",
     "viewField": "Voir le terrain",
-    "pending": "En attente"
+    "pending": "En attente",
+    "venueNamePlaceholder": "ex. Nom du centre sportif"
   },
   "teams": {
     "title": "Équipes",
@@ -286,7 +287,7 @@
     "deleteTeam": "Supprimer l'équipe",
     "teamName": "Nom de l'équipe",
     "teamLogo": "Logo de l'équipe",
-    "teamNamePlaceholder": "ex. PSG",
+    "teamNamePlaceholder": "ex. Nom de l'équipe",
     "doubleNamePlaceholder": "ex. Dupont/Martin",
     "players": "Joueurs",
     "player": "Joueur",
@@ -1096,5 +1097,24 @@
     "stepOpenMatch": "Appuyez sur un match pour l'ouvrir et mettre à jour le score en direct.",
     "stepExtra": "Appuyez ici pour ajouter des buteurs, cartons et autres événements du match.",
     "stepStandings": "Dernière étape : appuyez ici pour voir la page publique du tournoi avec le classement."
+  },
+  "collaborators": {
+    "title": "Gestion des collaborateurs",
+    "generateCode": "Générer un nouveau code",
+    "invitesTitle": "Codes d'invitation",
+    "active": "actifs",
+    "noInvites": "Aucun code actif",
+    "fullAccess": "Accès complet",
+    "collaboratorsTitle": "Collaborateurs",
+    "noCollaborators": "Aucun collaborateur pour l'instant",
+    "remove": "Retirer le collaborateur",
+    "removeConfirm": "Retirer ce collaborateur ? Il perdra l'accès au tournoi.",
+    "assignTeams": "Attribuer des équipes",
+    "assignTeamsHint": "Aucune sélection = accès complet au tournoi.",
+    "redeemEntry": "Code collaborateur",
+    "redeemTitle": "Rejoindre en tant que collaborateur",
+    "redeemHint": "Saisissez le code reçu de l'organisateur du tournoi.",
+    "redeemAction": "Rejoindre",
+    "redeemFailed": "Code invalide"
   }
 }

@@ -278,7 +278,7 @@
     "viewField": "View Field",
     "pending": "Pending",
     "venueName": "Venue Name",
-    "venueNamePlaceholder": "e.g. San Siro Sports Center",
+    "venueNamePlaceholder": "e.g. Community Sports Center",
     "venueAddress": "Venue Address",
     "venueAddressPlaceholder": "e.g. 5 Piccolomini St, Milan"
   },
@@ -300,7 +300,7 @@
     "deletePlayer": "Delete Player",
     "double": "Double",
     "doubleName": "Double Name",
-    "doubleNamePlaceholder": "e.g. Sinner/Berrettini",
+    "doubleNamePlaceholder": "e.g. Surname1/Surname2",
     "doubles": "Doubles",
     "homeDouble": "Home Double",
     "homePlayer": "Home Player",
@@ -308,7 +308,7 @@
     "noPlayers": "No players",
     "noPlayersInRoster": "No players in roster",
     "playerName": "Player Name",
-    "playerNamePlaceholder": "e.g. Jannik Sinner",
+    "playerNamePlaceholder": "e.g. First Last",
     "playerNumber": "Number",
     "players": "Players",
     "position": "Position",
@@ -316,7 +316,7 @@
     "selectPlayer": "Select player",
     "selectRole": "Select role",
     "selectTeam": "Select team",
-    "teamNamePlaceholder": "e.g. SSC Napoli"
+    "teamNamePlaceholder": "e.g. Team Name"
   },
   "matches": {
     "title": "Matches",
@@ -1064,7 +1064,8 @@
     "newsDeleted": "News deleted",
     "newsPublished": "News published!",
     "newsUpdated": "News updated!",
-    "playerAdded": "Player added"
+    "playerAdded": "Player added",
+    "ratingsSaved": "Ratings saved"
   },
   "products": {
     "sponsoredTitle": "Recommended products",
@@ -1140,5 +1141,24 @@
     "stepOpenMatch": "Tap a match to open it and update the score live.",
     "stepExtra": "Tap here to add scorers, cards and other match events.",
     "stepStandings": "Last step: tap here to see the tournament's public page with the standings."
+  },
+  "collaborators": {
+    "title": "Manage Collaborators",
+    "generateCode": "Generate new code",
+    "invitesTitle": "Invite codes",
+    "active": "active",
+    "noInvites": "No active codes",
+    "fullAccess": "Full access",
+    "collaboratorsTitle": "Collaborators",
+    "noCollaborators": "No collaborators yet",
+    "remove": "Remove collaborator",
+    "removeConfirm": "Remove this collaborator? They'll lose access to the tournament.",
+    "assignTeams": "Assign teams",
+    "assignTeamsHint": "No selection = full access to the tournament.",
+    "redeemEntry": "Collaborator code",
+    "redeemTitle": "Join as a collaborator",
+    "redeemHint": "Enter the code you got from the tournament organizer.",
+    "redeemAction": "Join",
+    "redeemFailed": "Invalid code"
   }
 }

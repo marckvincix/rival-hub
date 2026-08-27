@@ -1,15 +1,17 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
   TouchableOpacity,
   Alert,
   Image,
   Switch,
   RefreshControl,
-  ActivityIndicator
+  ActivityIndicator,
+  Modal,
+  TextInput
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -20,6 +22,7 @@ import { Button, TermsModal, LanguageSelector } from '../../src/components';
 import { favoritesApi, Favorite } from '../../src/utils/favoritesApi';
 import { useNotifications } from '../../src/hooks/useNotifications';
 import { useLanguage } from '../../src/contexts/LanguageContext';
+import api from '../../src/utils/api';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -34,6 +37,27 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [showLanguageSelector, setShowLanguageSelector] = useState(false);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [redeemCode, setRedeemCode] = useState('');
+  const [redeeming, setRedeeming] = useState(false);
+
+  const handleRedeemCode = async () => {
+    if (!redeemCode.trim()) return;
+    setRedeeming(true);
+    try {
+      const response = await api.post('/api/collaborators/redeem', { code: redeemCode.trim().toUpperCase() });
+      setShowRedeemModal(false);
+      setRedeemCode('');
+      const joinedTournament = response.data?.tournament;
+      if (joinedTournament?.id) {
+        router.push(`/(tabs)/tournaments?id=${joinedTournament.id}` as any);
+      }
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error?.response?.data?.detail || t('collaborators.redeemFailed', 'Codice non valido'));
+    } finally {
+      setRedeeming(false);
+    }
+  };
 
   // Get current language info
   const currentLang = languages.find(l => l.code === currentLanguage);
@@ -311,6 +335,16 @@ export default function ProfileScreen() {
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowRedeemModal(true)}>
+            <View style={styles.settingLeft}>
+              <View style={styles.settingIcon}>
+                <Ionicons name="key-outline" size={20} color="#000" />
+              </View>
+              <Text style={styles.settingText}>{t('collaborators.redeemEntry', 'Codice collaboratore')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#000" />
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.settingItem}>
             <View style={styles.settingLeft}>
               <View style={styles.settingIcon}>
@@ -364,6 +398,34 @@ export default function ProfileScreen() {
         visible={showLanguageSelector}
         onClose={() => setShowLanguageSelector(false)}
       />
+
+      {/* Redeem a collaborator invite code */}
+      <Modal visible={showRedeemModal} transparent animationType="fade" onRequestClose={() => setShowRedeemModal(false)}>
+        <View style={styles.redeemOverlay}>
+          <View style={styles.redeemContent}>
+            <Text style={styles.redeemTitle}>{t('collaborators.redeemTitle', 'Unisciti come collaboratore')}</Text>
+            <Text style={styles.redeemHint}>{t('collaborators.redeemHint', "Inserisci il codice ricevuto dall'organizzatore del torneo.")}</Text>
+            <TextInput
+              style={styles.redeemInput}
+              value={redeemCode}
+              onChangeText={(text) => setRedeemCode(text.toUpperCase())}
+              placeholder="RIVAL-XXXX"
+              placeholderTextColor="#999"
+              autoCapitalize="characters"
+              autoCorrect={false}
+            />
+            <Button
+              title={redeeming ? t('common.loading', 'Loading...') : t('collaborators.redeemAction', 'Unisciti')}
+              onPress={handleRedeemCode}
+              loading={redeeming}
+              fullWidth
+            />
+            <TouchableOpacity onPress={() => { setShowRedeemModal(false); setRedeemCode(''); }} style={{ marginTop: 12, alignItems: 'center' }}>
+              <Text style={styles.redeemCancel}>{t('common.cancel', 'Annulla')}</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -584,5 +646,49 @@ const styles = StyleSheet.create({
   languageName: {
     fontSize: 14,
     color: '#666',
+  },
+  redeemOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+  },
+  redeemContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 20,
+    padding: 24,
+    width: '100%',
+    maxWidth: 380,
+  },
+  redeemTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#000',
+    marginBottom: 6,
+  },
+  redeemHint: {
+    fontSize: 13,
+    color: '#666',
+    marginBottom: 16,
+    lineHeight: 18,
+  },
+  redeemInput: {
+    borderWidth: 2,
+    borderColor: '#000',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 18,
+    fontWeight: '700',
+    textAlign: 'center',
+    letterSpacing: 2,
+    color: '#000',
+    marginBottom: 16,
+  },
+  redeemCancel: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600',
   },
 });

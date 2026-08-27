@@ -271,6 +271,31 @@ class Tournament(BaseModel):
     access_code: Optional[str] = None
     created_at: datetime
 
+# Collaborator Models — invite people to help manage a tournament, either
+# with full access or limited to specific teams they own the roster/lineup
+# for. A record starts "pending" (just a generated code, no one attached
+# yet) and becomes "active" once someone redeems that code.
+class CollaboratorInviteCreate(BaseModel):
+    team_ids: List[str] = []  # empty = full access to the whole tournament
+
+class CollaboratorUpdate(BaseModel):
+    team_ids: Optional[List[str]] = None
+
+class CollaboratorRedeem(BaseModel):
+    code: str
+
+class Collaborator(BaseModel):
+    id: str
+    tournament_id: str
+    invite_code: str
+    team_ids: List[str] = []
+    status: str = "pending"  # pending, active
+    user_id: Optional[str] = None
+    email: Optional[str] = None
+    name: Optional[str] = None
+    created_at: datetime
+    joined_at: Optional[datetime] = None
+
 # Team Models
 class TeamCreate(BaseModel):
     name: str
@@ -595,6 +620,34 @@ def generate_highlights_code() -> str:
     # Exclude confusing characters like 0, O, I, 1
     chars = chars.replace('0', '').replace('O', '').replace('I', '').replace('1', '')
     return ''.join(random.choices(chars, k=6))
+
+def generate_invite_code() -> str:
+    """4-character code prefixed like RIVAL-QF5I, for tournament collaborator invites."""
+    chars = string.ascii_uppercase + string.digits
+    chars = chars.replace('0', '').replace('O', '').replace('I', '').replace('1', '')
+    return 'RIVAL-' + ''.join(random.choices(chars, k=4))
+
+async def get_tournament_for_manager(tournament_id: str, current_user: "User"):
+    """Authorize a tournament-management request: the organizer always has
+    full access, and so does any active collaborator. Team-level
+    restriction (a collaborator limited to specific teams) is enforced by
+    the frontend only for now — it hides non-assigned teams from a
+    restricted collaborator's view — not yet a hard boundary on every
+    endpoint here, which would need per-endpoint team-ownership checks
+    across teams/players/matches/etc. Raises 404 if the tournament doesn't
+    exist, 403 if the user has no access to it at all."""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    if tournament["organizer_id"] == current_user.user_id:
+        return tournament
+    collab = await db.tournament_collaborators.find_one(
+        {"tournament_id": tournament_id, "user_id": current_user.user_id, "status": "active"},
+        {"_id": 0}
+    )
+    if not collab:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    return tournament
 
 # A phone camera photo (3000-4000px wide, several MB) is wildly oversized for
 # what's ever actually displayed (a carousel thumbnail or a phone screen), and
@@ -1225,7 +1278,9 @@ async def create_tournament(
         "game_format": tournament_data.game_format,
         "custom_players_per_side": tournament_data.custom_players_per_side,
         "game_structure": tournament_data.game_structure,
-        "status": compute_effective_status("draft", tournament_data.start_date),
+        # New tournaments start live, not as a draft — the organizer can
+        # still set it back to draft/completed manually from Settings.
+        "status": "active",
         "start_date": tournament_data.start_date,
         "end_date": tournament_data.end_date,
         "location": tournament_data.location,
@@ -1248,11 +1303,16 @@ async def create_tournament(
 async def get_tournaments(
     current_user: User = Depends(get_current_user)
 ):
-    """Get all tournaments for current user"""
-    tournaments = await db.tournaments.find(
-        {"organizer_id": current_user.user_id},
-        {"_id": 0}
-    ).sort("created_at", -1).to_list(100)
+    """Get all tournaments for current user — their own, plus any they
+    actively collaborate on (e.g. after redeeming an invite code)."""
+    collab_tournament_ids = await db.tournament_collaborators.distinct(
+        "tournament_id", {"user_id": current_user.user_id, "status": "active"}
+    )
+    query = {"organizer_id": current_user.user_id}
+    if collab_tournament_ids:
+        query = {"$or": [query, {"id": {"$in": collab_tournament_ids}}]}
+
+    tournaments = await db.tournaments.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
 
     for t in tournaments:
         t["status"] = compute_effective_status(t["status"], t.get("start_date"))
@@ -1317,13 +1377,7 @@ async def get_tournament(
     current_user: User = Depends(get_current_user)
 ):
     """Get tournament by ID"""
-    tournament = await db.tournaments.find_one(
-        {"id": tournament_id, "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    tournament = await get_tournament_for_manager(tournament_id, current_user)
 
     effective_status = compute_effective_status(tournament["status"], tournament.get("start_date"))
     if effective_status != tournament["status"]:
@@ -1339,14 +1393,8 @@ async def update_tournament(
     current_user: User = Depends(get_current_user)
 ):
     """Update tournament"""
-    tournament = await db.tournaments.find_one(
-        {"id": tournament_id, "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+    tournament = await get_tournament_for_manager(tournament_id, current_user)
+
     update_data = {k: v for k, v in tournament_data.dict().items() if v is not None}
 
     # A tournament created before access codes existed (or one made public
@@ -1395,10 +1443,180 @@ async def delete_tournament(
     if team_ids:
         await db.user_favorites.delete_many({"type": "team", "reference_id": {"$in": team_ids}})
 
+    await db.tournament_collaborators.delete_many({"tournament_id": tournament_id})
+
     # Delete tournament
     await db.tournaments.delete_one({"id": tournament_id})
 
     return {"message": "Torneo eliminato"}
+
+# ===================== COLLABORATOR ENDPOINTS =====================
+# Only the organizer manages invites/collaborators themselves (inviting,
+# editing team scope, removing) — an active collaborator gets tournament
+# access via get_tournament_for_manager everywhere else, but doesn't get to
+# invite or remove other collaborators.
+
+@api_router.get("/tournaments/{tournament_id}/collaborators", response_model=List[Collaborator])
+async def list_collaborators(
+    tournament_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id, "organizer_id": current_user.user_id}, {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+
+    collaborators = await db.tournament_collaborators.find(
+        {"tournament_id": tournament_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(200)
+    return [Collaborator(**c) for c in collaborators]
+
+@api_router.get("/tournaments/{tournament_id}/my-access")
+async def get_my_tournament_access(
+    tournament_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    """Tells the CURRENT user their own access level for a tournament —
+    full (organizer or an unrestricted collaborator) or a specific list of
+    team_ids. The frontend uses this to hide teams a restricted
+    collaborator isn't assigned to."""
+    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    if tournament["organizer_id"] == current_user.user_id:
+        return {"role": "organizer", "team_ids": None}
+    collab = await db.tournament_collaborators.find_one(
+        {"tournament_id": tournament_id, "user_id": current_user.user_id, "status": "active"},
+        {"_id": 0}
+    )
+    if not collab:
+        raise HTTPException(status_code=403, detail="Non autorizzato")
+    team_ids = collab.get("team_ids") or []
+    return {"role": "collaborator", "team_ids": (team_ids or None)}
+
+@api_router.post("/tournaments/{tournament_id}/collaborators/invite", response_model=Collaborator)
+async def create_collaborator_invite(
+    tournament_id: str,
+    invite_data: CollaboratorInviteCreate,
+    current_user: User = Depends(get_current_user)
+):
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id, "organizer_id": current_user.user_id}, {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+
+    # A team_id on the invite must actually belong to this tournament.
+    if invite_data.team_ids:
+        valid_count = await db.teams.count_documents(
+            {"id": {"$in": invite_data.team_ids}, "tournament_id": tournament_id}
+        )
+        if valid_count != len(set(invite_data.team_ids)):
+            raise HTTPException(status_code=400, detail="Squadra non valida per questo torneo")
+
+    now = datetime.now(timezone.utc)
+    collab_doc = {
+        "id": f"collab_{uuid.uuid4().hex[:12]}",
+        "tournament_id": tournament_id,
+        "invite_code": generate_invite_code(),
+        "team_ids": invite_data.team_ids,
+        "status": "pending",
+        "user_id": None,
+        "email": None,
+        "name": None,
+        "created_at": now,
+        "joined_at": None,
+    }
+    await db.tournament_collaborators.insert_one(collab_doc)
+    return Collaborator(**collab_doc)
+
+@api_router.put("/tournaments/{tournament_id}/collaborators/{collaborator_id}", response_model=Collaborator)
+async def update_collaborator(
+    tournament_id: str,
+    collaborator_id: str,
+    update_data: CollaboratorUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id, "organizer_id": current_user.user_id}, {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+
+    collab = await db.tournament_collaborators.find_one(
+        {"id": collaborator_id, "tournament_id": tournament_id}, {"_id": 0}
+    )
+    if not collab:
+        raise HTTPException(status_code=404, detail="Collaboratore non trovato")
+
+    if update_data.team_ids is not None:
+        if update_data.team_ids:
+            valid_count = await db.teams.count_documents(
+                {"id": {"$in": update_data.team_ids}, "tournament_id": tournament_id}
+            )
+            if valid_count != len(set(update_data.team_ids)):
+                raise HTTPException(status_code=400, detail="Squadra non valida per questo torneo")
+        await db.tournament_collaborators.update_one(
+            {"id": collaborator_id}, {"$set": {"team_ids": update_data.team_ids}}
+        )
+
+    updated = await db.tournament_collaborators.find_one({"id": collaborator_id}, {"_id": 0})
+    return Collaborator(**updated)
+
+@api_router.delete("/tournaments/{tournament_id}/collaborators/{collaborator_id}")
+async def delete_collaborator(
+    tournament_id: str,
+    collaborator_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    tournament = await db.tournaments.find_one(
+        {"id": tournament_id, "organizer_id": current_user.user_id}, {"_id": 0}
+    )
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+
+    result = await db.tournament_collaborators.delete_one(
+        {"id": collaborator_id, "tournament_id": tournament_id}
+    )
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Collaboratore non trovato")
+    return {"message": "Collaboratore rimosso"}
+
+@api_router.post("/collaborators/redeem")
+async def redeem_collaborator_invite(
+    redeem_data: CollaboratorRedeem,
+    current_user: User = Depends(get_current_user)
+):
+    """Any signed-in user can redeem a code they were given — this is the
+    only collaborator endpoint NOT scoped to the organizer, since the whole
+    point is letting someone outside the tournament join it."""
+    code = redeem_data.code.strip().upper()
+    collab = await db.tournament_collaborators.find_one({"invite_code": code}, {"_id": 0})
+    if not collab:
+        raise HTTPException(status_code=404, detail="Codice non valido")
+    if collab["status"] == "active":
+        raise HTTPException(status_code=400, detail="Codice già utilizzato")
+
+    tournament = await db.tournaments.find_one({"id": collab["tournament_id"]}, {"_id": 0})
+    if not tournament:
+        raise HTTPException(status_code=404, detail="Torneo non trovato")
+    if tournament["organizer_id"] == current_user.user_id:
+        raise HTTPException(status_code=400, detail="Sei già l'organizzatore di questo torneo")
+
+    now = datetime.now(timezone.utc)
+    await db.tournament_collaborators.update_one(
+        {"id": collab["id"]},
+        {"$set": {
+            "status": "active",
+            "user_id": current_user.user_id,
+            "email": current_user.email,
+            "name": current_user.name,
+            "joined_at": now,
+        }}
+    )
+    tournament.pop("access_code", None)
+    return {"message": "Ti sei unito al torneo", "tournament": Tournament(**tournament).dict()}
 
 # ===================== TEAM ENDPOINTS =====================
 
@@ -1409,14 +1627,8 @@ async def create_team(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new team"""
-    tournament = await db.tournaments.find_one(
-        {"id": tournament_id, "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+    await get_tournament_for_manager(tournament_id, current_user)
+
     now = datetime.now(timezone.utc)
     team_id = f"team_{uuid.uuid4().hex[:12]}"
     
@@ -1453,14 +1665,9 @@ async def update_team(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     update_data = {k: v for k, v in team_data.dict().items() if v is not None}
     
     if update_data:
@@ -1479,14 +1686,9 @@ async def delete_team(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     # Delete players
     await db.players.delete_many({"team_id": team_id})
     # Delete favorites pointing at this team (no FK, reference_id is polymorphic)
@@ -1509,14 +1711,9 @@ async def create_player(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     now = datetime.now(timezone.utc)
     player_id = f"player_{uuid.uuid4().hex[:12]}"
     
@@ -1561,13 +1758,8 @@ async def update_player(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     update_data = {k: v for k, v in player_data.dict().items() if v is not None}
     
     if update_data:
@@ -1591,13 +1783,8 @@ async def delete_player(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     await db.players.delete_one({"id": player_id})
     return {"message": "Giocatore eliminato"}
 
@@ -1656,16 +1843,11 @@ async def save_team_formation(
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": team["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(team["tournament_id"], current_user)
+
     now = datetime.now(timezone.utc)
-    
+
     # Check if formation exists
     existing = await db.formations.find_one({"team_id": team_id}, {"_id": 0})
     
@@ -1756,14 +1938,8 @@ async def create_match(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new match"""
-    tournament = await db.tournaments.find_one(
-        {"id": tournament_id, "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+    await get_tournament_for_manager(tournament_id, current_user)
+
     now = datetime.now(timezone.utc)
     match_id = f"match_{uuid.uuid4().hex[:12]}"
     
@@ -1969,14 +2145,9 @@ async def update_match(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    tournament = await get_tournament_for_manager(match["tournament_id"], current_user)
+
     update_data = {k: v for k, v in match_data.dict().items() if v is not None}
     
     # Handle explicit null values for clearing fields (e.g., currentGame: null)
@@ -2054,14 +2225,9 @@ async def delete_match(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(match["tournament_id"], current_user)
+
     await db.match_events.delete_many({"match_id": match_id})
     await db.matches.delete_one({"id": match_id})
     
@@ -2080,14 +2246,9 @@ async def create_match_event(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(match["tournament_id"], current_user)
+
     now = datetime.now(timezone.utc)
     event_id = f"event_{uuid.uuid4().hex[:12]}"
     
@@ -2149,13 +2310,8 @@ async def delete_event(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
     
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    await get_tournament_for_manager(match["tournament_id"], current_user)
+
     await db.match_events.delete_one({"id": event_id})
     return {"message": "Evento eliminato"}
 
@@ -2179,16 +2335,11 @@ async def save_match_events_batch(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(match["tournament_id"], current_user)
+
     now = datetime.now(timezone.utc)
-    
+
     # First, delete existing events for this match (to allow re-saving)
     await db.match_events.delete_many({"match_id": match_id})
     
@@ -2373,12 +2524,7 @@ async def save_match_ratings(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
 
-    tournament = await db.tournaments.find_one(
-        {"id": match["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
+    await get_tournament_for_manager(match["tournament_id"], current_user)
 
     now = datetime.now(timezone.utc)
     for player_id, rating in data.ratings.items():
@@ -2490,14 +2636,8 @@ async def create_news(
     current_user: User = Depends(get_current_user)
 ):
     """Create news article"""
-    tournament = await db.tournaments.find_one(
-        {"id": tournament_id, "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
+    await get_tournament_for_manager(tournament_id, current_user)
+
     now = datetime.now(timezone.utc)
     news_id = f"news_{uuid.uuid4().hex[:12]}"
     
@@ -2541,14 +2681,9 @@ async def update_news(
     if not news:
         raise HTTPException(status_code=404, detail="News non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": news["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(news["tournament_id"], current_user)
+
     update_data = {k: v for k, v in news_data.dict().items() if v is not None}
     
     # Set published_at if publishing
@@ -2571,14 +2706,9 @@ async def delete_news(
     if not news:
         raise HTTPException(status_code=404, detail="News non trovata")
     
-    # Verify ownership
-    tournament = await db.tournaments.find_one(
-        {"id": news["tournament_id"], "organizer_id": current_user.user_id},
-        {"_id": 0}
-    )
-    if not tournament:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    # Verify access
+    await get_tournament_for_manager(news["tournament_id"], current_user)
+
     await db.news.delete_one({"id": news_id})
     return {"message": "News eliminata"}
 
@@ -3706,15 +3836,9 @@ async def get_highlights_code(
     tournament_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Get highlights code for organizer"""
-    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
-    if tournament["organizer_id"] != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    """Get highlights code for organizer/collaborators"""
+    tournament = await get_tournament_for_manager(tournament_id, current_user)
+
     # Generate code if not exists (for old tournaments)
     if not tournament.get("highlights_code"):
         code = generate_highlights_code()
@@ -3731,15 +3855,9 @@ async def regenerate_highlights_code(
     tournament_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Regenerate highlights code (organizer only)"""
-    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
-    if tournament["organizer_id"] != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    """Regenerate highlights code (organizer or an active collaborator)"""
+    await get_tournament_for_manager(tournament_id, current_user)
+
     new_code = generate_highlights_code()
     await db.tournaments.update_one(
         {"id": tournament_id},
@@ -3790,10 +3908,17 @@ async def get_highlights(
             {"$set": {"highlights_code": stored_code}}
         )
     
-    # Check access: organizer always has access, others need valid code
-    is_organizer = current_user and tournament["organizer_id"] == current_user.user_id
-    
-    if not is_organizer:
+    # Check access: organizer and active collaborators always have access,
+    # everyone else needs a valid code.
+    has_manager_access = bool(current_user) and tournament["organizer_id"] == current_user.user_id
+    if not has_manager_access and current_user:
+        collab = await db.tournament_collaborators.find_one(
+            {"tournament_id": tournament_id, "user_id": current_user.user_id, "status": "active"},
+            {"_id": 0}
+        )
+        has_manager_access = bool(collab)
+
+    if not has_manager_access:
         if not code or code.upper() != stored_code.upper():
             raise HTTPException(status_code=401, detail="Accesso non autorizzato")
     
@@ -3862,14 +3987,8 @@ async def get_rounds_with_content(
     current_user: User = Depends(get_current_user)
 ):
     """Get list of rounds that already have highlights (for upload form)"""
-    tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
-    
-    if not tournament:
-        raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
-    if tournament["organizer_id"] != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
-    
+    await get_tournament_for_manager(tournament_id, current_user)
+
     # Get unique rounds with content (counted in Python, same as the rest of the stats endpoints)
     highlights = await db.highlights.find({"tournament_id": tournament_id}).to_list(10000)
 
@@ -3895,14 +4014,31 @@ async def upload_highlight(
 ):
     """Upload a highlight (photo or video)"""
     tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
-    
+
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
-    
-    if tournament["organizer_id"] != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
 
-    if not user_has_highlights_plus(current_user):
+    is_organizer = tournament["organizer_id"] == current_user.user_id
+    if not is_organizer:
+        collab = await db.tournament_collaborators.find_one(
+            {"tournament_id": tournament_id, "user_id": current_user.user_id, "status": "active"},
+            {"_id": 0}
+        )
+        if not collab:
+            raise HTTPException(status_code=403, detail="Non autorizzato")
+
+    # Highlights Plus belongs to whoever organizes the tournament — a
+    # collaborator uploads against the organizer's subscription, not one of
+    # their own.
+    if is_organizer:
+        has_plus = user_has_highlights_plus(current_user)
+    else:
+        organizer_doc = await db.users.find_one({"user_id": tournament["organizer_id"]}, {"_id": 0})
+        has_plus = _plan_is_active(
+            organizer_doc.get("plan") if organizer_doc else None,
+            organizer_doc.get("plan_expiry") if organizer_doc else None
+        )
+    if not has_plus:
         raise HTTPException(
             status_code=402,
             detail="Serve l'abbonamento Highlights Plus per caricare foto e video"
@@ -4032,10 +4168,7 @@ async def delete_highlight(
         raise HTTPException(status_code=404, detail="Highlight non trovato")
 
     # Check authorization
-    tournament = await db.tournaments.find_one({"id": highlight["tournament_id"]}, {"_id": 0})
-
-    if not tournament or tournament["organizer_id"] != current_user.user_id:
-        raise HTTPException(status_code=403, detail="Non autorizzato")
+    await get_tournament_for_manager(highlight["tournament_id"], current_user)
 
     # Delete file from Supabase Storage
     await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove([highlight["file_path"]])

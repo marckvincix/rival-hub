@@ -277,7 +277,8 @@
     "category": "Categoría",
     "inProgress": "En curso",
     "viewField": "Ver campo",
-    "pending": "Pendiente"
+    "pending": "Pendiente",
+    "venueNamePlaceholder": "ej. Nombre del centro deportivo"
   },
   "teams": {
     "title": "Equipos",
@@ -286,7 +287,7 @@
     "editTeam": "Editar equipo",
     "deleteTeam": "Eliminar equipo",
     "teamName": "Nombre del equipo",
-    "teamNamePlaceholder": "ej. Real Madrid",
+    "teamNamePlaceholder": "ej. Nombre del equipo",
     "teamLogo": "Logo del equipo",
     "players": "Jugadores",
     "player": "Jugador",
@@ -302,7 +303,7 @@
     "double": "Doble",
     "newDouble": "Nuevo doble",
     "doubleName": "Nombre del doble",
-    "doubleNamePlaceholder": "ej. Nadal/Alcaraz",
+    "doubleNamePlaceholder": "ej. Apellido1/Apellido2",
     "homeDouble": "Doble local",
     "awayDouble": "Doble visitante",
     "homePlayer": "Jugador local",
@@ -1097,5 +1098,24 @@
     "stepOpenMatch": "Toca un partido para abrirlo y actualizar el marcador en directo.",
     "stepExtra": "Toca aquí para añadir goleadores, tarjetas y otros eventos del partido.",
     "stepStandings": "Último paso: toca aquí para ver la página pública del torneo con la clasificación."
+  },
+  "collaborators": {
+    "title": "Gestión de colaboradores",
+    "generateCode": "Generar nuevo código",
+    "invitesTitle": "Códigos de invitación",
+    "active": "activos",
+    "noInvites": "Ningún código activo",
+    "fullAccess": "Acceso completo",
+    "collaboratorsTitle": "Colaboradores",
+    "noCollaborators": "Todavía no hay colaboradores",
+    "remove": "Eliminar colaborador",
+    "removeConfirm": "¿Eliminar a este colaborador? Perderá el acceso al torneo.",
+    "assignTeams": "Asignar equipos",
+    "assignTeamsHint": "Ninguna selección = acceso completo al torneo.",
+    "redeemEntry": "Código de colaborador",
+    "redeemTitle": "Unirse como colaborador",
+    "redeemHint": "Introduce el código que te dio el organizador del torneo.",
+    "redeemAction": "Unirse",
+    "redeemFailed": "Código no válido"
   }
 }
