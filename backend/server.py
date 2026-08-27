@@ -1304,15 +1304,27 @@ async def get_tournaments(
     current_user: User = Depends(get_current_user)
 ):
     """Get all tournaments for current user — their own, plus any they
-    actively collaborate on (e.g. after redeeming an invite code)."""
+    actively collaborate on (e.g. after redeeming an invite code).
+    Two separate queries + a Python-side merge, not a single $or query —
+    the Supabase compatibility layer only implements the Mongo operators
+    server.py actually used before collaborators existed ($set, $in, $ne,
+    $lte, $gte, $gt, $lt, $eq, $regex/$options), not $or."""
+    own = await db.tournaments.find(
+        {"organizer_id": current_user.user_id}, {"_id": 0}
+    ).sort("created_at", -1).to_list(100)
+
     collab_tournament_ids = await db.tournament_collaborators.distinct(
         "tournament_id", {"user_id": current_user.user_id, "status": "active"}
     )
-    query = {"organizer_id": current_user.user_id}
+    collaborated = []
     if collab_tournament_ids:
-        query = {"$or": [query, {"id": {"$in": collab_tournament_ids}}]}
+        collaborated = await db.tournaments.find(
+            {"id": {"$in": collab_tournament_ids}}, {"_id": 0}
+        ).sort("created_at", -1).to_list(100)
 
-    tournaments = await db.tournaments.find(query, {"_id": 0}).sort("created_at", -1).to_list(100)
+    seen_ids = {t["id"] for t in own}
+    tournaments = own + [t for t in collaborated if t["id"] not in seen_ids]
+    tournaments.sort(key=lambda t: t.get("created_at") or "", reverse=True)
 
     for t in tournaments:
         t["status"] = compute_effective_status(t["status"], t.get("start_date"))
