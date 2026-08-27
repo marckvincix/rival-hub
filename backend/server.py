@@ -1396,6 +1396,15 @@ async def get_tournament(
         tournament["status"] = effective_status
         await db.tournaments.update_one({"id": tournament["id"]}, {"$set": {"status": effective_status}})
 
+    # A tournament already marked private but still missing a code (e.g. one
+    # switched to private before the access_code column existed at all)
+    # would otherwise never get one — flipping "Privato" again is a no-op
+    # once it's already selected, so there'd be no action left in the UI to
+    # trigger the lazy-generation that only lives in update_tournament.
+    if not tournament.get("is_public", True) and not tournament.get("access_code"):
+        tournament["access_code"] = generate_highlights_code()
+        await db.tournaments.update_one({"id": tournament["id"]}, {"$set": {"access_code": tournament["access_code"]}})
+
     return Tournament(**tournament)
 
 @api_router.put("/tournaments/{tournament_id}", response_model=Tournament)
