@@ -76,6 +76,7 @@ function RootLayoutContent() {
         <Stack.Screen name="(auth)/callback" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="tournament/[slug]" />
+        <Stack.Screen name="join" />
       </Stack>
       <HighlightsPaywallModal
         visible={showPostTourPaywall}

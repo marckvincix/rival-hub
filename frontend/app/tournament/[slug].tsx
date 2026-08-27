@@ -240,11 +240,11 @@ export default function TournamentPublicPage() {
     const publicUrl = `${(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '')}/tournament/${tournament.slug}`;
     const message = `Segui "${tournament.name}" su Rival Hub!\n${publicUrl}`;
     try {
-      // `url` only does anything on iOS (its own share sheet field, kept
-      // separate from the message there) — Android and the fallback text
-      // share both ignore it, so the link has to live in `message` too for
-      // it to actually show up everywhere.
-      await Share.share({ message, url: publicUrl, title: tournament.name });
+      // Only `message` — on iOS, also passing `url` made the link appear
+      // twice (once in the message text, once again as a separate native
+      // preview attachment). Android ignores `url` entirely regardless, so
+      // the link has to live in `message` either way.
+      await Share.share({ message, title: tournament.name });
     } catch (e) {}
   };
 

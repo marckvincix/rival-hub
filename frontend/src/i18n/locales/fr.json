@@ -234,9 +234,6 @@
     "formatKnockout": "Élimination directe",
     "formatGroupsKnockout": "Groupes + Élimination",
     "formatChampionship": "Championnat",
-    "visibility": "Visibilité",
-    "public": "Public",
-    "private": "Privé",
     "privateHint": "Un code d'accès sera généré à partager avec les personnes que vous voulez laisser voir le tournoi.",
     "accessCode": "Code d'accès",
     "accessCodeHint": "Partagez ce code avec les personnes que vous voulez laisser voir le tournoi : sans lui, elles ne pourront pas voir les équipes, les matchs ou le classement.",
@@ -1111,10 +1108,16 @@
     "removeConfirm": "Retirer ce collaborateur ? Il perdra l'accès au tournoi.",
     "assignTeams": "Attribuer des équipes",
     "assignTeamsHint": "Aucune sélection = accès complet au tournoi.",
+    "emailLabel": "E-mail (facultatif)",
+    "emailPlaceholder": "nom@exemple.com",
     "redeemEntry": "Code collaborateur",
     "redeemTitle": "Rejoindre en tant que collaborateur",
     "redeemHint": "Saisissez le code reçu de l'organisateur du tournoi.",
     "redeemAction": "Rejoindre",
-    "redeemFailed": "Code invalide"
+    "redeemFailed": "Code invalide",
+    "shareMessage": "Vous avez été invité à collaborer sur le tournoi \"{{tournamentName}}\" sur Rival Hub ! Inscrivez-vous ou connectez-vous et entrez le code {{code}} pour commencer : {{joinUrl}}",
+    "shareMessageTeam": "Vous avez été invité à gérer l'équipe \"{{teamName}}\" du tournoi \"{{tournamentName}}\" sur Rival Hub ! Inscrivez-vous ou connectez-vous et entrez le code {{code}} pour commencer : {{joinUrl}}",
+    "joinInviteTitle": "Vous avez été invité à collaborer",
+    "joinInviteSubtitle": "Connectez-vous ou créez un compte pour rejoindre le tournoi et commencer à le gérer."
   }
 }

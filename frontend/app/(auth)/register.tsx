@@ -21,6 +21,7 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../../src/utils/api';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 const ONBOARDING_SEEN_KEY_PREFIX = '@rival_hub_onboarding_seen_';
@@ -48,10 +49,26 @@ export default function RegisterScreen() {
   // brand-new account has by definition never seen it, so no need to check
   // a "seen" flag here; it's only checked again on login for accounts that
   // registered before this existed.
+  //
+  // Unless they arrived via a collaborator invite link (app/join.tsx) —
+  // then the "tour" doesn't make sense (they're not creating their own
+  // tournament) and they should land straight on the tournament they were
+  // invited to instead of the usual first-time flow.
   const afterAuth = async () => {
     const { user } = useAuthStore.getState();
     if (user?.user_id) {
       try { await AsyncStorage.setItem(`${ONBOARDING_SEEN_KEY_PREFIX}${user.user_id}`, 'true'); } catch { /* ignore */ }
+    }
+    if (params.collab_code) {
+      try {
+        const res = await api.post('/api/collaborators/redeem', { code: String(params.collab_code).toUpperCase() });
+        const joinedTournament = res.data?.tournament;
+        router.replace((joinedTournament?.id ? `/(tabs)/tournaments?id=${joinedTournament.id}` : '/(tabs)') as any);
+        return;
+      } catch (error) {
+        // Invalid/already-used code — fall through to the normal flow
+        // rather than leaving them stuck on a dead end.
+      }
     }
     setShowWelcomeTour(true);
   };
@@ -251,7 +268,7 @@ export default function RegisterScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>{t('auth.alreadyHaveAccount', 'Already have an account?')}</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/login')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(auth)/login', params: params.collab_code ? { collab_code: params.collab_code } : {} })}>
               <Text style={styles.footerLink}>{t('auth.login', 'Login')}</Text>
             </TouchableOpacity>
           </View>

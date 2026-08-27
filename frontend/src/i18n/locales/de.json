@@ -235,9 +235,6 @@
     "formatGroupsKnockout": "Gruppen + K.o.",
     "formatChampionship": "Meisterschaft",
     "format": "Format",
-    "visibility": "Sichtbarkeit",
-    "public": "Öffentlich",
-    "private": "Privat",
     "privateHint": "Es wird ein Zugangscode erstellt, den du mit den Personen teilen kannst, die das Turnier sehen sollen.",
     "accessCode": "Zugangscode",
     "accessCodeHint": "Teile diesen Code mit den Personen, die das Turnier sehen sollen — ohne ihn können sie keine Teams, Spiele oder Tabelle sehen.",
@@ -1112,10 +1109,16 @@
     "removeConfirm": "Diesen Mitarbeiter entfernen? Er verliert den Zugriff auf das Turnier.",
     "assignTeams": "Teams zuweisen",
     "assignTeamsHint": "Keine Auswahl = Vollzugriff auf das Turnier.",
+    "emailLabel": "E-Mail (optional)",
+    "emailPlaceholder": "name@beispiel.com",
     "redeemEntry": "Mitarbeiter-Code",
     "redeemTitle": "Als Mitarbeiter beitreten",
     "redeemHint": "Gib den Code ein, den du vom Turnierorganisator erhalten hast.",
     "redeemAction": "Beitreten",
-    "redeemFailed": "Ungültiger Code"
+    "redeemFailed": "Ungültiger Code",
+    "shareMessage": "Du wurdest eingeladen, beim Turnier \"{{tournamentName}}\" auf Rival Hub mitzuwirken! Registriere dich oder melde dich an und gib den Code {{code}} ein, um loszulegen: {{joinUrl}}",
+    "shareMessageTeam": "Du wurdest eingeladen, das Team \"{{teamName}}\" beim Turnier \"{{tournamentName}}\" auf Rival Hub zu verwalten! Registriere dich oder melde dich an und gib den Code {{code}} ein, um loszulegen: {{joinUrl}}",
+    "joinInviteTitle": "Du wurdest eingeladen mitzuarbeiten",
+    "joinInviteSubtitle": "Melde dich an oder erstelle ein Konto, um dem Turnier beizutreten und es zu verwalten."
   }
 }

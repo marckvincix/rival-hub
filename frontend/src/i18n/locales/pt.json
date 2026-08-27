@@ -235,9 +235,6 @@
     "formatGroupsKnockout": "Grupos + Eliminatórias",
     "formatChampionship": "Campeonato",
     "format": "Formato",
-    "visibility": "Visibilidade",
-    "public": "Público",
-    "private": "Privado",
     "privateHint": "Será gerado um código de acesso para partilhares com quem quiseres que veja o torneio.",
     "accessCode": "Código de acesso",
     "accessCodeHint": "Partilha este código com quem quiseres que veja o torneio: sem ele, não conseguirá ver equipas, jogos ou classificação.",
@@ -1112,10 +1109,16 @@
     "removeConfirm": "Remover este colaborador? Vai perder o acesso ao torneio.",
     "assignTeams": "Atribuir equipas",
     "assignTeamsHint": "Nenhuma seleção = acesso completo ao torneio.",
+    "emailLabel": "Email (opcional)",
+    "emailPlaceholder": "nome@exemplo.com",
     "redeemEntry": "Código de colaborador",
     "redeemTitle": "Juntar-te como colaborador",
     "redeemHint": "Introduz o código recebido do organizador do torneio.",
     "redeemAction": "Juntar-te",
-    "redeemFailed": "Código inválido"
+    "redeemFailed": "Código inválido",
+    "shareMessage": "Foste convidado a colaborar no torneio \"{{tournamentName}}\" no Rival Hub! Regista-te ou inicia sessão e introduz o código {{code}} para começar: {{joinUrl}}",
+    "shareMessageTeam": "Foste convidado a gerir a equipa \"{{teamName}}\" do torneio \"{{tournamentName}}\" no Rival Hub! Regista-te ou inicia sessão e introduz o código {{code}} para começar: {{joinUrl}}",
+    "joinInviteTitle": "Foste convidado a colaborar",
+    "joinInviteSubtitle": "Inicia sessão ou cria uma conta para te juntares ao torneio e começares a geri-lo."
   }
 }

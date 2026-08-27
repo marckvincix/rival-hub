@@ -14,7 +14,11 @@
       "infoPlist": {
         "NSCameraUsageDescription": "To take photos to upload in your tournaments",
         "NSPhotoLibraryUsageDescription": "To select photos and videos from your library to upload in your tournaments"
-      }
+      },
+      "associatedDomains": [
+        "applinks:rivalhub.app",
+        "applinks:www.rivalhub.app"
+      ]
     },
     "locales": {
       "it": "./languages/it.json",
@@ -38,6 +42,19 @@
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            { "scheme": "https", "host": "rivalhub.app", "pathPrefix": "/tournament" },
+            { "scheme": "https", "host": "rivalhub.app", "pathPrefix": "/join" },
+            { "scheme": "https", "host": "www.rivalhub.app", "pathPrefix": "/tournament" },
+            { "scheme": "https", "host": "www.rivalhub.app", "pathPrefix": "/join" }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "web": {

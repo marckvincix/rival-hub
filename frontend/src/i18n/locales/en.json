@@ -234,9 +234,6 @@
     "formatKnockout": "Knockout",
     "formatGroupsKnockout": "Groups + Knockout",
     "formatChampionship": "Championship",
-    "visibility": "Visibility",
-    "public": "Public",
-    "private": "Private",
     "privateHint": "An access code will be generated to share with whoever you want to let see the tournament.",
     "accessCode": "Access code",
     "accessCodeHint": "Share this code with whoever you want to let see the tournament — without it, they can't see teams, matches, or standings.",
@@ -1155,10 +1152,16 @@
     "removeConfirm": "Remove this collaborator? They'll lose access to the tournament.",
     "assignTeams": "Assign teams",
     "assignTeamsHint": "No selection = full access to the tournament.",
+    "emailLabel": "Email (optional)",
+    "emailPlaceholder": "name@example.com",
     "redeemEntry": "Collaborator code",
     "redeemTitle": "Join as a collaborator",
     "redeemHint": "Enter the code you got from the tournament organizer.",
     "redeemAction": "Join",
-    "redeemFailed": "Invalid code"
+    "redeemFailed": "Invalid code",
+    "shareMessage": "You've been invited to collaborate on the \"{{tournamentName}}\" tournament on Rival Hub! Sign up or log in and enter code {{code}} to get started: {{joinUrl}}",
+    "shareMessageTeam": "You've been invited to manage the \"{{teamName}}\" team for the \"{{tournamentName}}\" tournament on Rival Hub! Sign up or log in and enter code {{code}} to get started: {{joinUrl}}",
+    "joinInviteTitle": "You've been invited to collaborate",
+    "joinInviteSubtitle": "Sign in or create an account to join the tournament and start managing it."
   }
 }

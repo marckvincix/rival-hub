@@ -11,7 +11,7 @@ import {
   Image
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Input, HighlightsPaywallModal, WelcomeTourModal } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
@@ -22,12 +22,14 @@ import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import api from '../../src/utils/api';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
 const ONBOARDING_SEEN_KEY_PREFIX = '@rival_hub_onboarding_seen_';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams();
   const { login, appleLogin } = useAuthStore();
   const { t } = useTranslation();
 
@@ -54,11 +56,25 @@ export default function LoginScreen() {
   // First step: anyone whose account has never seen the welcome/tour prompt
   // (new signups, and any existing account logging in for the first time
   // since this was added) sees it once before the Highlights paywall check.
+  //
+  // Unless they arrived via a collaborator invite link (app/join.tsx) —
+  // then they should land straight on the tournament they were invited to,
+  // ahead of the onboarding/paywall checks below.
   const afterLogin = async () => {
     const { user } = useAuthStore.getState();
     if (!user?.user_id) {
       router.replace('/(tabs)');
       return;
+    }
+    if (params.collab_code) {
+      try {
+        const res = await api.post('/api/collaborators/redeem', { code: String(params.collab_code).toUpperCase() });
+        const joinedTournament = res.data?.tournament;
+        router.replace((joinedTournament?.id ? `/(tabs)/tournaments?id=${joinedTournament.id}` : '/(tabs)') as any);
+        return;
+      } catch (error) {
+        // Invalid/already-used code — fall through to the normal flow.
+      }
     }
     const onboardingKey = `${ONBOARDING_SEEN_KEY_PREFIX}${user.user_id}`;
     let onboardingSeen = false;
@@ -247,7 +263,7 @@ export default function LoginScreen() {
           {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>{t('auth.noAccount', "Don't have an account?")}</Text>
-            <TouchableOpacity onPress={() => router.push('/(auth)/register')}>
+            <TouchableOpacity onPress={() => router.push({ pathname: '/(auth)/register', params: params.collab_code ? { collab_code: params.collab_code } : {} })}>
               <Text style={styles.footerLink}>{t('auth.register', 'Register')}</Text>
             </TouchableOpacity>
           </View>

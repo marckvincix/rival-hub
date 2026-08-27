@@ -277,6 +277,7 @@ class Tournament(BaseModel):
 # yet) and becomes "active" once someone redeems that code.
 class CollaboratorInviteCreate(BaseModel):
     team_ids: List[str] = []  # empty = full access to the whole tournament
+    email: Optional[str] = None  # if given, emails the invite code/link directly
 
 class CollaboratorUpdate(BaseModel):
     team_ids: Optional[List[str]] = None
@@ -762,19 +763,19 @@ async def cleanup_expired_highlights():
     return len(expired)
 
 async def send_expiry_warning_notifications():
-    """Send notifications to organizers 30 days before highlights expire"""
+    """Send notifications (push + email) to organizers 30 days before highlights expire"""
     now = datetime.now(timezone.utc)
     warning_date = now + timedelta(days=30)
-    
+
     # Find highlights expiring in ~30 days that haven't been warned
     highlights = await db.highlights.find({
         "expires_at": {"$lte": warning_date, "$gt": now},
         "expiry_warning_sent": {"$ne": True}
     }).to_list(1000)
-    
+
     # Group by tournament
     tournament_ids = set(h["tournament_id"] for h in highlights)
-    
+
     for tournament_id in tournament_ids:
         tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
         if tournament:
@@ -784,13 +785,43 @@ async def send_expiry_warning_notifications():
                 f"I tuoi Highlights del {tournament['name']} verranno eliminati tra 30 giorni",
                 {"type": "highlights_expiry_warning", "tournament_id": tournament_id}
             )
-    
+            organizer = await db.users.find_one({"user_id": tournament["organizer_id"]}, {"_id": 0})
+            if organizer and organizer.get("email"):
+                batch = [h for h in highlights if h["tournament_id"] == tournament_id]
+                earliest_expiry = min(h["expires_at"] for h in batch)
+                if isinstance(earliest_expiry, str):
+                    earliest_expiry = datetime.fromisoformat(earliest_expiry)
+                photos = sum(1 for h in batch if h.get("file_type") == "photo")
+                videos = sum(1 for h in batch if h.get("file_type") == "video")
+                asyncio.create_task(send_highlights_expiring_email(
+                    organizer["email"], organizer.get("name") or "", tournament["name"], earliest_expiry, photos, videos
+                ))
+
     # Mark as warned
     for h in highlights:
         await db.highlights.update_one(
             {"id": h["id"]},
             {"$set": {"expiry_warning_sent": True}}
         )
+
+async def send_subscription_expiry_warnings():
+    """Email PRO subscribers whose plan expires in ~7 days. Runs alongside
+    the highlights expiry check on the same startup-triggered cadence."""
+    now = datetime.now(timezone.utc)
+    warning_date = now + timedelta(days=7)
+    users = await db.users.find({
+        "plan": "plus",
+        "plan_expiry": {"$lte": warning_date, "$gt": now},
+        "plan_expiry_warning_sent": {"$ne": True}
+    }).to_list(1000)
+    for u in users:
+        if not u.get("email"):
+            continue
+        expiry = u["plan_expiry"]
+        if isinstance(expiry, str):
+            expiry = datetime.fromisoformat(expiry)
+        asyncio.create_task(send_subscription_expiring_email(u["email"], u.get("name") or "", expiry))
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"plan_expiry_warning_sent": True}})
 
 def _parse_stored_date(date_str: Optional[str]):
     """Tournament dates are stored as free-text, either 'DD/MM/YYYY' (from the
@@ -926,6 +957,231 @@ def user_has_highlights_plus(user: User) -> bool:
     """Whether a user's Highlights Plus subscription is currently active."""
     return _plan_is_active(user.plan, user.plan_expiry)
 
+# ===================== EMAIL (RESEND) =====================
+# Transactional email for the handful of moments that genuinely need one:
+# welcome-on-registration, tournament created, collaborator invited by
+# email. Everything else in the app (in-app alerts, share sheets) stays
+# as-is. Silently disabled — logs and returns instead of raising — until
+# RESEND_API_KEY is set, so the app works exactly as it does today for
+# anyone who hasn't configured Resend yet.
+RESEND_API_KEY = os.environ.get('RESEND_API_KEY', '')
+RESEND_FROM_EMAIL = os.environ.get('RESEND_FROM_EMAIL', 'Rival Hub <no-reply@rivalhub.app>')
+APP_PUBLIC_URL = os.environ.get('APP_PUBLIC_URL', 'https://www.rivalhub.app')
+
+def _email_shell(preheader: str, heading: str, body_html: str, cta_label: Optional[str] = None, cta_url: Optional[str] = None, extra_html: str = "") -> str:
+    """Wraps one block of body HTML in the shared Rival Hub email chrome —
+    matches the templates already designed and tested against the verified
+    Resend domain (stacked black wordmark, white card, footer with legal
+    links + the Resend one-click-unsubscribe merge tag). Keeping every
+    template going through this one function means a future restyle is a
+    one-place change, not a per-template rewrite."""
+    cta_html = ""
+    if cta_label and cta_url:
+        cta_html = f'''
+        <tr><td style="padding:8px 0 0 0;">
+          <a href="{cta_url}" style="display:inline-block;padding:14px 28px;background:#000;color:#fff;border-radius:12px;text-decoration:none;font-weight:700;font-size:15px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">{cta_label}</a>
+        </td></tr>'''
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rival Hub</title></head>
+<body style="margin:0;padding:0;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+<span style="display:none;max-height:0;overflow:hidden;">{preheader}</span>
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f5f5;padding:32px 16px;">
+<tr><td align="center">
+<table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;background:#fff;border-radius:16px;overflow:hidden;">
+<tr><td style="padding:28px 32px 20px 32px;text-align:center;border-bottom:1px solid #eee;">
+  <img src="{APP_PUBLIC_URL}/static/rival-hub-logo.jpg" alt="Rival Hub" width="160" height="90" style="display:inline-block;width:160px;height:auto;max-width:100%;border:0;"/>
+</td></tr>
+<tr><td style="padding:32px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
+    <tr><td style="font-size:19px;font-weight:700;color:#000;padding-bottom:12px;">{heading}</td></tr>
+    <tr><td style="font-size:15px;line-height:1.6;color:#333;">{body_html}</td></tr>
+    {cta_html}
+  </table>
+  {extra_html}
+</td></tr>
+</table>
+<table role="presentation" width="480" cellpadding="0" cellspacing="0" style="max-width:480px;width:100%;">
+<tr><td style="padding:16px 32px;text-align:center;">
+  <span style="font-size:12px;color:#999;">© {datetime.now().year} Rival Hub · <a href="mailto:info@rivalhub.app" style="color:#999;">info@rivalhub.app</a></span><br/>
+  <span style="font-size:12px;color:#999;">
+    <a href="{APP_PUBLIC_URL}/terms" style="color:#999;text-decoration:underline;">Termini di Servizio</a> ·
+    <a href="{APP_PUBLIC_URL}/privacy" style="color:#999;text-decoration:underline;">Privacy Policy</a> ·
+    <a href="{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}" style="color:#999;text-decoration:underline;">Disiscriviti</a>
+  </span>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body></html>"""
+
+async def send_email(to: str, subject: str, html: str) -> bool:
+    """Fire-and-forget send through Resend's HTTP API. Returns whether it
+    was actually sent — callers log and move on either way; a failed email
+    should never fail the request that triggered it (registration, invite,
+    tournament creation all succeed regardless)."""
+    if not RESEND_API_KEY or not to:
+        if not RESEND_API_KEY:
+            logger.info(f"Resend not configured — skipping email to {to!r} ({subject!r})")
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.post(
+                "https://api.resend.com/emails",
+                headers={"Authorization": f"Bearer {RESEND_API_KEY}"},
+                json={"from": RESEND_FROM_EMAIL, "to": [to], "subject": subject, "html": html},
+            )
+        if resp.status_code >= 400:
+            logger.warning(f"Resend send failed ({resp.status_code}) to {to!r}: {resp.text[:300]}")
+            return False
+        return True
+    except Exception as e:
+        logger.warning(f"Resend send raised for {to!r}: {e}")
+        return False
+
+def _detail_row(label: str, value: str) -> str:
+    return f'''<tr>
+      <td style="padding:8px 0;color:#666;font-size:14px;border-bottom:1px solid #f0f0f0;">{label}</td>
+      <td style="padding:8px 0;color:#000;font-size:14px;font-weight:700;text-align:right;border-bottom:1px solid #f0f0f0;">{value}</td>
+    </tr>'''
+
+def _detail_box(rows: List[str]) -> str:
+    return f'<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border-radius:12px;padding:4px 16px;margin:8px 0;">{"".join(rows)}</table>'
+
+async def send_welcome_email(to: str, name: str):
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Grazie per esserti registrato su Rival Hub. Ora puoi creare e gestire i tuoi tornei sportivi con facilità.</p>
+    <p>Se hai domande, contattaci a <a href="mailto:info@rivalhub.app" style="color:#000;">info@rivalhub.app</a></p>
+    """
+    html = _email_shell(preheader="Il tuo account Rival Hub è pronto.", heading="Benvenuto su Rival Hub! 🏆", body_html=body)
+    return await send_email(to, "Benvenuto su Rival Hub! 🏆", html)
+
+_FORMAT_LABELS_IT = {
+    "league": "Girone all'italiana",
+    "knockout": "Eliminazione diretta",
+    "groups_knockout": "Gironi + eliminazione",
+    "mixed": "Misto",
+}
+
+async def send_tournament_created_email(to: str, name: str, tournament: dict):
+    sport = (tournament.get("sport") or "").capitalize()
+    rows = [
+        _detail_row("Nome torneo:", tournament["name"]),
+        _detail_row("Sport:", sport),
+        _detail_row("Formato:", _FORMAT_LABELS_IT.get(tournament.get("format"), tournament.get("format") or "")),
+        _detail_row("Categoria:", tournament.get("category") or "—"),
+    ]
+    if tournament.get("start_date"):
+        rows.append(_detail_row("Data inizio:", tournament["start_date"]))
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Hai creato con successo un nuovo torneo. Ecco il riepilogo:</p>
+    """
+    steps = """
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;border-radius:12px;padding:16px;margin-top:8px;">
+      <tr><td style="font-size:14px;font-weight:700;color:#000;padding-bottom:8px;">Prossimi passi:</td></tr>
+      <tr><td style="font-size:14px;color:#333;line-height:1.9;">
+        1. Aggiungi le squadre partecipanti<br/>
+        2. Crea il calendario delle partite<br/>
+        3. Invita i collaboratori se necessario<br/>
+        4. Condividi il torneo con i partecipanti
+      </td></tr>
+    </table>"""
+    html = _email_shell(
+        preheader=f"{tournament['name']} è pronto.",
+        heading="Il tuo torneo è pronto! 🏆",
+        body_html=body + _detail_box(rows),
+        cta_label="Apri il torneo",
+        cta_url=f"{APP_PUBLIC_URL}/tournament/{tournament['slug']}",
+        extra_html=steps,
+    )
+    return await send_email(to, "Torneo creato con successo", html)
+
+async def send_collaborator_invite_email(to: str, inviter_name: str, tournament_name: str, code: str, team_name: Optional[str]):
+    scope = f' per la squadra <strong>{team_name}</strong>' if team_name else ''
+    body = f"""
+    <p>Ciao!</p>
+    <p><strong>{inviter_name}</strong> ti ha invitato a collaborare alla gestione del torneo{scope}:</p>
+    """ + _detail_box([_detail_row("Torneo:", tournament_name)]) + f"""
+    <p style="margin-top:16px;">Il tuo codice collaboratore:</p>
+    <p style="font-size:24px;font-weight:800;letter-spacing:0.1em;background:#fafafa;border-radius:12px;padding:16px;text-align:center;margin:8px 0;">{code}</p>
+    <p style="font-size:13px;color:#888;">Per accettare, apri l'app Rival Hub (o registrati se non hai ancora un account) e inserisci questo codice nella sezione "Sei un collaboratore?". Se non conosci {inviter_name}, ignora questa email.</p>
+    """
+    html = _email_shell(
+        preheader=f"{inviter_name} ti ha invitato a collaborare su {tournament_name}.",
+        heading="Sei stato invitato 🤝",
+        body_html=body,
+        cta_label="Apri l'invito",
+        cta_url=f"{APP_PUBLIC_URL}/join?code={code}",
+    )
+    return await send_email(to, f"{inviter_name} ti invita a collaborare su Rival Hub", html)
+
+async def send_collaborator_joined_email(to: str, tournament_name: str, collaborator_name: str, collaborator_email: str, team_names: Optional[str]):
+    rows = [
+        _detail_row("Torneo:", tournament_name),
+        _detail_row("Nuovo collaboratore:", collaborator_name),
+        _detail_row("Email:", collaborator_email),
+    ]
+    if team_names:
+        rows.append(_detail_row("Squadre assegnate:", team_names))
+    body = "<p>Un nuovo utente ha accettato il tuo invito e si è unito come collaboratore al torneo:</p>" + _detail_box(rows) + \
+        '<p style="margin-top:12px;">Puoi gestire i collaboratori dalle impostazioni del torneo.</p>'
+    html = _email_shell(preheader=f"{collaborator_name} si è unito a {tournament_name}.", heading="Nuovo collaboratore! 👥", body_html=body)
+    return await send_email(to, "Nuovo collaboratore aggiunto al tuo torneo", html)
+
+async def send_collaborator_welcome_email(to: str, tournament_name: str, organizer_name: Optional[str], team_names: Optional[str]):
+    rows = [_detail_row("Torneo:", tournament_name)]
+    if organizer_name:
+        rows.append(_detail_row("Creatore del torneo:", organizer_name))
+    if team_names:
+        rows.append(_detail_row("Squadre assegnate:", team_names))
+    scope_note = f'<p style="font-size:13px;color:#888;margin-top:8px;">Il tuo accesso è limitato alle squadre sopra indicate.</p>' if team_names else ''
+    body = "<p>Sei stato aggiunto come collaboratore al torneo. Ora puoi gestire le squadre assegnate, le partite, i risultati e molto altro.</p>" + \
+        _detail_box(rows) + f"""
+        <p style="margin-top:12px;">Cosa puoi fare:</p>
+        <p style="line-height:1.9;">✓ Gestire squadre e giocatori<br/>✓ Aggiungere e modificare partite<br/>✓ Inserire risultati in tempo reale<br/>✓ Caricare foto e video negli Highlights</p>
+        {scope_note}
+        <p style="margin-top:12px;">Buon lavoro! Il torneo ti aspetta.</p>
+        """
+    html = _email_shell(preheader=f"Sei collaboratore su {tournament_name}.", heading="Benvenuto nel team! 🎉", body_html=body)
+    return await send_email(to, "Sei ora collaboratore del torneo", html)
+
+async def send_subscription_activated_email(to: str, name: str, expiry: Optional[datetime]):
+    rows = [_detail_row("Data di rinnovo:", expiry.strftime("%d/%m/%Y") if expiry else "—")]
+    features = """
+    <p style="line-height:1.9;">✓ Tornei illimitati<br/>✓ Highlights senza limiti<br/>✓ Statistiche avanzate<br/>✓ Supporto prioritario</p>
+    """
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Congratulazioni! Il tuo abbonamento PRO è stato attivato con successo. Ora hai accesso a tutte le funzionalità premium di Rival Hub.</p>
+    {features}
+    """ + _detail_box(rows) + '<p style="margin-top:12px;">Grazie per aver scelto Rival Hub PRO!</p>'
+    html = _email_shell(preheader="Il tuo abbonamento PRO è attivo.", heading="Benvenuto nel piano PRO! 🎉", body_html=body)
+    return await send_email(to, "Benvenuto nel piano PRO", html)
+
+async def send_subscription_expiring_email(to: str, name: str, expiry: datetime):
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Ti ricordiamo che il tuo abbonamento PRO scadrà tra 7 giorni. Per continuare a usufruire di tutte le funzionalità premium, rinnova il tuo abbonamento.</p>
+    """ + _detail_box([_detail_row("Data di scadenza:", expiry.strftime("%d/%m/%Y"))]) + \
+        '<p style="margin-top:12px;">Se non rinnovi, il tuo account tornerà al piano gratuito.</p>'
+    html = _email_shell(preheader="Il tuo abbonamento PRO sta per scadere.", heading="Il tuo abbonamento PRO sta per scadere", body_html=body)
+    return await send_email(to, "Il tuo abbonamento PRO scade tra 7 giorni", html)
+
+async def send_highlights_expiring_email(to: str, name: str, tournament_name: str, expiry: datetime, photos: int, videos: int):
+    rows = [
+        _detail_row("Torneo:", tournament_name),
+        _detail_row("Data di scadenza:", expiry.strftime("%d/%m/%Y")),
+        _detail_row("Contenuti a rischio:", f"{photos} foto, {videos} video"),
+    ]
+    body = f"<p>Ciao {name}!</p><p>Ti ricordiamo che i contenuti Highlights del tuo torneo verranno eliminati automaticamente tra 30 giorni.</p>" + \
+        _detail_box(rows) + \
+        '<p style="background:#eef6ff;border-radius:8px;padding:12px;margin-top:12px;">💡 Suggerimento: scarica i contenuti che vuoi conservare prima della scadenza.</p>' + \
+        '<p style="margin-top:12px;">Gli Highlights vengono eliminati automaticamente dopo 365 giorni dal caricamento.</p>'
+    html = _email_shell(preheader=f"Highlights di {tournament_name} in scadenza.", heading="I tuoi Highlights stanno per scadere ⚠️", body_html=body)
+    return await send_email(to, "I tuoi Highlights scadranno tra 30 giorni", html)
+
 # ===================== AUTH ENDPOINTS =====================
 
 @api_router.post("/auth/register")
@@ -951,7 +1207,8 @@ async def register(user_data: UserCreate):
     }
     
     await db.users.insert_one(user_doc)
-    
+    asyncio.create_task(send_welcome_email(user_data.email, user_data.name))
+
     # Create session
     session_token = f"session_{uuid.uuid4().hex}"
     session_doc = {
@@ -1296,6 +1553,7 @@ async def create_tournament(
     }
     
     await db.tournaments.insert_one(tournament_doc)
+    asyncio.create_task(send_tournament_created_email(current_user.email, current_user.name, tournament_doc))
 
     return Tournament(**tournament_doc)
 
@@ -1550,6 +1808,16 @@ async def create_collaborator_invite(
         "joined_at": None,
     }
     await db.tournament_collaborators.insert_one(collab_doc)
+
+    if invite_data.email:
+        team_name = None
+        if invite_data.team_ids:
+            teams = await db.teams.find({"id": {"$in": invite_data.team_ids}}, {"_id": 0}).to_list(100)
+            team_name = ", ".join(t["name"] for t in teams) or None
+        asyncio.create_task(send_collaborator_invite_email(
+            invite_data.email, current_user.name, tournament["name"], collab_doc["invite_code"], team_name
+        ))
+
     return Collaborator(**collab_doc)
 
 @api_router.put("/tournaments/{tournament_id}/collaborators/{collaborator_id}", response_model=Collaborator)
@@ -1636,6 +1904,21 @@ async def redeem_collaborator_invite(
             "joined_at": now,
         }}
     )
+
+    team_names = None
+    if collab["team_ids"]:
+        teams = await db.teams.find({"id": {"$in": collab["team_ids"]}}, {"_id": 0}).to_list(100)
+        team_names = ", ".join(t["name"] for t in teams) or None
+
+    organizer = await db.users.find_one({"user_id": tournament["organizer_id"]}, {"_id": 0})
+    if organizer and organizer.get("email"):
+        asyncio.create_task(send_collaborator_joined_email(
+            organizer["email"], tournament["name"], current_user.name, current_user.email, team_names
+        ))
+    asyncio.create_task(send_collaborator_welcome_email(
+        current_user.email, tournament["name"], organizer.get("name") if organizer else None, team_names
+    ))
+
     tournament.pop("access_code", None)
     return {"message": "Ti sei unito al torneo", "tournament": Tournament(**tournament).dict()}
 
@@ -3554,14 +3837,26 @@ async def revenuecat_webhook(request: Request):
     product_id = (event.get("product_id") or "").lower()
     plan_type = "annual" if "annual" in product_id or "yearly" in product_id else "monthly"
 
+    user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
+    was_active = bool(user_doc) and _plan_is_active(user_doc.get("plan"), user_doc.get("plan_expiry"))
+
     await db.users.update_one(
         {"user_id": user_id},
         {"$set": {
             "plan": "plus" if is_active else "free",
             "plan_expiry": expiry,
-            "plan_type": plan_type if is_active else None
+            "plan_type": plan_type if is_active else None,
+            # Reset on every active ping (not just renewals) so a later
+            # expiry from RevenueCat always gets its own 7-day warning,
+            # instead of staying silenced by a warning sent for the old date.
+            "plan_expiry_warning_sent": False,
         }}
     )
+
+    # Only on the free -> plus transition, not on every renewal ping RevenueCat
+    # sends for an already-active subscription.
+    if is_active and not was_active and user_doc and user_doc.get("email"):
+        asyncio.create_task(send_subscription_activated_email(user_doc["email"], user_doc.get("name") or "", expiry))
 
     return {"status": "ok"}
 
@@ -4201,9 +4496,13 @@ async def delete_highlight(
 
 @api_router.post("/highlights/cleanup-expired")
 async def manual_cleanup_expired():
-    """Manual endpoint to cleanup expired highlights (can be called by cron job)"""
+    """Manual endpoint to cleanup expired highlights and send expiry/renewal
+    reminder emails (meant to be pinged periodically by an external cron —
+    Render's own Cron Jobs, or any uptime-pinger — since this app has no
+    in-process scheduler)."""
     count = await cleanup_expired_highlights()
     await send_expiry_warning_notifications()
+    await send_subscription_expiry_warnings()
     return {"deleted_count": count}
 
 # ===================== INTERNAL NOTIFICATION HELPERS =====================
@@ -4278,6 +4577,57 @@ async def notify_team_followers(team_id: str, title: str, body: str, data: dict 
 
 # Include the router
 app.include_router(api_router)
+
+# Static assets that don't depend on the frontend web build existing —
+# right now just the logo, so it has a stable public URL email clients can
+# fetch (inline data: URIs are unreliable across email clients).
+STATIC_DIR = ROOT_DIR / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+
+# ===================== UNIVERSAL LINKS / APP LINKS =====================
+# These two files are how iOS/Android decide a link to our own domain should
+# open the app instead of (or in addition to) a browser tab. Both env vars
+# are blank until supplied — until then these routes serve harmless empty
+# associations, so shared links still work as plain web links, they just
+# won't hand off to the app yet.
+APPLE_TEAM_ID = os.environ.get('APPLE_TEAM_ID', '')
+IOS_BUNDLE_ID = "app.emergent.profilisquadretestfb21fa61"
+ANDROID_PACKAGE = "app.emergent.torneolive4d62a32b"
+ANDROID_SHA256_FINGERPRINTS = [
+    f.strip() for f in os.environ.get('ANDROID_SHA256_FINGERPRINTS', '').split(',') if f.strip()
+]
+
+# Paths a tapped link can take over the app for. /auth-callback is
+# deliberately excluded — it already bridges to rivalhub:// itself and
+# doesn't need the OS to intercept it earlier.
+_UNIVERSAL_LINK_PATHS = ["/tournament/*", "/join*"]
+
+@app.get("/.well-known/apple-app-site-association", include_in_schema=False)
+@app.get("/apple-app-site-association", include_in_schema=False)
+async def apple_app_site_association():
+    details = []
+    if APPLE_TEAM_ID:
+        details.append({
+            "appID": f"{APPLE_TEAM_ID}.{IOS_BUNDLE_ID}",
+            "paths": _UNIVERSAL_LINK_PATHS,
+        })
+    # Must be served as application/json with no redirect — JSONResponse
+    # does both; Apple's CDN refuses to fetch it through a 301/302.
+    return JSONResponse(content={"applinks": {"apps": [], "details": details}})
+
+@app.get("/.well-known/assetlinks.json", include_in_schema=False)
+async def android_asset_links():
+    if not ANDROID_SHA256_FINGERPRINTS:
+        return JSONResponse(content=[])
+    return JSONResponse(content=[{
+        "relation": ["delegate_permission/common.handle_all_urls"],
+        "target": {
+            "namespace": "android_app",
+            "package_name": ANDROID_PACKAGE,
+            "sha256_cert_fingerprints": ANDROID_SHA256_FINGERPRINTS,
+        },
+    }])
 
 # Google's OAuth redirect lands here as a plain https request (not something
 # Expo Router/the mobile app itself can intercept mid-navigation on iOS
@@ -4391,7 +4741,17 @@ if WEB_APP_DIR.exists():
         if tournament_html.exists():
             return FileResponse(tournament_html)
         return FileResponse(WEB_APP_DIR / "index.html")
-    
+
+    @app.get("/join", response_class=HTMLResponse, include_in_schema=False)
+    async def serve_join():
+        """Serve the collaborator invite-code landing page (app/join.tsx).
+        Was previously unregistered here, so a shared https://.../join?code=...
+        link 404'd on the web even though the route exists in the app."""
+        html_path = WEB_APP_DIR / "join.html"
+        if html_path.exists():
+            return FileResponse(html_path)
+        return FileResponse(WEB_APP_DIR / "index.html")
+
     logger.info(f"Web App enabled - serving from {WEB_APP_DIR}")
 else:
     logger.warning(f"Web App directory not found: {WEB_APP_DIR}")
@@ -4418,6 +4778,7 @@ async def startup_cleanup_task():
 
         # Send expiry warning notifications
         await send_expiry_warning_notifications()
+        await send_subscription_expiry_warnings()
         logger.info("Startup: Sent expiry warning notifications")
     except Exception as e:
         logger.error(f"Startup cleanup failed: {e}")

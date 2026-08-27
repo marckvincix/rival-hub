@@ -235,9 +235,6 @@
     "formatGroupsKnockout": "Gironi + Eliminazione",
     "formatChampionship": "Campionato",
     "format": "Formato",
-    "visibility": "Visibilità",
-    "public": "Pubblico",
-    "private": "Privato",
     "privateHint": "Verrà generato un codice d'accesso da condividere con chi vuoi far vedere il torneo.",
     "accessCode": "Codice d'accesso",
     "accessCodeHint": "Condividi questo codice con chi vuoi far vedere il torneo: senza, non potrà vedere squadre, partite o classifica.",
@@ -1156,10 +1153,16 @@
     "removeConfirm": "Rimuovere questo collaboratore? Perderà l'accesso al torneo.",
     "assignTeams": "Assegna squadre",
     "assignTeamsHint": "Nessuna selezione = accesso completo al torneo.",
+    "emailLabel": "Email (opzionale)",
+    "emailPlaceholder": "nome@esempio.com",
     "redeemEntry": "Codice collaboratore",
     "redeemTitle": "Unisciti come collaboratore",
     "redeemHint": "Inserisci il codice ricevuto dall'organizzatore del torneo.",
     "redeemAction": "Unisciti",
-    "redeemFailed": "Codice non valido"
+    "redeemFailed": "Codice non valido",
+    "shareMessage": "Sei stato invitato a collaborare al torneo \"{{tournamentName}}\" su Rival Hub! Registrati o accedi e inserisci il codice {{code}} per iniziare: {{joinUrl}}",
+    "shareMessageTeam": "Sei stato invitato a gestire la squadra \"{{teamName}}\" del torneo \"{{tournamentName}}\" su Rival Hub! Registrati o accedi e inserisci il codice {{code}} per iniziare: {{joinUrl}}",
+    "joinInviteTitle": "Sei stato invitato a collaborare",
+    "joinInviteSubtitle": "Accedi o crea un account per unirti al torneo e iniziare a gestirlo."
   }
 }

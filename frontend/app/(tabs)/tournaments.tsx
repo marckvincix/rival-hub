@@ -14,7 +14,8 @@ import {
   ActivityIndicator,
   FlatList,
   Dimensions,
-  Keyboard
+  Keyboard,
+  Share
 } from 'react-native';
 import { SafeAreaView, SafeAreaProvider } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
@@ -783,7 +784,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [collaborators, setCollaborators] = useState<any[]>([]);
   const [loadingCollaborators, setLoadingCollaborators] = useState(false);
   const [generatingInvite, setGeneratingInvite] = useState(false);
-  const [teamPickerCollaborator, setTeamPickerCollaborator] = useState<any>(null);
+  // Team assignment happens BEFORE a code exists, not just after someone's
+  // already redeemed one — "Genera nuovo codice" opens this same picker in
+  // "new" mode (no API call yet), and only once they confirm (with or
+  // without teams picked) does the invite actually get created and show up
+  // with its copy/share actions. The shield icon on an existing
+  // collaborator reuses the same picker in "edit" mode.
+  const [teamPicker, setTeamPicker] = useState<{ mode: 'new' | 'edit'; teamIds: string[]; collaborator?: any; email?: string } | null>(null);
 
   const loadCollaborators = async () => {
     setLoadingCollaborators(true);
@@ -801,15 +808,48 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     if (activeTab === 'settings') loadCollaborators();
   }, [activeTab]);
 
-  const handleGenerateInvite = async () => {
+  const handleGenerateInvite = async (teamIds: string[], email?: string) => {
     setGeneratingInvite(true);
     try {
-      await api.post(`/api/tournaments/${tournament.id}/collaborators/invite`, { team_ids: [] });
+      await api.post(`/api/tournaments/${tournament.id}/collaborators/invite`, {
+        team_ids: teamIds,
+        email: email?.trim() || undefined, // if given, the backend also emails the code directly
+      });
       await loadCollaborators();
     } catch (error) {
       Alert.alert(t('common.error'), 'Impossibile generare il codice');
     } finally {
       setGeneratingInvite(false);
+    }
+  };
+
+  const handleShareInviteCode = async (collab: any) => {
+    // Deep-links straight into the app's join flow: if the recipient
+    // doesn't have an account yet they can register right from there, and
+    // either way they land directly on this tournament as a collaborator —
+    // not just a bare code they'd have to go find somewhere to redeem.
+    const base = (process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '');
+    const joinUrl = `${base}/join?code=${encodeURIComponent(collab.invite_code)}`;
+    const teamNames = (collab.team_ids || []).map((id: string) => getTeamName(id)).join(', ');
+    const message = teamNames
+      ? t(
+          'collaborators.shareMessageTeam',
+          'Sei stato invitato a gestire la squadra "{{teamName}}" del torneo "{{tournamentName}}" su Rival Hub! Registrati o accedi e inserisci il codice {{code}} per iniziare: {{joinUrl}}',
+          { teamName: teamNames, tournamentName: tournament.name, code: collab.invite_code, joinUrl }
+        )
+      : t(
+          'collaborators.shareMessage',
+          'Sei stato invitato a collaborare al torneo "{{tournamentName}}" su Rival Hub! Registrati o accedi e inserisci il codice {{code}} per iniziare: {{joinUrl}}',
+          { tournamentName: tournament.name, code: collab.invite_code, joinUrl }
+        );
+    try {
+      // Only `message` — on iOS, passing `url` too made the link show up
+      // twice (once written out in the message text, once again as its own
+      // native preview attachment). Android ignores `url` entirely anyway,
+      // so the link needs to live in the message text regardless.
+      await Share.share({ message, title: tournament.name });
+    } catch (error) {
+      // user dismissed the share sheet — nothing to do
     }
   };
 
@@ -838,6 +878,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (error) {
       Alert.alert(t('common.error'));
     }
+  };
+
+  const handleSaveTeamPicker = async () => {
+    if (!teamPicker) return;
+    if (teamPicker.mode === 'new') {
+      await handleGenerateInvite(teamPicker.teamIds, teamPicker.email);
+    } else {
+      await handleToggleCollaboratorTeams(teamPicker.collaborator, teamPicker.teamIds);
+    }
+    setTeamPicker(null);
   };
 
   // Guided "create your first tournament" tour — steps that live in this
@@ -2721,7 +2771,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     <Text style={styles.settingsLabel}>{t('collaborators.title', 'Gestione Collaboratori')}</Text>
                   </View>
 
-                  <TouchableOpacity style={styles.collabGenerateBtn} onPress={handleGenerateInvite} disabled={generatingInvite}>
+                  <TouchableOpacity
+                    style={styles.collabGenerateBtn}
+                    onPress={() => setTeamPicker({ mode: 'new', teamIds: [] })}
+                    disabled={generatingInvite}
+                  >
                     <Ionicons name="add-circle-outline" size={18} color="#FFF" />
                     <Text style={styles.collabGenerateBtnText}>
                       {generatingInvite ? t('common.loading', 'Loading...') : t('collaborators.generateCode', 'Genera nuovo codice')}
@@ -2751,6 +2805,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                               </View>
                               <TouchableOpacity onPress={() => Clipboard.setStringAsync(c.invite_code)}>
                                 <Ionicons name="copy-outline" size={20} color="#000" />
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => handleShareInviteCode(c)} style={{ marginLeft: 12 }}>
+                                <Ionicons name="share-outline" size={20} color="#000" />
                               </TouchableOpacity>
                               <TouchableOpacity onPress={() => handleRemoveCollaborator(c)} style={{ marginLeft: 12 }}>
                                 <Ionicons name="close-circle" size={22} color="#DC2626" />
@@ -2782,7 +2839,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                   </Text>
                                 </View>
                               </View>
-                              <TouchableOpacity onPress={() => setTeamPickerCollaborator(c)}>
+                              <TouchableOpacity onPress={() => setTeamPicker({ mode: 'edit', teamIds: c.team_ids || [], collaborator: c })}>
                                 <Ionicons name="shield-outline" size={20} color="#000" />
                               </TouchableOpacity>
                               <TouchableOpacity onPress={() => handleRemoveCollaborator(c)} style={{ marginLeft: 12 }}>
@@ -3381,24 +3438,38 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         </TouchableOpacity>
       </Modal>
 
-      {/* Collaborator team-picker — the "shield" toggle on an active
-          collaborator; no selection = full access to the whole tournament. */}
-      <Modal visible={!!teamPickerCollaborator} transparent animationType="fade" onRequestClose={() => setTeamPickerCollaborator(null)}>
+      {/* Collaborator team-picker — shared by "Genera nuovo codice" (mode
+          "new": pick teams BEFORE the code is even created) and the shield
+          icon on an existing collaborator (mode "edit"). No selection in
+          either case = full access to the whole tournament. */}
+      <Modal visible={!!teamPicker} transparent animationType="fade" onRequestClose={() => setTeamPicker(null)}>
         <View style={styles.collabPickerOverlay}>
           <View style={styles.collabPickerContent}>
             <Text style={styles.collabPickerTitle}>{t('collaborators.assignTeams', 'Assegna squadre')}</Text>
             <Text style={styles.settingsHint}>{t('collaborators.assignTeamsHint', "Nessuna selezione = accesso completo al torneo.")}</Text>
+            {teamPicker?.mode === 'new' && (
+              <Input
+                label={t('collaborators.emailLabel', 'Email (opzionale)')}
+                placeholder={t('collaborators.emailPlaceholder', 'nome@esempio.com')}
+                value={teamPicker?.email || ''}
+                onChangeText={(text) => teamPicker && setTeamPicker({ ...teamPicker, email: text })}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            )}
             <ScrollView style={{ maxHeight: 320 }}>
               {teams.map((team) => {
-                const selected = (teamPickerCollaborator?.team_ids || []).includes(team.id);
+                const selected = (teamPicker?.teamIds || []).includes(team.id);
                 return (
                   <TouchableOpacity
                     key={team.id}
                     style={styles.collabPickerRow}
                     onPress={() => {
-                      const current: string[] = teamPickerCollaborator?.team_ids || [];
-                      const next = selected ? current.filter((id) => id !== team.id) : [...current, team.id];
-                      setTeamPickerCollaborator({ ...teamPickerCollaborator, team_ids: next });
+                      if (!teamPicker) return;
+                      const next = selected
+                        ? teamPicker.teamIds.filter((id) => id !== team.id)
+                        : [...teamPicker.teamIds, team.id];
+                      setTeamPicker({ ...teamPicker, teamIds: next });
                     }}
                   >
                     <Ionicons name={selected ? 'checkbox' : 'square-outline'} size={22} color="#000" />
@@ -3408,14 +3479,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               })}
             </ScrollView>
             <Button
-              title={t('common.save', 'Salva')}
-              onPress={async () => {
-                await handleToggleCollaboratorTeams(teamPickerCollaborator, teamPickerCollaborator?.team_ids || []);
-                setTeamPickerCollaborator(null);
-              }}
+              title={teamPicker?.mode === 'new' ? t('collaborators.generateCode', 'Genera nuovo codice') : t('common.save', 'Salva')}
+              onPress={handleSaveTeamPicker}
+              loading={generatingInvite}
               fullWidth
             />
-            <TouchableOpacity onPress={() => setTeamPickerCollaborator(null)} style={{ marginTop: 12, alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setTeamPicker(null)} style={{ marginTop: 12, alignItems: 'center' }}>
               <Text style={styles.settingsHint}>{t('common.cancel', 'Annulla')}</Text>
             </TouchableOpacity>
           </View>
