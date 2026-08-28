@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Header, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse, HTMLResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -25,6 +25,9 @@ from PIL import Image
 import io
 import base64
 import asyncio
+import hmac
+import hashlib
+from urllib.parse import quote
 
 from db_supabase import SupabaseDB
 
@@ -184,6 +187,14 @@ class UserCreate(BaseModel):
 class UserLogin(BaseModel):
     email: str
     password: str
+
+class ForgotPasswordRequest(BaseModel):
+    email: str
+
+class ResetPasswordRequest(BaseModel):
+    email: str
+    code: str
+    new_password: str
 
 class AppleAuthRequest(BaseModel):
     identity_token: str
@@ -1007,7 +1018,7 @@ def _email_shell(preheader: str, heading: str, body_html: str, cta_label: Option
   <span style="font-size:12px;color:#999;">
     <a href="{APP_PUBLIC_URL}/terms" style="color:#999;text-decoration:underline;">Termini di Servizio</a> ·
     <a href="{APP_PUBLIC_URL}/privacy" style="color:#999;text-decoration:underline;">Privacy Policy</a> ·
-    <a href="{{{{{{RESEND_UNSUBSCRIBE_URL}}}}}}" style="color:#999;text-decoration:underline;">Disiscriviti</a>
+    <a href="__UNSUBSCRIBE_URL__" style="color:#999;text-decoration:underline;">Disiscriviti</a>
   </span>
 </td></tr>
 </table>
@@ -1015,15 +1026,34 @@ def _email_shell(preheader: str, heading: str, body_html: str, cta_label: Option
 </table>
 </body></html>"""
 
-async def send_email(to: str, subject: str, html: str) -> bool:
+def _unsubscribe_token(email: str) -> str:
+    """Short HMAC so /unsubscribe can't be used to opt out an arbitrary
+    address just by guessing it in the URL — same SECRET_KEY already used
+    to sign session JWTs, no new secret to manage."""
+    return hmac.new(SECRET_KEY.encode(), email.strip().lower().encode(), hashlib.sha256).hexdigest()[:24]
+
+def _unsubscribe_url(email: str) -> str:
+    return f"{APP_PUBLIC_URL}/unsubscribe?email={quote(email)}&token={_unsubscribe_token(email)}"
+
+async def send_email(to: str, subject: str, html: str, transactional: bool = False) -> bool:
     """Fire-and-forget send through Resend's HTTP API. Returns whether it
     was actually sent — callers log and move on either way; a failed email
     should never fail the request that triggered it (registration, invite,
-    tournament creation all succeed regardless)."""
+    tournament creation all succeed regardless).
+
+    transactional=True skips the unsubscribed check — for the password
+    reset code/confirmation, which the recipient explicitly asked for by
+    using the "forgot password" flow, not a notification they opted into."""
     if not RESEND_API_KEY or not to:
         if not RESEND_API_KEY:
             logger.info(f"Resend not configured — skipping email to {to!r} ({subject!r})")
         return False
+    if not transactional:
+        user = await db.users.find_one({"email": to}, {"_id": 0})
+        if user and user.get("email_unsubscribed"):
+            logger.info(f"{to!r} unsubscribed — skipping email ({subject!r})")
+            return False
+    html = html.replace("__UNSUBSCRIBE_URL__", _unsubscribe_url(to))
     try:
         async with httpx.AsyncClient(timeout=10.0) as client:
             resp = await client.post(
@@ -1182,6 +1212,25 @@ async def send_highlights_expiring_email(to: str, name: str, tournament_name: st
     html = _email_shell(preheader=f"Highlights di {tournament_name} in scadenza.", heading="I tuoi Highlights stanno per scadere ⚠️", body_html=body)
     return await send_email(to, "I tuoi Highlights scadranno tra 30 giorni", html)
 
+async def send_password_reset_email(to: str, name: str, code: str):
+    body = f"""
+    <p>Ciao {name},</p>
+    <p>Abbiamo ricevuto una richiesta per reimpostare la password del tuo account Rival Hub. Usa il codice qui sotto per reimpostare la tua password:</p>
+    <p style="font-size:26px;font-weight:800;letter-spacing:0.15em;background:#fafafa;border-radius:12px;padding:16px;text-align:center;margin:16px 0;">{code}</p>
+    <p style="text-align:center;color:#666;font-size:13px;">Questo codice è valido per 1 ora.</p>
+    """ + '<p style="background:#fff8e6;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;">Se non hai richiesto il reset della password, ignora questa email. La tua password rimarrà invariata.</p>'
+    html = _email_shell(preheader="Usa il codice per reimpostare la password.", heading="Reimposta la tua password", body_html=body)
+    return await send_email(to, "Reimposta la tua password", html, transactional=True)
+
+async def send_password_reset_success_email(to: str, name: str):
+    body = f"""
+    <p>Ciao {name},</p>
+    <p>La tua password di Rival Hub è stata reimpostata con successo. Ora puoi accedere al tuo account con la nuova password.</p>
+    """ + '<p style="background:#fdecea;border-radius:8px;padding:12px;margin-top:12px;font-size:13px;">Se non hai effettuato tu questa modifica, contattaci immediatamente a <a href="mailto:info@rivalhub.app" style="color:#000;">info@rivalhub.app</a></p>' + \
+        '<p style="margin-top:12px;font-size:13px;color:#666;">Per la tua sicurezza, ti consigliamo di non condividere mai la tua password.</p>'
+    html = _email_shell(preheader="La tua password è stata reimpostata.", heading="Password reimpostata! 🔒", body_html=body)
+    return await send_email(to, "Password reimpostata con successo", html, transactional=True)
+
 # ===================== AUTH ENDPOINTS =====================
 
 @api_router.post("/auth/register")
@@ -1280,6 +1329,52 @@ async def login(user_data: UserLogin):
     )
     
     return response
+
+@api_router.post("/auth/forgot-password")
+async def forgot_password(data: ForgotPasswordRequest):
+    """Start a password reset: emails a 6-digit code valid for 1 hour.
+    Always returns the same generic message, whether or not the email
+    exists or has a password to reset — this endpoint can't be used to
+    probe which addresses have an account."""
+    user_doc = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if user_doc and user_doc.get("password_hash"):
+        # Google/Apple-only accounts have no password_hash — nothing to
+        # reset, and emailing them a code for a password they don't have
+        # would just be confusing.
+        code = f"{random.randint(0, 999999):06d}"
+        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        await db.users.update_one(
+            {"user_id": user_doc["user_id"]},
+            {"$set": {"reset_code": code, "reset_code_expires": expires}}
+        )
+        asyncio.create_task(send_password_reset_email(user_doc["email"], user_doc.get("name") or "", code))
+    return {"message": "Se l'indirizzo esiste, riceverai un'email con il codice"}
+
+@api_router.post("/auth/reset-password")
+async def reset_password(data: ResetPasswordRequest):
+    """Complete a password reset with the code from /auth/forgot-password."""
+    user_doc = await db.users.find_one({"email": data.email}, {"_id": 0})
+    if not user_doc or not user_doc.get("reset_code") or user_doc["reset_code"] != data.code.strip():
+        raise HTTPException(status_code=400, detail="Codice non valido")
+
+    expires = user_doc.get("reset_code_expires")
+    if isinstance(expires, str):
+        expires = datetime.fromisoformat(expires)
+    if expires and expires.tzinfo is None:
+        expires = expires.replace(tzinfo=timezone.utc)
+    if not expires or expires < datetime.now(timezone.utc):
+        raise HTTPException(status_code=400, detail="Codice scaduto, richiedine uno nuovo")
+
+    await db.users.update_one(
+        {"user_id": user_doc["user_id"]},
+        {"$set": {"password_hash": hash_password(data.new_password), "reset_code": None, "reset_code_expires": None}}
+    )
+    # Force re-login everywhere — a reset triggered because the account was
+    # compromised shouldn't leave the attacker's old session still valid.
+    await db.user_sessions.delete_many({"user_id": user_doc["user_id"]})
+
+    asyncio.create_task(send_password_reset_success_email(user_doc["email"], user_doc.get("name") or ""))
+    return {"message": "Password reimpostata con successo"}
 
 @api_router.post("/auth/google")
 async def google_login(data: GoogleAuthRequest):
@@ -4658,6 +4753,75 @@ a{{display:inline-block;margin-top:24px;padding:14px 28px;background:#000;color:
 <script>window.location.replace("{deep_link}");</script>
 </body></html>"""
     return HTMLResponse(content=html)
+
+def _web_page_html(heading: str, body_html: str) -> str:
+    """Same branded chrome as the email templates (real logo, black/white,
+    one card) for the handful of plain web pages the backend serves
+    directly — right now just /unsubscribe."""
+    return f"""<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Rival Hub</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{{margin:0;padding:32px 16px;background:#f5f5f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#000;}}
+.card{{max-width:420px;margin:0 auto;background:#fff;border-radius:16px;overflow:hidden;}}
+.logo{{padding:28px 32px 20px 32px;text-align:center;border-bottom:1px solid #eee;}}
+.logo img{{width:140px;height:auto;}}
+.content{{padding:32px;text-align:center;}}
+h1{{font-size:20px;margin:0 0 12px 0;}}
+p{{font-size:15px;line-height:1.6;color:#333;margin:0 0 16px 0;}}
+button,.btn{{display:inline-block;padding:14px 28px;background:#000;color:#fff;border:0;border-radius:12px;font-weight:700;font-size:15px;font-family:inherit;cursor:pointer;text-decoration:none;}}
+</style>
+</head><body>
+<div class="card">
+  <div class="logo"><img src="{APP_PUBLIC_URL}/static/rival-hub-logo.jpg" alt="Rival Hub"/></div>
+  <div class="content">
+    <h1>{heading}</h1>
+    {body_html}
+  </div>
+</div>
+</body></html>"""
+
+@app.get("/unsubscribe", response_class=HTMLResponse, include_in_schema=False)
+async def unsubscribe_page(request: Request):
+    email = request.query_params.get("email", "")
+    token = request.query_params.get("token", "")
+    confirmed = request.query_params.get("confirmed") == "1"
+
+    if not email or not hmac.compare_digest(token, _unsubscribe_token(email)):
+        html = _web_page_html("Link non valido", "<p>Questo link di disiscrizione non è valido o è incompleto.</p>")
+        return HTMLResponse(content=html, status_code=400)
+
+    user = await db.users.find_one({"email": email}, {"_id": 0})
+    already_unsubscribed = bool(user and user.get("email_unsubscribed"))
+
+    if confirmed or already_unsubscribed:
+        html = _web_page_html(
+            "Disiscrizione confermata ✅",
+            f"<p>Non riceverai più email da Rival Hub su <strong>{email}</strong>, a parte quelle strettamente legate alla sicurezza dell'account (es. reset password).</p>"
+            f"<p style=\"font-size:13px;color:#888;\">Hai cambiato idea? Scrivici a <a href=\"mailto:info@rivalhub.app\">info@rivalhub.app</a>.</p>"
+        )
+        return HTMLResponse(content=html)
+
+    html = _web_page_html(
+        "Disiscriviti dalle email di Rival Hub",
+        f"<p>Stai per disiscrivere <strong>{email}</strong> dalle email di Rival Hub (benvenuto, tornei, collaboratori, promemoria). Le email legate alla sicurezza dell'account continueranno ad arrivare.</p>"
+        f'<form method="POST" action="/api/unsubscribe">'
+        f'<input type="hidden" name="email" value="{email}"/>'
+        f'<input type="hidden" name="token" value="{token}"/>'
+        f'<button type="submit">Disiscriviti</button>'
+        f'</form>'
+    )
+    return HTMLResponse(content=html)
+
+@app.post("/api/unsubscribe", include_in_schema=False)
+async def unsubscribe_confirm(request: Request):
+    form = await request.form()
+    email = str(form.get("email", ""))
+    token = str(form.get("token", ""))
+    if not email or not hmac.compare_digest(token, _unsubscribe_token(email)):
+        raise HTTPException(status_code=400, detail="Link non valido")
+    await db.users.update_one({"email": email}, {"$set": {"email_unsubscribed": True}})
+    return RedirectResponse(url=f"/unsubscribe?email={quote(email)}&token={quote(token)}&confirmed=1", status_code=303)
 
 # ===================== WEB APP STATIC FILES =====================
 # Serve the built web app from /app/frontend/dist

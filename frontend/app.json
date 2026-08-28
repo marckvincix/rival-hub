@@ -31,7 +31,7 @@
     },
     "android": {
       "package": "app.emergent.torneolive4d62a32b",
-      "versionCode": 1028,
+      "versionCode": 1029,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -90,7 +90,8 @@
           "defaultChannel": "default"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "./plugins/withAndroidLintFix.js"
     ],
     "experiments": {
       "typedRoutes": true
