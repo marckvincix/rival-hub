@@ -1,0 +1,2 @@
+NSCameraUsageDescription = "Per scattare foto da caricare nei tornei";
+NSPhotoLibraryUsageDescription = "Per selezionare foto e video dalla libreria da caricare nei tornei";

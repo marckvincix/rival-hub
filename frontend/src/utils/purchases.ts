@@ -1,8 +1,19 @@
 import { Platform } from 'react-native';
-import Purchases, { CustomerInfo, PurchasesOffering } from 'react-native-purchases';
+import Purchases, { CustomerInfo, PurchasesOffering, PurchasesPackage } from 'react-native-purchases';
 
 // Must match backend HIGHLIGHTS_PLUS_ENTITLEMENT / RevenueCat dashboard entitlement id.
 export const HIGHLIGHTS_PLUS_ENTITLEMENT = 'rival_hub_pro';
+
+// Independent "Grafiche Social" subscription — must match backend
+// SOCIAL_GRAPHICS_ENTITLEMENT / RevenueCat dashboard entitlement id.
+// This one is NOT the RevenueCat-dashboard "current" offering (Highlights
+// Plus already occupies that slot), so it's fetched by its offering
+// identifier below instead — see SOCIAL_GRAPHICS_OFFERING_ID.
+export const SOCIAL_GRAPHICS_ENTITLEMENT = 'social_graphics';
+// Identifier of the RevenueCat Offering that holds the Grafiche Social
+// monthly/annual packages. Must match the offering's "Identifier" field
+// in the RevenueCat dashboard (Offerings).
+export const SOCIAL_GRAPHICS_OFFERING_ID = 'social_graphics';
 
 let configured = false;
 
@@ -66,6 +77,45 @@ export async function getHighlightsPlusOffering(): Promise<PurchasesOffering | n
   } catch {
     return null;
   }
+}
+
+export async function hasSocialGraphicsPlan(): Promise<boolean> {
+  try {
+    const info = await Purchases.getCustomerInfo();
+    return !!info.entitlements.active[SOCIAL_GRAPHICS_ENTITLEMENT];
+  } catch {
+    return false;
+  }
+}
+
+export async function getSocialGraphicsOffering(): Promise<PurchasesOffering | null> {
+  try {
+    const offerings = await Purchases.getOfferings();
+    // Not offerings.current: Highlights Plus already owns that dashboard
+    // slot, so Grafiche Social is looked up by its own offering id instead.
+    return offerings.all[SOCIAL_GRAPHICS_OFFERING_ID] || null;
+  } catch {
+    return null;
+  }
+}
+
+// Real "X% OFF" savings on the annual package vs. paying monthly for a
+// year, computed live from actual store prices — never hardcoded, since
+// the real per-store price (and any promo) can differ from whatever a
+// static design mockup shows. Returns null (hide the badge) rather than a
+// wrong number if either package/price isn't available yet.
+export function getAnnualDiscountPercent(
+  monthlyPkg: PurchasesPackage | null | undefined,
+  annualPkg: PurchasesPackage | null | undefined
+): number | null {
+  const monthlyPrice = monthlyPkg?.product?.price;
+  const annualPrice = annualPkg?.product?.price;
+  if (!monthlyPrice || !annualPrice) return null;
+  const yearlyIfPaidMonthly = monthlyPrice * 12;
+  if (yearlyIfPaidMonthly <= 0) return null;
+  const discount = 1 - annualPrice / yearlyIfPaidMonthly;
+  if (discount <= 0) return null;
+  return Math.round(discount * 100);
 }
 
 export async function purchasePackage(pkg: NonNullable<PurchasesOffering['availablePackages']>[number]): Promise<CustomerInfo> {

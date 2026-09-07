@@ -13,18 +13,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Button, Input, HighlightsPaywallModal, WelcomeTourModal } from '../../src/components';
+import { Button, Input } from '../../src/components';
 import { useAuthStore } from '../../src/store/authStore';
-import { useTourStore } from '../../src/store/tourStore';
 import { useTranslation } from '../../src/i18n';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import api from '../../src/utils/api';
 
 const RivalHubLogo = require('../../assets/images/rival-hub-logo.jpg');
-const ONBOARDING_SEEN_KEY_PREFIX = '@rival_hub_onboarding_seen_';
 
 export default function RegisterScreen() {
   const router = useRouter();
@@ -42,23 +39,13 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{name?: string; email?: string; password?: string; confirmPassword?: string}>({});
-  const [showWelcomeTour, setShowWelcomeTour] = useState(false);
-  const [showHighlightsPaywall, setShowHighlightsPaywall] = useState(false);
 
-  // Every new account sees a welcome prompt offering the guided tour. A
-  // brand-new account has by definition never seen it, so no need to check
-  // a "seen" flag here; it's only checked again on login for accounts that
-  // registered before this existed.
-  //
-  // Unless they arrived via a collaborator invite link (app/join.tsx) —
-  // then the "tour" doesn't make sense (they're not creating their own
-  // tournament) and they should land straight on the tournament they were
-  // invited to instead of the usual first-time flow.
+  // Unless they arrived via a collaborator invite link (app/join.tsx) — in
+  // which case they land straight on the tournament they were invited to —
+  // a fresh registration goes straight into the app (or into tournament
+  // creation, if that's what brought them to register). No more automatic
+  // welcome-tour prompt or Highlights Plus paywall.
   const afterAuth = async () => {
-    const { user } = useAuthStore.getState();
-    if (user?.user_id) {
-      try { await AsyncStorage.setItem(`${ONBOARDING_SEEN_KEY_PREFIX}${user.user_id}`, 'true'); } catch { /* ignore */ }
-    }
     if (params.collab_code) {
       try {
         const res = await api.post('/api/collaborators/redeem', { code: String(params.collab_code).toUpperCase() });
@@ -70,27 +57,7 @@ export default function RegisterScreen() {
         // rather than leaving them stuck on a dead end.
       }
     }
-    setShowWelcomeTour(true);
-  };
-
-  // "Salta" on the welcome prompt: skip the guided tour entirely and go
-  // straight to the Highlights paywall (shown unconditionally here since a
-  // fresh registration can never already have "seen" it or be subscribed —
-  // shouldShowHighlightsPaywall would just confirm that, so we skip the
-  // async round-trip and show it directly).
-  const skipTour = () => {
-    setShowWelcomeTour(false);
-    setShowHighlightsPaywall(true);
-  };
-
-  // "Inizia il tour": jump straight into tournament creation with the
-  // guided tour active. The Highlights paywall is deferred until the tour
-  // finishes (see the global watcher in app/_layout.tsx) since by then
-  // register.tsx is long unmounted.
-  const startTour = () => {
-    setShowWelcomeTour(false);
-    useTourStore.getState().start();
-    router.replace('/(tabs)/tournaments?create=true' as any);
+    router.replace(postPaywallDestination as any);
   };
 
   const validate = () => {
@@ -274,24 +241,6 @@ export default function RegisterScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      <WelcomeTourModal
-        visible={showWelcomeTour}
-        onStart={startTour}
-        onSkip={skipTour}
-      />
-
-      <HighlightsPaywallModal
-        visible={showHighlightsPaywall}
-        onClose={() => {
-          setShowHighlightsPaywall(false);
-          router.replace(postPaywallDestination as any);
-        }}
-        onSubscribed={() => {
-          setShowHighlightsPaywall(false);
-          router.replace(postPaywallDestination as any);
-        }}
-      />
     </SafeAreaView>
   );
 }

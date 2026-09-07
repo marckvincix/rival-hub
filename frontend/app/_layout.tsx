@@ -1,12 +1,11 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { useFonts, Anton_400Regular } from '@expo-google-fonts/anton';
 import { useAuthStore } from '../src/store/authStore';
-import { useTourStore } from '../src/store/tourStore';
-import { shouldShowHighlightsPaywall } from '../src/utils/paywallGate';
-import { Loading, LanguageSelectionScreen, HighlightsPaywallModal } from '../src/components';
+import { Loading, LanguageSelectionScreen } from '../src/components';
 import { useNotifications } from '../src/hooks/useNotifications';
 import { LanguageProvider, useLanguage } from '../src/contexts/LanguageContext';
 import { configureAnonymousPurchases } from '../src/utils/purchases';
@@ -15,21 +14,10 @@ import '../src/i18n'; // Initialize i18n
 function RootLayoutContent() {
   const { isLoading, checkAuth, user } = useAuthStore();
   const { isLanguageReady, needsLanguageSelection } = useLanguage();
-  const tourActive = useTourStore((s) => s.active);
-  const wasTourActiveRef = useRef(false);
-  const [showPostTourPaywall, setShowPostTourPaywall] = useState(false);
-
-  // The guided tour lives inside the tournaments screen, far from wherever
-  // it was started (register/login). Rather than thread a callback all the
-  // way through, watch the shared tour store here at the root and react to
-  // the active -> inactive transition — fires whether the tour was finished
-  // naturally or dismissed early via "Salta tour" on a coachmark.
-  useEffect(() => {
-    if (wasTourActiveRef.current && !tourActive) {
-      shouldShowHighlightsPaywall().then((show) => { if (show) setShowPostTourPaywall(true); });
-    }
-    wasTourActiveRef.current = tourActive;
-  }, [tourActive]);
+  // Display font for the full-page paywalls (FullPagePaywall.tsx) — the
+  // rest of the app keeps the system font, this is loaded once at boot so
+  // there's no flash of the wrong font the first time a paywall shows.
+  const [fontsLoaded] = useFonts({ Anton_400Regular });
 
   // Register push notifications when user is authenticated
   const { expoPushToken } = useNotifications();
@@ -48,8 +36,8 @@ function RootLayoutContent() {
     checkAuth();
   }, []);
 
-  // Show loading while language is being initialized
-  if (!isLanguageReady) {
+  // Show loading while language/fonts are being initialized
+  if (!isLanguageReady || !fontsLoaded) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#000" />
@@ -79,11 +67,6 @@ function RootLayoutContent() {
         <Stack.Screen name="tournament/[slug]" />
         <Stack.Screen name="join" />
       </Stack>
-      <HighlightsPaywallModal
-        visible={showPostTourPaywall}
-        onClose={() => setShowPostTourPaywall(false)}
-        onSubscribed={() => setShowPostTourPaywall(false)}
-      />
     </>
   );
 }

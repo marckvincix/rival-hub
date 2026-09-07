@@ -18,15 +18,32 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Loading, EmptyState, TeamLogo, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab, ProductCarousel } from '../../src/components';
+import { Loading, EmptyState, TeamLogo, FieldView, BasketballCourtView, TennisCourtView, PadelCourtView, VolleyballCourtView, RugbyCourtView, HighlightsTab, ProductCarousel, SocialGraphicsGenerator } from '../../src/components';
 import { FavoriteButton } from '../../src/components/FavoriteButton';
 import { useAuthStore } from '../../src/store/authStore';
 import api from '../../src/utils/api';
 import { Tournament, Team, Match, Standing, Scorer, PlayerStats, News, Formation, Player, Sport, getSportEmoji } from '../../src/types';
+import { StandingsGraphicData } from '../../src/types/socialGraphics';
 import { useTranslation } from '../../src/i18n';
 import { parseFlexibleDate } from '../../src/utils/helpers';
+import {
+  isCalendarSyncSupported,
+  getMatchCalendarSyncMap,
+  getPendingCalendarMatches,
+  syncMatchesToCalendar,
+  cleanupDeletedMatchesFromCalendar,
+  MatchCalendarSyncMap,
+} from '../../src/utils/matchCalendarSync';
 
 type TabId = 'standings' | 'teams' | 'matches' | 'scorers' | 'stats' | 'news' | 'info' | 'highlights';
+
+// Public web domain for shareable/Universal Links — deliberately NOT
+// EXPO_PUBLIC_BACKEND_URL (that's the API host, rival-hub.onrender.com,
+// which has no Universal Links entitlement at all). Must stay
+// "www.rivalhub.app": the bare "rivalhub.app" apex currently resolves to
+// an unrelated site rather than this backend, so a link built with it
+// would silently fail to open the app.
+const PUBLIC_WEB_URL = process.env.EXPO_PUBLIC_WEB_URL || 'https://www.rivalhub.app';
 
 export default function TournamentPublicPage() {
   const router = useRouter();
@@ -118,6 +135,14 @@ export default function TournamentPublicPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [matches, setMatches] = useState<Match[]>([]);
   const [standings, setStandings] = useState<Standing[]>([]);
+  const [showStandingsGraphic, setShowStandingsGraphic] = useState(false);
+  // This is the PUBLIC page — whoever is looking at it isn't necessarily
+  // the organizer (usually isn't). Whether "Condividi Grafica" can work
+  // here depends on the ORGANIZER's plan, not the current visitor's — a
+  // random visitor's own subscription status is meaningless for someone
+  // else's tournament, so there's no paywall to show them either: the
+  // button simply doesn't appear unless the organizer already unlocked it.
+  const organizerHasSocialGraphicsPlan = !!tournament?.organizer_has_social_graphics_plan;
   const [scorers, setScorers] = useState<Scorer[]>([]);
   const [playerStats, setPlayerStats] = useState<PlayerStats[]>([]);
   const [news, setNews] = useState<News[]>([]);
@@ -142,6 +167,32 @@ export default function TournamentPublicPage() {
   const [privateAccess, setPrivateAccess] = useState<'unknown' | 'needs_code' | 'invalid_code'>('unknown');
   const [accessCodeInput, setAccessCodeInput] = useState('');
   const [checkingCode, setCheckingCode] = useState(false);
+
+  // Which matches are already synced to the device's native calendar, and
+  // with what date/time — per device, loaded from local storage. Reloaded
+  // whenever the tournament changes so switching tournaments doesn't carry
+  // over a stale map.
+  const [calendarSyncMap, setCalendarSyncMap] = useState<MatchCalendarSyncMap>({});
+  const [syncingCalendar, setSyncingCalendar] = useState(false);
+  useEffect(() => {
+    if (!tournament?.id) return;
+    getMatchCalendarSyncMap(tournament.id).then(setCalendarSyncMap);
+  }, [tournament?.id]);
+
+  // Quietly remove the calendar event for any match that got deleted since
+  // it was last synced — runs on its own whenever the (already-loaded)
+  // matches list changes, no button needed. Gated on `!loading` so the
+  // brief empty `matches` array during the very first load (or a refresh)
+  // is never mistaken for "every synced match was deleted".
+  useEffect(() => {
+    if (!tournament?.id || loading) return;
+    const currentIds = matches.map((m) => m.id);
+    cleanupDeletedMatchesFromCalendar(tournament.id, currentIds).then((result) => {
+      if (result.removedCount > 0) {
+        getMatchCalendarSyncMap(tournament.id).then(setCalendarSyncMap);
+      }
+    });
+  }, [tournament?.id, matches, loading]);
 
   useEffect(() => { if (slug) loadData(); }, [slug]);
 
@@ -237,7 +288,10 @@ export default function TournamentPublicPage() {
 
   const handleShare = async () => {
     if (!tournament) return;
-    const publicUrl = `${(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '')}/tournament/${tournament.slug}`;
+    // A Universal Link — opens the app directly to this tournament on a
+    // device that has it installed, and falls back to the web page
+    // otherwise. Must be built from PUBLIC_WEB_URL, not the API host.
+    const publicUrl = `${PUBLIC_WEB_URL}/tournament/${tournament.slug}`;
     const message = `Segui "${tournament.name}" su Rival Hub!\n${publicUrl}`;
     try {
       // Only `message` — on iOS, also passing `url` made the link appear
@@ -316,6 +370,54 @@ export default function TournamentPublicPage() {
     return result || t('matches.dateTBD', 'Date TBD');
   };
 
+  // A match can override the tournament's own venue with its own pitch —
+  // prefer that, and fall back to the tournament's venue name/address.
+  // Shared by the visible venue line on each match card and by the
+  // calendar event's location/details below.
+  const getMatchVenue = (match: Match) => ({
+    name: match.venue_name || tournament?.venue_name || '',
+    address: match.venue_address || tournament?.venue_address || '',
+  });
+
+  // Everything needed to represent a match as a calendar event — shared by
+  // the single-match "add to calendar" link and the bulk native-calendar
+  // sync, so both ever show exactly the same title/notes/location/time for
+  // the same match.
+  const buildMatchCalendarDetails = (match: Match) => {
+    const homeTeam = getTeamName(match.home_team_id);
+    const awayTeam = getTeamName(match.away_team_id);
+    const title = `${homeTeam} vs ${awayTeam}`;
+
+    const { name: venueName, address: venueAddress } = getMatchVenue(match);
+    const location = [venueName, venueAddress].filter(Boolean).join(', ') || tournament?.location || '';
+
+    let startDate = new Date();
+    if (match.match_date) {
+      startDate = new Date(match.match_date);
+    }
+    if (match.match_time) {
+      const [hours, minutes] = match.match_time.split(':');
+      startDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
+    }
+    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+
+    // Everything worth knowing about the match and its tournament, since
+    // the calendar app's "location" field isn't always tappable/mapped the
+    // same way on every platform — repeating it as plain text here means
+    // it's readable either way.
+    const notes = [
+      `${homeTeam} vs ${awayTeam}`,
+      tournament?.name ? `Torneo: ${tournament.name}` : null,
+      tournament?.category ? `Categoria: ${tournament.category}` : null,
+      match.round ? `Turno: ${translateRoundName(match.round)}` : null,
+      venueName ? `Campo: ${venueName}` : null,
+      venueAddress ? `Indirizzo: ${venueAddress}` : null,
+      tournament?.slug ? `${PUBLIC_WEB_URL}/tournament/${tournament.slug}` : null,
+    ].filter(Boolean).join('\n');
+
+    return { title, notes, location, startDate, endDate };
+  };
+
   // Player ratings bottom sheet — shows how each player was scored for a
   // given match, in traditional lineup order per sport (e.g. for calcio:
   // goalkeeper → defenders → midfielders → forwards), matching how
@@ -373,53 +475,20 @@ export default function TournamentPublicPage() {
     }
   };
 
-  // Add to calendar function
+  // Add to calendar function — single match, via a Google Calendar web
+  // link. This is the fallback used on web (where native calendar sync
+  // isn't available) and stays available per-match everywhere else too.
   const handleAddToCalendar = async (match: Match) => {
-    const homeTeam = getTeamName(match.home_team_id);
-    const awayTeam = getTeamName(match.away_team_id);
-    const title = `${homeTeam} vs ${awayTeam}`;
-
-    // A match can override the tournament's own venue with its own pitch —
-    // prefer that, and fall back through the tournament's venue name/
-    // address and finally its plain location string.
-    const venueName = match.venue_name || tournament?.venue_name || '';
-    const venueAddress = match.venue_address || tournament?.venue_address || '';
-    const location = [venueName, venueAddress].filter(Boolean).join(', ') || tournament?.location || '';
-
-    // Parse date and time
-    let startDate = new Date();
-    if (match.match_date) {
-      startDate = new Date(match.match_date);
-    }
-    if (match.match_time) {
-      const [hours, minutes] = match.match_time.split(':');
-      startDate.setHours(parseInt(hours) || 0, parseInt(minutes) || 0, 0, 0);
-    }
-
-    const endDate = new Date(startDate.getTime() + 2 * 60 * 60 * 1000); // 2 hours duration
+    const { title, notes, location, startDate, endDate } = buildMatchCalendarDetails(match);
 
     // Format for calendar URLs
     const formatDate = (d: Date) => d.toISOString().replace(/-|:|\.\d{3}/g, '');
     const startStr = formatDate(startDate);
     const endStr = formatDate(endDate);
 
-    // Everything worth knowing about the match and its tournament, since
-    // the calendar app's "location" field isn't always tappable/mapped the
-    // same way on every platform — repeating it as plain text here means
-    // it's readable either way.
-    const detailsLines = [
-      `${homeTeam} vs ${awayTeam}`,
-      tournament?.name ? `Torneo: ${tournament.name}` : null,
-      tournament?.category ? `Categoria: ${tournament.category}` : null,
-      match.round ? `Turno: ${translateRoundName(match.round)}` : null,
-      venueName ? `Campo: ${venueName}` : null,
-      venueAddress ? `Indirizzo: ${venueAddress}` : null,
-      tournament?.slug ? `${(process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '')}/tournament/${tournament.slug}` : null,
-    ].filter(Boolean).join('\n');
-
     // Create Google Calendar URL
-    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(detailsLines)}`;
-    
+    const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(title)}&dates=${startStr}/${endStr}&location=${encodeURIComponent(location)}&details=${encodeURIComponent(notes)}`;
+
     // For iOS, we can try to open the calendar app
     if (Platform.OS === 'ios') {
       Alert.alert(
@@ -433,6 +502,57 @@ export default function TournamentPublicPage() {
     } else {
       // For Android and web, open Google Calendar
       Linking.openURL(googleUrl);
+    }
+  };
+
+  // Matches missing from the native-calendar sync map, or present but with
+  // a date/time that no longer matches what was last synced — exactly what
+  // "Aggiorna partite del calendario" needs to touch. Everything else in
+  // `matches` is already synced and unchanged, and is left alone.
+  const pendingCalendarMatches = getPendingCalendarMatches(matches, calendarSyncMap);
+  const calendarSyncNeedsUpdate = Object.keys(calendarSyncMap).length > 0 && pendingCalendarMatches.length > 0;
+
+  // Bulk "add/update all matches" — creates a native calendar event for
+  // every match not yet synced, and updates (in place, same event) any
+  // synced match whose date/time changed since. Matches that are already
+  // synced and unchanged are never touched, so this is safe to press again
+  // any time, not just when the button turns red.
+  const handleBulkCalendarSync = async () => {
+    if (!tournament || pendingCalendarMatches.length === 0 || syncingCalendar) return;
+    setSyncingCalendar(true);
+    try {
+      const inputs = pendingCalendarMatches.map((match) => {
+        const { title, notes, location, startDate, endDate } = buildMatchCalendarDetails(match);
+        return {
+          matchId: match.id,
+          match_date: match.match_date ?? null,
+          match_time: match.match_time ?? null,
+          title,
+          notes,
+          location,
+          startDate,
+          endDate,
+        };
+      });
+      const result = await syncMatchesToCalendar(tournament.id, inputs);
+      if (!result.granted) {
+        Alert.alert(
+          t('matches.calendarPermissionTitle', 'Permesso Calendario necessario'),
+          t('matches.calendarPermissionDenied', "Per aggiungere le partite al calendario, consenti l'accesso al Calendario a Rival Hub nelle impostazioni del telefono.")
+        );
+        return;
+      }
+      setCalendarSyncMap(await getMatchCalendarSyncMap(tournament.id));
+      if (result.updatedCount > 0 && result.addedCount === 0) {
+        Alert.alert(t('common.success'), t('matches.calendarUpdated', 'Calendario aggiornato: {{count}} partite modificate.', { count: result.updatedCount }));
+      } else {
+        Alert.alert(t('common.success'), t('matches.calendarAdded', 'Partite aggiunte al calendario.'));
+      }
+    } catch (error) {
+      console.error('Bulk calendar sync error:', error);
+      Alert.alert(t('common.error'));
+    } finally {
+      setSyncingCalendar(false);
     }
   };
 
@@ -589,6 +709,15 @@ export default function TournamentPublicPage() {
         {/* Standings Tab */}
         {activeTab === 'standings' && (
           <View style={styles.tabContent}>
+            {standings.length > 0 && organizerHasSocialGraphicsPlan && (
+              <TouchableOpacity
+                style={styles.shareGraphicButton}
+                onPress={() => setShowStandingsGraphic(true)}
+              >
+                <Ionicons name="share-social-outline" size={16} color="#000" />
+                <Text style={styles.shareGraphicButtonText}>{t('social.shareGraphic', 'Condividi Grafica')}</Text>
+              </TouchableOpacity>
+            )}
             {standings.length === 0 ? <EmptyState icon="podium-outline" title={t('stats.noStandings', 'No standings')} /> : (
               <View style={styles.standingsTable}>
                 <View style={styles.standingsHeader}>
@@ -684,6 +813,27 @@ export default function TournamentPublicPage() {
         {/* Matches Tab */}
         {activeTab === 'matches' && (
           <View style={styles.tabContent}>
+            {/* Bulk "add all matches to my calendar" — native calendar sync
+                only (expo-calendar has no web build), hidden entirely when
+                unsupported or when there's nothing to add yet. Turns red
+                and switches to "update" once the organizer changes a
+                match's date/time, and then touches only that match. */}
+            {matches.length > 0 && isCalendarSyncSupported() && (
+              <TouchableOpacity
+                style={[styles.bulkCalendarButton, calendarSyncNeedsUpdate && styles.bulkCalendarButtonUpdate]}
+                onPress={handleBulkCalendarSync}
+                disabled={syncingCalendar}
+              >
+                <Ionicons name={calendarSyncNeedsUpdate ? 'refresh' : 'calendar'} size={18} color="#FFF" />
+                <Text style={styles.bulkCalendarButtonText}>
+                  {syncingCalendar
+                    ? t('common.loading', 'Loading...')
+                    : calendarSyncNeedsUpdate
+                      ? t('matches.updateCalendar', 'Aggiorna partite del calendario')
+                      : t('matches.addAllToCalendar', 'Aggiungi partite al calendario')}
+                </Text>
+              </TouchableOpacity>
+            )}
             {matches.length === 0 ? <EmptyState icon="football-outline" title={t('tournaments.noMatches', 'No matches')} /> : (
               sortedRounds.map(([round, roundMatches]) => (
                 <View key={round} style={styles.matchesGroup}>
@@ -802,6 +952,22 @@ export default function TournamentPublicPage() {
                         </View>
                         {/* Date and Time */}
                         <Text style={styles.matchDateTime}>{formatMatchDateTime(match)}</Text>
+                        {/* Venue — same match-then-tournament fallback the
+                            calendar button already uses, so anything shown
+                            here is exactly what gets added to the user's
+                            calendar. Hidden entirely when neither is set. */}
+                        {(() => {
+                          const { name: venueName, address: venueAddress } = getMatchVenue(match);
+                          if (!venueName && !venueAddress) return null;
+                          return (
+                            <View style={styles.matchVenueRow}>
+                              <Ionicons name="location-outline" size={14} color="#666" />
+                              <Text style={styles.matchVenueText} numberOfLines={2}>
+                                {[venueName, venueAddress].filter(Boolean).join(' • ')}
+                              </Text>
+                            </View>
+                          );
+                        })()}
                         {/* Ratings — shown regardless of live/completed status, since
                             the organizer can score players any time after the match.
                             Not calcio-specific: role-based sorting/labels already
@@ -1860,6 +2026,17 @@ export default function TournamentPublicPage() {
           </View>
         </View>
       </Modal>
+
+      {showStandingsGraphic && (
+        <SocialGraphicsGenerator
+          visible
+          onClose={() => setShowStandingsGraphic(false)}
+          template="standings"
+          data={{
+            rows: standings.map((s) => ({ position: s.position, teamName: s.team_name, played: s.played, points: s.points })),
+          } as StandingsGraphicData}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -1914,6 +2091,11 @@ const styles = StyleSheet.create({
   standingsCell: { fontSize: 13, color: '#000', textAlign: 'center' },
   teamCell: { flexDirection: 'row', alignItems: 'center' },
   teamNameCell: { fontSize: 13, fontWeight: '600', color: '#000', marginLeft: 8, flex: 1 },
+  bulkCalendarButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#000', borderRadius: 14, paddingVertical: 14, marginBottom: 20 },
+  bulkCalendarButtonUpdate: { backgroundColor: '#DC2626' },
+  bulkCalendarButtonText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
+  shareGraphicButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderWidth: 1.5, borderColor: '#000', borderRadius: 14, paddingVertical: 12, marginBottom: 16 },
+  shareGraphicButtonText: { fontSize: 14, fontWeight: '700', color: '#000' },
   matchesGroup: { marginBottom: 24 },
   matchesGroupTitle: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 12 },
   matchCard: { borderWidth: 2, borderColor: '#000', borderRadius: 24, paddingVertical: 14, paddingHorizontal: 8, marginBottom: 8 },
@@ -1931,6 +2113,8 @@ const styles = StyleSheet.create({
   tennisGameScore: { fontSize: 12, fontWeight: '600', color: '#666' },
   tennisPointScore: { fontSize: 14, fontWeight: '700', color: '#2D8A2E', backgroundColor: '#E8F5E9', paddingHorizontal: 8, paddingVertical: 2, borderRadius: 4, marginTop: 2 },
   matchDateTime: { fontSize: 12, color: '#666', textAlign: 'center', marginTop: 8 },
+  matchVenueRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 4, paddingHorizontal: 12 },
+  matchVenueText: { fontSize: 12, color: '#666', textAlign: 'center' },
   matchActionsRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 10, gap: 10 },
   ratingsSheetButton: { flexDirection: 'row', alignSelf: 'center', alignItems: 'center', gap: 6, borderWidth: 1.5, borderColor: '#000', borderRadius: 14, paddingVertical: 6, paddingHorizontal: 14, marginTop: 10 },
   ratingsSheetButtonText: { fontSize: 13, fontWeight: '700', color: '#000' },

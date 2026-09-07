@@ -1,5 +1,5 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Request, Depends, Header, UploadFile, File, Form
-from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, RedirectResponse
+from fastapi.responses import JSONResponse, FileResponse, HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -27,6 +27,7 @@ import base64
 import asyncio
 import hmac
 import hashlib
+import json
 from urllib.parse import quote
 
 from db_supabase import SupabaseDB
@@ -53,7 +54,20 @@ HIGHLIGHTS_RETENTION_DAYS = 365
 # their own billing for a subscription that unlocks a feature inside the app).
 # Must match the entitlement identifier created in the RevenueCat dashboard.
 HIGHLIGHTS_PLUS_ENTITLEMENT = os.environ.get("REVENUECAT_ENTITLEMENT_ID", "rival_hub_pro")
+
+# "Grafiche Social" subscription — independent of Highlights Plus above
+# (same RevenueCat project, its own entitlement + offering + products, so a
+# user can hold either, both, or neither). Must match the entitlement
+# identifier created in the RevenueCat dashboard.
+SOCIAL_GRAPHICS_ENTITLEMENT = os.environ.get("REVENUECAT_SOCIAL_GRAPHICS_ENTITLEMENT_ID", "social_graphics")
+
 REVENUECAT_WEBHOOK_SECRET = os.environ.get("REVENUECAT_WEBHOOK_SECRET", "")
+
+# Shared secret for the external cron that pings /highlights/cleanup-expired
+# periodically (Render Cron Jobs, or any uptime-pinger) — same idea as
+# REVENUECAT_WEBHOOK_SECRET above, just for our own scheduled job instead of
+# a third party's webhook.
+CRON_SECRET = os.environ.get("CRON_SECRET", "")
 
 # Supabase connection (initialized in the startup event, since acreate_client is async)
 SUPABASE_URL = os.environ['SUPABASE_URL']
@@ -70,9 +84,118 @@ supabase_client = None  # raw client, used directly for Storage (db is the Mongo
 # bypass the code check entirely.
 HIGHLIGHT_URL_EXPIRY_SECONDS = 3600
 
-async def get_highlight_signed_url(file_path: str) -> str:
+# ===================== GOOGLE DRIVE (HIGHLIGHTS STORAGE) =====================
+# New highlights are stored in a folder on the organizer's own Google Drive
+# (shared with this service account as Editor) instead of Supabase Storage,
+# to use his own Drive quota rather than paying for more Supabase storage.
+# Every highlight document has a "storage" field ("drive" | "supabase") so
+# whatever was already on Supabase before this migration keeps working
+# forever — both code paths coexist, nothing gets moved.
+#
+# Uses OAuth as the organizer's own Google account, not a service account:
+# a bare service account has zero Drive storage quota of its own, and Google
+# refuses to let it create files in a folder shared from a personal account
+# ("storageQuotaExceeded") no matter what role it's given on that folder —
+# only Workspace Shared Drives or domain-wide delegation work with service
+# accounts, neither of which applies to a personal @gmail.com account.
+# GOOGLE_DRIVE_REFRESH_TOKEN comes from a one-time manual OAuth consent
+# (see the "App per desktop" OAuth client in Google Cloud Console); the
+# access token it's exchanged for on each use refreshes itself indefinitely.
+GOOGLE_DRIVE_CLIENT_ID = os.environ.get('GOOGLE_DRIVE_CLIENT_ID', '')
+GOOGLE_DRIVE_CLIENT_SECRET = os.environ.get('GOOGLE_DRIVE_CLIENT_SECRET', '')
+GOOGLE_DRIVE_REFRESH_TOKEN = os.environ.get('GOOGLE_DRIVE_REFRESH_TOKEN', '')
+GOOGLE_DRIVE_FOLDER_ID = os.environ.get('GOOGLE_DRIVE_FOLDER_ID', '')
+GOOGLE_DRIVE_SCOPES = ['https://www.googleapis.com/auth/drive']
+_drive_service = None
+
+def drive_is_configured() -> bool:
+    return bool(GOOGLE_DRIVE_CLIENT_ID and GOOGLE_DRIVE_CLIENT_SECRET and GOOGLE_DRIVE_REFRESH_TOKEN and GOOGLE_DRIVE_FOLDER_ID)
+
+def _get_drive_service():
+    """Lazily builds the Drive API client. Returns None when Drive isn't
+    configured, so upload_highlight can fall back to Supabase instead of
+    crashing anywhere that hasn't set these env vars yet."""
+    global _drive_service
+    if _drive_service is not None:
+        return _drive_service
+    if not drive_is_configured():
+        return None
+    from google.oauth2.credentials import Credentials as GoogleUserCredentials
+    from googleapiclient.discovery import build as build_google_api_client
+    creds = GoogleUserCredentials(
+        None,  # no cached access token — refreshed on first use below
+        refresh_token=GOOGLE_DRIVE_REFRESH_TOKEN,
+        client_id=GOOGLE_DRIVE_CLIENT_ID,
+        client_secret=GOOGLE_DRIVE_CLIENT_SECRET,
+        token_uri="https://oauth2.googleapis.com/token",
+        scopes=GOOGLE_DRIVE_SCOPES,
+    )
+    _drive_service = build_google_api_client('drive', 'v3', credentials=creds, cache_discovery=False)
+    return _drive_service
+
+def _drive_upload_sync(file_name: str, content: bytes, mime_type: str) -> str:
+    from googleapiclient.http import MediaIoBaseUpload
+    service = _get_drive_service()
+    media = MediaIoBaseUpload(io.BytesIO(content), mimetype=mime_type, resumable=False)
+    metadata = {"name": file_name, "parents": [GOOGLE_DRIVE_FOLDER_ID]}
+    created = service.files().create(body=metadata, media_body=media, fields="id").execute()
+    return created["id"]
+
+async def drive_upload(file_name: str, content: bytes, mime_type: str) -> str:
+    """Uploads bytes to the shared Drive folder, returns the Drive file ID
+    (stored as this highlight's file_path). Runs in a thread since the
+    underlying googleapiclient library is synchronous."""
+    return await asyncio.to_thread(_drive_upload_sync, file_name, content, mime_type)
+
+def _drive_download_sync(file_id: str) -> bytes:
+    from googleapiclient.http import MediaIoBaseDownload
+    service = _get_drive_service()
+    request = service.files().get_media(fileId=file_id)
+    buffer = io.BytesIO()
+    downloader = MediaIoBaseDownload(buffer, request)
+    done = False
+    while not done:
+        _, done = downloader.next_chunk()
+    return buffer.getvalue()
+
+async def drive_download(file_id: str) -> bytes:
+    return await asyncio.to_thread(_drive_download_sync, file_id)
+
+def _drive_delete_sync(file_id: str):
+    try:
+        _get_drive_service().files().delete(fileId=file_id).execute()
+    except Exception as e:
+        logger.warning(f"Drive delete failed for file {file_id}: {e}")
+
+async def drive_delete(file_id: str):
+    await asyncio.to_thread(_drive_delete_sync, file_id)
+
+async def drive_delete_many(file_ids: List[str]):
+    for fid in file_ids:
+        await drive_delete(fid)
+
+def _highlight_stream_token(highlight_id: str, expires_at: int) -> str:
+    msg = f"{highlight_id}:{expires_at}"
+    return hmac.new(SECRET_KEY.encode(), msg.encode(), hashlib.sha256).hexdigest()[:32]
+
+def _highlight_stream_url(highlight_id: str) -> str:
+    """A self-contained, time-limited link for a Drive-backed highlight —
+    the frontend uses this exactly like a Supabase signed URL (plain
+    <Image>/<Video> source, no auth header), it just resolves through our
+    own /stream endpoint instead of Supabase's CDN."""
+    expires_at = int(datetime.now(timezone.utc).timestamp()) + HIGHLIGHT_URL_EXPIRY_SECONDS
+    token = _highlight_stream_token(highlight_id, expires_at)
+    return f"{APP_PUBLIC_URL}/api/highlights/{highlight_id}/stream?expires={expires_at}&token={token}"
+
+async def get_highlight_signed_url(highlight: dict) -> str:
+    """Given a highlight document, returns a URL the frontend can use
+    directly as a media source — a real Supabase signed URL for anything
+    uploaded before the Drive migration, or our own signed proxy-download
+    link for anything stored on Drive."""
+    if highlight.get("storage") == "drive":
+        return _highlight_stream_url(highlight["id"])
     signed = await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).create_signed_url(
-        file_path, HIGHLIGHT_URL_EXPIRY_SECONDS
+        highlight["file_path"], HIGHLIGHT_URL_EXPIRY_SECONDS
     )
     return signed.get("signedURL") or signed.get("signedUrl")
 
@@ -210,9 +333,16 @@ class User(BaseModel):
     name: str
     picture: Optional[str] = None
     created_at: datetime
-    plan: str = "free"  # free | plus
+    plan: str = "free"  # free | plus  (Highlights Plus)
     plan_expiry: Optional[datetime] = None
     plan_type: Optional[str] = None  # monthly | annual
+    # "Grafiche Social" — a second, independent subscription: a user can
+    # have Highlights Plus, Grafiche Social, both, or neither, so this is
+    # deliberately its own plan/expiry/type triplet rather than reusing the
+    # one above.
+    social_graphics_plan: str = "free"  # free | plus
+    social_graphics_plan_expiry: Optional[datetime] = None
+    social_graphics_plan_type: Optional[str] = None  # monthly | annual
 
 class UserResponse(BaseModel):
     user_id: str
@@ -222,6 +352,9 @@ class UserResponse(BaseModel):
     plan: str = "free"
     plan_expiry: Optional[datetime] = None
     plan_type: Optional[str] = None
+    social_graphics_plan: str = "free"
+    social_graphics_plan_expiry: Optional[datetime] = None
+    social_graphics_plan_type: Optional[str] = None
 
 # Tournament Models
 class TournamentCreate(BaseModel):
@@ -281,6 +414,13 @@ class Tournament(BaseModel):
     is_public: bool = True
     access_code: Optional[str] = None
     created_at: datetime
+    # Computed, not stored — whether the organizer's own account has an
+    # active "Grafiche Social" plan. Only set by get_tournament_by_slug
+    # (the public endpoint): it lets the public standings page decide
+    # whether to show "Condividi Grafica" WITHOUT ever checking the
+    # *visitor's* own plan, which would be meaningless (a random visitor
+    # isn't the one who'd be paying for it). Defaults to None elsewhere.
+    organizer_has_social_graphics_plan: Optional[bool] = None
 
 # Collaborator Models — invite people to help manage a tournament, either
 # with full access or limited to specific teams they own the roster/lineup
@@ -289,9 +429,14 @@ class Tournament(BaseModel):
 class CollaboratorInviteCreate(BaseModel):
     team_ids: List[str] = []  # empty = full access to the whole tournament
     email: Optional[str] = None  # if given, emails the invite code/link directly
+    # Whether this collaborator may manage teams/players/formations and
+    # assign match ratings ("voti") — unchecked leaves them with matches,
+    # results (minus ratings), news, highlights and settings-view only.
+    can_manage_players: bool = True
 
 class CollaboratorUpdate(BaseModel):
     team_ids: Optional[List[str]] = None
+    can_manage_players: Optional[bool] = None
 
 class CollaboratorRedeem(BaseModel):
     code: str
@@ -301,6 +446,7 @@ class Collaborator(BaseModel):
     tournament_id: str
     invite_code: str
     team_ids: List[str] = []
+    can_manage_players: bool = True
     status: str = "pending"  # pending, active
     user_id: Optional[str] = None
     email: Optional[str] = None
@@ -639,7 +785,7 @@ def generate_invite_code() -> str:
     chars = chars.replace('0', '').replace('O', '').replace('I', '').replace('1', '')
     return 'RIVAL-' + ''.join(random.choices(chars, k=4))
 
-async def get_tournament_for_manager(tournament_id: str, current_user: "User"):
+async def get_tournament_for_manager(tournament_id: str, current_user: "User", require_player_management: bool = False):
     """Authorize a tournament-management request: the organizer always has
     full access, and so does any active collaborator. Team-level
     restriction (a collaborator limited to specific teams) is enforced by
@@ -647,7 +793,12 @@ async def get_tournament_for_manager(tournament_id: str, current_user: "User"):
     restricted collaborator's view — not yet a hard boundary on every
     endpoint here, which would need per-endpoint team-ownership checks
     across teams/players/matches/etc. Raises 404 if the tournament doesn't
-    exist, 403 if the user has no access to it at all."""
+    exist, 403 if the user has no access to it at all.
+
+    Pass require_player_management=True for endpoints that manage teams,
+    players or formations (or assign ratings) — a collaborator invited
+    with can_manage_players=False gets a 403 there even though they can
+    otherwise manage the tournament."""
     tournament = await db.tournaments.find_one({"id": tournament_id}, {"_id": 0})
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
@@ -659,7 +810,22 @@ async def get_tournament_for_manager(tournament_id: str, current_user: "User"):
     )
     if not collab:
         raise HTTPException(status_code=403, detail="Non autorizzato")
+    if require_player_management and not collab.get("can_manage_players", True):
+        raise HTTPException(status_code=403, detail="Non hai il permesso di gestire la squadra")
     return tournament
+
+async def user_can_manage_players(tournament: dict, current_user: "User") -> bool:
+    """Whether this user — already known to have general access to
+    `tournament` via get_tournament_for_manager — may also manage
+    teams/players/formations and assign ratings. Always true for the
+    organizer; for a collaborator, follows their can_manage_players flag."""
+    if tournament["organizer_id"] == current_user.user_id:
+        return True
+    collab = await db.tournament_collaborators.find_one(
+        {"tournament_id": tournament["id"], "user_id": current_user.user_id, "status": "active"},
+        {"_id": 0}
+    )
+    return bool(collab and collab.get("can_manage_players", True))
 
 # A phone camera photo (3000-4000px wide, several MB) is wildly oversized for
 # what's ever actually displayed (a carousel thumbnail or a phone screen), and
@@ -764,8 +930,12 @@ async def cleanup_expired_highlights():
     ).to_list(1000)
     
     if expired:
-        paths = [h["file_path"] for h in expired]
-        await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(paths)
+        supabase_paths = [h["file_path"] for h in expired if h.get("storage") != "drive"]
+        drive_ids = [h["file_path"] for h in expired if h.get("storage") == "drive"]
+        if supabase_paths:
+            await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(supabase_paths)
+        if drive_ids:
+            await drive_delete_many(drive_ids)
 
     for highlight in expired:
         await db.highlights.delete_one({"id": highlight["id"]})
@@ -816,10 +986,14 @@ async def send_expiry_warning_notifications():
         )
 
 async def send_subscription_expiry_warnings():
-    """Email PRO subscribers whose plan expires in ~7 days. Runs alongside
-    the highlights expiry check on the same startup-triggered cadence."""
+    """Email PRO subscribers whose plan expires in ~7 days, and separately
+    Grafiche Social subscribers whose plan does — two independent
+    subscriptions, so a user could get either warning, both, or neither.
+    Runs alongside the highlights expiry check on the same
+    startup-triggered cadence."""
     now = datetime.now(timezone.utc)
     warning_date = now + timedelta(days=7)
+
     users = await db.users.find({
         "plan": "plus",
         "plan_expiry": {"$lte": warning_date, "$gt": now},
@@ -833,6 +1007,20 @@ async def send_subscription_expiry_warnings():
             expiry = datetime.fromisoformat(expiry)
         asyncio.create_task(send_subscription_expiring_email(u["email"], u.get("name") or "", expiry))
         await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"plan_expiry_warning_sent": True}})
+
+    social_graphics_users = await db.users.find({
+        "social_graphics_plan": "plus",
+        "social_graphics_plan_expiry": {"$lte": warning_date, "$gt": now},
+        "social_graphics_plan_expiry_warning_sent": {"$ne": True}
+    }).to_list(1000)
+    for u in social_graphics_users:
+        if not u.get("email"):
+            continue
+        expiry = u["social_graphics_plan_expiry"]
+        if isinstance(expiry, str):
+            expiry = datetime.fromisoformat(expiry)
+        asyncio.create_task(send_social_graphics_expiring_email(u["email"], u.get("name") or "", expiry))
+        await db.users.update_one({"user_id": u["user_id"]}, {"$set": {"social_graphics_plan_expiry_warning_sent": True}})
 
 def _parse_stored_date(date_str: Optional[str]):
     """Tournament dates are stored as free-text, either 'DD/MM/YYYY' (from the
@@ -967,6 +1155,11 @@ def _plan_is_active(plan: Optional[str], plan_expiry) -> bool:
 def user_has_highlights_plus(user: User) -> bool:
     """Whether a user's Highlights Plus subscription is currently active."""
     return _plan_is_active(user.plan, user.plan_expiry)
+
+def user_has_social_graphics_plan(user: User) -> bool:
+    """Whether a user's "Grafiche Social" subscription is currently active —
+    independent of Highlights Plus above."""
+    return _plan_is_active(user.social_graphics_plan, user.social_graphics_plan_expiry)
 
 # ===================== EMAIL (RESEND) =====================
 # Transactional email for the handful of moments that genuinely need one:
@@ -1190,6 +1383,19 @@ async def send_subscription_activated_email(to: str, name: str, expiry: Optional
     html = _email_shell(preheader="Il tuo abbonamento PRO è attivo.", heading="Benvenuto nel piano PRO! 🎉", body_html=body)
     return await send_email(to, "Benvenuto nel piano PRO", html)
 
+async def send_social_graphics_activated_email(to: str, name: str, expiry: Optional[datetime]):
+    rows = [_detail_row("Data di rinnovo:", expiry.strftime("%d/%m/%Y") if expiry else "—")]
+    features = """
+    <p style="line-height:1.9;">✓ Grafiche social illimitate<br/>✓ Formato post e storia<br/>✓ Prossima partita, risultato, classifica, formazione</p>
+    """
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Congratulazioni! Il tuo abbonamento Grafiche Social è stato attivato con successo. Ora puoi esportare le grafiche promozionali dei tuoi tornei.</p>
+    {features}
+    """ + _detail_box(rows) + '<p style="margin-top:12px;">Grazie per aver scelto Rival Hub!</p>'
+    html = _email_shell(preheader="Il tuo abbonamento Grafiche Social è attivo.", heading="Grafiche Social attivate! 🎉", body_html=body)
+    return await send_email(to, "Grafiche Social attivate", html)
+
 async def send_subscription_expiring_email(to: str, name: str, expiry: datetime):
     body = f"""
     <p>Ciao {name}!</p>
@@ -1198,6 +1404,15 @@ async def send_subscription_expiring_email(to: str, name: str, expiry: datetime)
         '<p style="margin-top:12px;">Se non rinnovi, il tuo account tornerà al piano gratuito.</p>'
     html = _email_shell(preheader="Il tuo abbonamento PRO sta per scadere.", heading="Il tuo abbonamento PRO sta per scadere", body_html=body)
     return await send_email(to, "Il tuo abbonamento PRO scade tra 7 giorni", html)
+
+async def send_social_graphics_expiring_email(to: str, name: str, expiry: datetime):
+    body = f"""
+    <p>Ciao {name}!</p>
+    <p>Ti ricordiamo che il tuo abbonamento Grafiche Social scadrà tra 7 giorni. Per continuare a esportare le grafiche promozionali dei tuoi tornei, rinnova il tuo abbonamento.</p>
+    """ + _detail_box([_detail_row("Data di scadenza:", expiry.strftime("%d/%m/%Y"))]) + \
+        '<p style="margin-top:12px;">Se non rinnovi, il tuo account tornerà al piano gratuito per questa funzionalità.</p>'
+    html = _email_shell(preheader="Il tuo abbonamento Grafiche Social sta per scadere.", heading="Il tuo abbonamento Grafiche Social sta per scadere", body_html=body)
+    return await send_email(to, "Il tuo abbonamento Grafiche Social scade tra 7 giorni", html)
 
 async def send_highlights_expiring_email(to: str, name: str, tournament_name: str, expiry: datetime, photos: int, videos: int):
     rows = [
@@ -1571,8 +1786,12 @@ async def delete_account(current_user: User = Depends(get_current_user)):
 
         highlights = await db.highlights.find({"tournament_id": {"$in": tournament_ids}}, {"_id": 0}).to_list(10000)
         if highlights:
-            paths = [h["file_path"] for h in highlights]
-            await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(paths)
+            supabase_paths = [h["file_path"] for h in highlights if h.get("storage") != "drive"]
+            drive_ids = [h["file_path"] for h in highlights if h.get("storage") == "drive"]
+            if supabase_paths:
+                await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove(supabase_paths)
+            if drive_ids:
+                await drive_delete_many(drive_ids)
             await db.highlights.delete_many({"tournament_id": {"$in": tournament_ids}})
 
         teams = await db.teams.find({"tournament_id": {"$in": tournament_ids}}, {"_id": 0}).to_list(1000)
@@ -1734,6 +1953,11 @@ async def get_tournament_by_slug(slug: str, code: Optional[str] = None):
     # Don't leak the access code itself in the public payload — it's only
     # meant to be read back by the organizer via their authenticated routes.
     tournament.pop("access_code", None)
+
+    organizer = await db.users.find_one({"user_id": tournament["organizer_id"]}, {"_id": 0})
+    tournament["organizer_has_social_graphics_plan"] = (
+        user_has_social_graphics_plan(User(**organizer)) if organizer else False
+    )
     return Tournament(**tournament)
 
 @api_router.get("/tournaments/{tournament_id}", response_model=Tournament)
@@ -1859,7 +2083,7 @@ async def get_my_tournament_access(
     if not tournament:
         raise HTTPException(status_code=404, detail="Torneo non trovato")
     if tournament["organizer_id"] == current_user.user_id:
-        return {"role": "organizer", "team_ids": None}
+        return {"role": "organizer", "team_ids": None, "can_manage_players": True}
     collab = await db.tournament_collaborators.find_one(
         {"tournament_id": tournament_id, "user_id": current_user.user_id, "status": "active"},
         {"_id": 0}
@@ -1867,7 +2091,11 @@ async def get_my_tournament_access(
     if not collab:
         raise HTTPException(status_code=403, detail="Non autorizzato")
     team_ids = collab.get("team_ids") or []
-    return {"role": "collaborator", "team_ids": (team_ids or None)}
+    return {
+        "role": "collaborator",
+        "team_ids": (team_ids or None),
+        "can_manage_players": collab.get("can_manage_players", True),
+    }
 
 @api_router.post("/tournaments/{tournament_id}/collaborators/invite", response_model=Collaborator)
 async def create_collaborator_invite(
@@ -1895,6 +2123,7 @@ async def create_collaborator_invite(
         "tournament_id": tournament_id,
         "invite_code": generate_invite_code(),
         "team_ids": invite_data.team_ids,
+        "can_manage_players": invite_data.can_manage_players,
         "status": "pending",
         "user_id": None,
         "email": None,
@@ -1934,6 +2163,7 @@ async def update_collaborator(
     if not collab:
         raise HTTPException(status_code=404, detail="Collaboratore non trovato")
 
+    set_fields = {}
     if update_data.team_ids is not None:
         if update_data.team_ids:
             valid_count = await db.teams.count_documents(
@@ -1941,8 +2171,13 @@ async def update_collaborator(
             )
             if valid_count != len(set(update_data.team_ids)):
                 raise HTTPException(status_code=400, detail="Squadra non valida per questo torneo")
+        set_fields["team_ids"] = update_data.team_ids
+    if update_data.can_manage_players is not None:
+        set_fields["can_manage_players"] = update_data.can_manage_players
+
+    if set_fields:
         await db.tournament_collaborators.update_one(
-            {"id": collaborator_id}, {"$set": {"team_ids": update_data.team_ids}}
+            {"id": collaborator_id}, {"$set": set_fields}
         )
 
     updated = await db.tournament_collaborators.find_one({"id": collaborator_id}, {"_id": 0})
@@ -2026,7 +2261,7 @@ async def create_team(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new team"""
-    await get_tournament_for_manager(tournament_id, current_user)
+    await get_tournament_for_manager(tournament_id, current_user, require_player_management=True)
 
     now = datetime.now(timezone.utc)
     team_id = f"team_{uuid.uuid4().hex[:12]}"
@@ -2063,9 +2298,9 @@ async def update_team(
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
+
     # Verify access
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     update_data = {k: v for k, v in team_data.dict().items() if v is not None}
     
@@ -2084,9 +2319,9 @@ async def delete_team(
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
+
     # Verify access
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     # Delete players
     await db.players.delete_many({"team_id": team_id})
@@ -2109,9 +2344,9 @@ async def create_player(
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
+
     # Verify access
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     now = datetime.now(timezone.utc)
     player_id = f"player_{uuid.uuid4().hex[:12]}"
@@ -2156,8 +2391,8 @@ async def update_player(
     team = await db.teams.find_one({"id": player["team_id"]}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     update_data = {k: v for k, v in player_data.dict().items() if v is not None}
     
@@ -2181,8 +2416,8 @@ async def delete_player(
     team = await db.teams.find_one({"id": player["team_id"]}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     await db.players.delete_one({"id": player_id})
     return {"message": "Giocatore eliminato"}
@@ -2241,9 +2476,9 @@ async def save_team_formation(
     team = await db.teams.find_one({"id": team_id}, {"_id": 0})
     if not team:
         raise HTTPException(status_code=404, detail="Squadra non trovata")
-    
+
     # Verify access
-    await get_tournament_for_manager(team["tournament_id"], current_user)
+    await get_tournament_for_manager(team["tournament_id"], current_user, require_player_management=True)
 
     now = datetime.now(timezone.utc)
 
@@ -2337,7 +2572,7 @@ async def create_match(
     current_user: User = Depends(get_current_user)
 ):
     """Create a new match"""
-    await get_tournament_for_manager(tournament_id, current_user)
+    tournament = await get_tournament_for_manager(tournament_id, current_user)
 
     now = datetime.now(timezone.utc)
     match_id = f"match_{uuid.uuid4().hex[:12]}"
@@ -2361,35 +2596,46 @@ async def create_match(
     
     await db.matches.insert_one(match_doc)
 
-    # Send notification to tournament followers
-    home_team = await db.teams.find_one({"id": match_data.home_team_id}, {"_id": 0, "name": 1})
-    away_team = await db.teams.find_one({"id": match_data.away_team_id}, {"_id": 0, "name": 1})
-    
-    if home_team and away_team:
-        date_str = match_data.match_date if match_data.match_date else "data da definire"
-        time_str = match_data.match_time if match_data.match_time else ""
-        
-        await notify_tournament_followers(
-            tournament_id,
-            f"Nuova partita nel Torneo {tournament['name']}",
-            f"{home_team['name']} vs {away_team['name']} il {date_str} {time_str}".strip(),
-            {"type": "new_match", "match_id": match_id, "tournament_id": tournament_id}
-        )
-        
-        # Notify team followers
-        await notify_team_followers(
-            match_data.home_team_id,
-            f"Partita programmata per {home_team['name']}",
-            f"Gioca il {date_str} {time_str} contro {away_team['name']}".strip(),
-            {"type": "team_match_scheduled", "match_id": match_id}
-        )
-        await notify_team_followers(
-            match_data.away_team_id,
-            f"Partita programmata per {away_team['name']}",
-            f"Gioca il {date_str} {time_str} contro {home_team['name']}".strip(),
-            {"type": "team_match_scheduled", "match_id": match_id}
-        )
-    
+    # Notifications are a best-effort side effect, never the reason this
+    # request should fail — the match above is already committed by this
+    # point, so any exception here (a push token query tripping over a
+    # Mongo-style operator the Supabase compat shim doesn't support, the
+    # Expo API being unreachable, etc.) used to surface as a 500 to the
+    # organizer with the match already created underneath it: the app
+    # showed "Add failed" every time, even though reloading the list
+    # always showed the new match. Swallow and log instead so a
+    # notification hiccup can never masquerade as a failed creation.
+    try:
+        home_team = await db.teams.find_one({"id": match_data.home_team_id}, {"_id": 0, "name": 1})
+        away_team = await db.teams.find_one({"id": match_data.away_team_id}, {"_id": 0, "name": 1})
+
+        if home_team and away_team:
+            date_str = match_data.match_date if match_data.match_date else "data da definire"
+            time_str = match_data.match_time if match_data.match_time else ""
+
+            await notify_tournament_followers(
+                tournament_id,
+                f"Nuova partita nel Torneo {tournament['name']}",
+                f"{home_team['name']} vs {away_team['name']} il {date_str} {time_str}".strip(),
+                {"type": "new_match", "match_id": match_id, "tournament_id": tournament_id}
+            )
+
+            # Notify team followers
+            await notify_team_followers(
+                match_data.home_team_id,
+                f"Partita programmata per {home_team['name']}",
+                f"Gioca il {date_str} {time_str} contro {away_team['name']}".strip(),
+                {"type": "team_match_scheduled", "match_id": match_id}
+            )
+            await notify_team_followers(
+                match_data.away_team_id,
+                f"Partita programmata per {away_team['name']}",
+                f"Gioca il {date_str} {time_str} contro {home_team['name']}".strip(),
+                {"type": "team_match_scheduled", "match_id": match_id}
+            )
+    except Exception as e:
+        logger.error(f"Failed to send new-match notifications for {match_id}: {e}")
+
     return Match(**match_doc)
 
 @api_router.get("/tournaments/{tournament_id}/matches", response_model=List[Match])
@@ -2482,20 +2728,18 @@ async def get_matches_live(tournament_id: str):
             has_game_data = len(rugby_events) > 0 or home_score > 0 or away_score > 0
             has_live_data = is_in_progress and has_game_data
         else:
-            # Soccer scoring - first try from events, then fallback to home_goals/away_goals
-            for event in events:
-                if event.get("event_type") == "goal":
-                    if event.get("team_id") == match.get("home_team_id"):
-                        home_score += 1
-                    else:
-                        away_score += 1
-            
-            # If no events but status is in_progress, use home_goals/away_goals
-            if len(events) == 0 and match.get("status") == "in_progress":
-                home_score = match.get("home_goals", 0) or 0
-                away_score = match.get("away_goals", 0) or 0
-            
-            # Has live data if has events OR status is in_progress
+            # Soccer: always read home_goals/away_goals directly, same as
+            # every other sport above — never recompute from event counts.
+            # This used to count "goal" events instead whenever any existed,
+            # which silently went stale the moment the organizer updated the
+            # score any other way (the quick +1/-1 buttons, or editing the
+            # result without re-saving every event) — the public live view
+            # kept showing the old event-derived count while the organizer's
+            # own screen (reading home_goals/away_goals) had already moved
+            # on, so the two disagreed (e.g. 6-4 for the organizer vs. a
+            # stale 6-8 for visitors).
+            home_score = match.get("home_goals", 0) or 0
+            away_score = match.get("away_goals", 0) or 0
             has_live_data = len(events) > 0 or match.get("status") == "in_progress"
         
         # Add live_score to match data
@@ -2571,47 +2815,54 @@ async def update_match(
         await db.matches.update_one({"id": match_id}, {"$set": update_data})
     
     updated = await db.matches.find_one({"id": match_id}, {"_id": 0})
-    
-    # Send notifications for score updates
-    if "home_goals" in update_data or "away_goals" in update_data:
-        home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
-        away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
-        
-        if home_team and away_team:
-            home_goals = updated.get("home_goals", 0) or 0
-            away_goals = updated.get("away_goals", 0) or 0
-            
-            if is_completing:
-                # Match ended notification
-                await notify_tournament_followers(
-                    match["tournament_id"],
-                    f"Risultato finale - {tournament['name']}",
-                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
-                    {"type": "match_ended", "match_id": match_id}
-                )
-                
-                # Team followers
-                await notify_team_followers(
-                    match["home_team_id"],
-                    "Partita terminata",
-                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
-                    {"type": "team_match_ended", "match_id": match_id}
-                )
-                await notify_team_followers(
-                    match["away_team_id"],
-                    "Partita terminata",
-                    f"{away_team['name']} {away_goals} - {home_goals} {home_team['name']}",
-                    {"type": "team_match_ended", "match_id": match_id}
-                )
-            else:
-                # Score update notification
-                await notify_tournament_followers(
-                    match["tournament_id"],
-                    f"Aggiornamento - {tournament['name']}",
-                    f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
-                    {"type": "score_update", "match_id": match_id}
-                )
-    
+
+    # Same reasoning as create_match: the update above is already committed,
+    # so a notification failure (score updates fire on every quick +1/-1 tap
+    # during a live match, so this runs constantly) must never turn an
+    # already-successful save into a false error for the organizer.
+    try:
+        # Send notifications for score updates
+        if "home_goals" in update_data or "away_goals" in update_data:
+            home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
+            away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
+
+            if home_team and away_team:
+                home_goals = updated.get("home_goals", 0) or 0
+                away_goals = updated.get("away_goals", 0) or 0
+
+                if is_completing:
+                    # Match ended notification
+                    await notify_tournament_followers(
+                        match["tournament_id"],
+                        f"Risultato finale - {tournament['name']}",
+                        f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                        {"type": "match_ended", "match_id": match_id}
+                    )
+
+                    # Team followers
+                    await notify_team_followers(
+                        match["home_team_id"],
+                        "Partita terminata",
+                        f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                        {"type": "team_match_ended", "match_id": match_id}
+                    )
+                    await notify_team_followers(
+                        match["away_team_id"],
+                        "Partita terminata",
+                        f"{away_team['name']} {away_goals} - {home_goals} {home_team['name']}",
+                        {"type": "team_match_ended", "match_id": match_id}
+                    )
+                else:
+                    # Score update notification
+                    await notify_tournament_followers(
+                        match["tournament_id"],
+                        f"Aggiornamento - {tournament['name']}",
+                        f"{home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                        {"type": "score_update", "match_id": match_id}
+                    )
+    except Exception as e:
+        logger.error(f"Failed to send match-update notifications for {match_id}: {e}")
+
     return Match(**updated)
 
 @api_router.delete("/matches/{match_id}")
@@ -2665,33 +2916,39 @@ async def create_match_event(
     
     await db.match_events.insert_one(event_doc)
 
-    # Send notification for goals
-    if event_data.event_type == "goal":
-        scoring_team = await db.teams.find_one({"id": event_data.team_id}, {"_id": 0, "name": 1})
-        home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
-        away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
-        
-        if scoring_team and home_team and away_team:
-            # Count current goals
-            home_goals = await db.match_events.count_documents({
-                "match_id": match_id,
-                "team_id": match["home_team_id"],
-                "event_type": "goal"
-            })
-            away_goals = await db.match_events.count_documents({
-                "match_id": match_id,
-                "team_id": match["away_team_id"],
-                "event_type": "goal"
-            })
-            
-            # Notify team followers of the goal
-            await notify_team_followers(
-                event_data.team_id,
-                f"GOOOL! {scoring_team['name']} segna!",
-                f"Risultato: {home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
-                {"type": "goal", "match_id": match_id, "team_id": event_data.team_id}
-            )
-    
+    # Same reasoning as create_match/update_match: the event above is
+    # already committed, so a notification failure must never surface as a
+    # false "failed" error for an event that was actually recorded.
+    try:
+        # Send notification for goals
+        if event_data.event_type == "goal":
+            scoring_team = await db.teams.find_one({"id": event_data.team_id}, {"_id": 0, "name": 1})
+            home_team = await db.teams.find_one({"id": match["home_team_id"]}, {"_id": 0, "name": 1})
+            away_team = await db.teams.find_one({"id": match["away_team_id"]}, {"_id": 0, "name": 1})
+
+            if scoring_team and home_team and away_team:
+                # Count current goals
+                home_goals = await db.match_events.count_documents({
+                    "match_id": match_id,
+                    "team_id": match["home_team_id"],
+                    "event_type": "goal"
+                })
+                away_goals = await db.match_events.count_documents({
+                    "match_id": match_id,
+                    "team_id": match["away_team_id"],
+                    "event_type": "goal"
+                })
+
+                # Notify team followers of the goal
+                await notify_team_followers(
+                    event_data.team_id,
+                    f"GOOOL! {scoring_team['name']} segna!",
+                    f"Risultato: {home_team['name']} {home_goals} - {away_goals} {away_team['name']}",
+                    {"type": "goal", "match_id": match_id, "team_id": event_data.team_id}
+                )
+    except Exception as e:
+        logger.error(f"Failed to send goal notification for event {event_id}: {e}")
+
     return MatchEvent(**event_doc)
 
 @api_router.delete("/events/{event_id}")
@@ -2733,9 +2990,11 @@ async def save_match_events_batch(
     match = await db.matches.find_one({"id": match_id}, {"_id": 0})
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
-    
-    # Verify access
-    await get_tournament_for_manager(match["tournament_id"], current_user)
+
+    # Verify access — goals/cards/score stay open to any collaborator with
+    # tournament access; only the ratings below are further gated on
+    # can_manage_players (checked right before they're applied).
+    tournament = await get_tournament_for_manager(match["tournament_id"], current_user)
 
     now = datetime.now(timezone.utc)
 
@@ -2780,8 +3039,13 @@ async def save_match_events_batch(
         {"$set": match_update}
     )
     
-    # Save player ratings for this match in a separate collection
+    # Save player ratings for this match in a separate collection — gated
+    # separately from the rest of this endpoint: a collaborator without
+    # can_manage_players can still save goals/cards/score above, just not
+    # ratings.
     if data.ratings:
+        if not await user_can_manage_players(tournament, current_user):
+            raise HTTPException(status_code=403, detail="Non hai il permesso di assegnare i voti")
         for player_id, rating in data.ratings.items():
             await db.player_ratings.update_one(
                 {"match_id": match_id, "player_id": player_id},
@@ -2923,7 +3187,7 @@ async def save_match_ratings(
     if not match:
         raise HTTPException(status_code=404, detail="Partita non trovata")
 
-    await get_tournament_for_manager(match["tournament_id"], current_user)
+    await get_tournament_for_manager(match["tournament_id"], current_user, require_player_management=True)
 
     now = datetime.now(timezone.utc)
     for player_id, rating in data.ratings.items():
@@ -3913,7 +4177,17 @@ async def revenuecat_webhook(request: Request):
     user_id = event.get("app_user_id")
     entitlement_ids = event.get("entitlement_ids") or []
 
-    if not user_id or HIGHLIGHTS_PLUS_ENTITLEMENT not in entitlement_ids:
+    # Which of our two independent subscriptions this event is about — a
+    # single event's entitlement_ids only ever contains one of these, since
+    # each is sold as its own separate product, never bundled together.
+    if HIGHLIGHTS_PLUS_ENTITLEMENT in entitlement_ids:
+        plan_field, expiry_field, type_field, warning_field = "plan", "plan_expiry", "plan_type", "plan_expiry_warning_sent"
+    elif SOCIAL_GRAPHICS_ENTITLEMENT in entitlement_ids:
+        plan_field, expiry_field, type_field, warning_field = "social_graphics_plan", "social_graphics_plan_expiry", "social_graphics_plan_type", None
+    else:
+        return {"status": "ignored"}
+
+    if not user_id:
         return {"status": "ignored"}
 
     # Sync plan/expiry directly from what RevenueCat reports rather than
@@ -3926,32 +4200,34 @@ async def revenuecat_webhook(request: Request):
     expiry = datetime.fromtimestamp(expiration_ms / 1000, tz=timezone.utc) if expiration_ms else None
     is_active = expiry is not None and expiry > datetime.now(timezone.utc)
 
-    # product_id looks like "rivalhub_highlights_plus_annual" on iOS or
-    # "highlights_plus:annual" (subscription:base_plan) on Android — a
-    # substring check is robust to both without hardcoding either format.
+    # product_id looks like "rivalhub_highlights_plus_annual"/"rivalhub_social_graphics_annual"
+    # on iOS or "highlights_plus:annual"/"social_graphics:annual" (subscription:base_plan) on
+    # Android — a substring check is robust to both without hardcoding either format.
     product_id = (event.get("product_id") or "").lower()
     plan_type = "annual" if "annual" in product_id or "yearly" in product_id else "monthly"
 
     user_doc = await db.users.find_one({"user_id": user_id}, {"_id": 0})
-    was_active = bool(user_doc) and _plan_is_active(user_doc.get("plan"), user_doc.get("plan_expiry"))
+    was_active = bool(user_doc) and _plan_is_active(user_doc.get(plan_field), user_doc.get(expiry_field))
 
-    await db.users.update_one(
-        {"user_id": user_id},
-        {"$set": {
-            "plan": "plus" if is_active else "free",
-            "plan_expiry": expiry,
-            "plan_type": plan_type if is_active else None,
-            # Reset on every active ping (not just renewals) so a later
-            # expiry from RevenueCat always gets its own 7-day warning,
-            # instead of staying silenced by a warning sent for the old date.
-            "plan_expiry_warning_sent": False,
-        }}
-    )
+    update_fields = {
+        plan_field: "plus" if is_active else "free",
+        expiry_field: expiry,
+        type_field: plan_type if is_active else None,
+    }
+    if warning_field:
+        # Reset on every active ping (not just renewals) so a later expiry
+        # from RevenueCat always gets its own 7-day warning, instead of
+        # staying silenced by a warning sent for the old date.
+        update_fields[warning_field] = False
+    await db.users.update_one({"user_id": user_id}, {"$set": update_fields})
 
     # Only on the free -> plus transition, not on every renewal ping RevenueCat
     # sends for an already-active subscription.
     if is_active and not was_active and user_doc and user_doc.get("email"):
-        asyncio.create_task(send_subscription_activated_email(user_doc["email"], user_doc.get("name") or "", expiry))
+        if plan_field == "plan":
+            asyncio.create_task(send_subscription_activated_email(user_doc["email"], user_doc.get("name") or "", expiry))
+        else:
+            asyncio.create_task(send_social_graphics_activated_email(user_doc["email"], user_doc.get("name") or "", expiry))
 
     return {"status": "ok"}
 
@@ -4266,8 +4542,11 @@ async def regenerate_highlights_code(
     tournament_id: str,
     current_user: User = Depends(get_current_user)
 ):
-    """Regenerate highlights code (organizer or an active collaborator)"""
-    await get_tournament_for_manager(tournament_id, current_user)
+    """Regenerate highlights code — organizer only. A collaborator can view
+    and copy the code (get_highlights_code above) but not change it."""
+    tournament = await get_tournament_for_manager(tournament_id, current_user)
+    if tournament["organizer_id"] != current_user.user_id:
+        raise HTTPException(status_code=403, detail="Solo il gestore del torneo può rigenerare il codice")
 
     new_code = generate_highlights_code()
     await db.tournaments.update_one(
@@ -4377,7 +4656,7 @@ async def get_highlights(
             "tournament_id": h["tournament_id"],
             "round": h["round"],
             "file_type": h["file_type"],
-            "file_url": await get_highlight_signed_url(h["file_path"]),
+            "file_url": await get_highlight_signed_url(h),
             "file_name": h["file_name"],
             "file_size": h["file_size"],
             "duration_seconds": h.get("duration_seconds"),
@@ -4412,6 +4691,26 @@ async def get_rounds_with_content(
             entry["video_count"] += 1
 
     return rounds
+
+@app.get("/api/highlights/{highlight_id}/stream", include_in_schema=False)
+async def stream_highlight(highlight_id: str, expires: int, token: str):
+    """Private proxy download for Drive-backed highlights — the counterpart
+    to Supabase's own signed-URL mechanism, since Drive has no equivalent
+    of a self-expiring public link. Declared on `app` directly (not
+    `api_router`) so it's registered immediately regardless of where in the
+    file it's defined, same as /unsubscribe and the other bridge routes."""
+    if datetime.now(timezone.utc).timestamp() > expires:
+        raise HTTPException(status_code=410, detail="Link scaduto")
+    if not hmac.compare_digest(token, _highlight_stream_token(highlight_id, expires)):
+        raise HTTPException(status_code=403, detail="Link non valido")
+
+    highlight = await db.highlights.find_one({"id": highlight_id}, {"_id": 0})
+    if not highlight or highlight.get("storage") != "drive":
+        raise HTTPException(status_code=404, detail="Highlight non trovato")
+
+    content = await drive_download(highlight["file_path"])
+    mime = "image/jpeg" if highlight["file_type"] == "photo" else "video/mp4"
+    return Response(content=content, media_type=mime)
 
 @api_router.post("/tournaments/{tournament_id}/highlights")
 async def upload_highlight(
@@ -4500,8 +4799,11 @@ async def upload_highlight(
 
     # Compression/resizing and duration probing need a real file on disk
     # (ffmpeg/PIL), so we use a scratch temp directory; the final bytes are
-    # what actually get persisted, to Supabase Storage rather than local disk
+    # what actually get persisted — to the organizer's own Google Drive if
+    # configured, otherwise Supabase Storage — rather than local disk
     # (which doesn't survive a Render redeploy).
+    use_drive = drive_is_configured()
+    content_type = file.content_type or ('image/jpeg' if file_type == 'photo' else 'video/mp4')
     with tempfile.TemporaryDirectory() as tmp_dir:
         tmp_path = Path(tmp_dir) / file_name
         with open(tmp_path, 'wb') as f:
@@ -4524,11 +4826,15 @@ async def upload_highlight(
             duration_seconds = await get_video_duration(tmp_path)
 
         final_content = tmp_path.read_bytes()
-        await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).upload(
-            relative_path,
-            final_content,
-            {"content-type": file.content_type or ('image/jpeg' if file_type == 'photo' else 'video/mp4')}
-        )
+        if use_drive:
+            stored_path = await drive_upload(file_name, final_content, content_type)
+        else:
+            stored_path = relative_path
+            await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).upload(
+                relative_path,
+                final_content,
+                {"content-type": content_type}
+            )
 
     # Save to database
     now = datetime.now(timezone.utc)
@@ -4538,7 +4844,8 @@ async def upload_highlight(
         "tournament_id": tournament_id,
         "round": round,
         "file_type": file_type,
-        "file_path": relative_path,
+        "file_path": stored_path,
+        "storage": "drive" if use_drive else "supabase",
         "file_name": file.filename or file_name,
         "file_size": file_size,
         "duration_seconds": duration_seconds,
@@ -4550,21 +4857,27 @@ async def upload_highlight(
 
     await db.highlights.insert_one(highlight_doc)
 
-    # Send push notifications to team followers
-    teams = await db.teams.find({"tournament_id": tournament_id}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
+    # Same reasoning as create_match: the highlight above is already saved
+    # (and the file already uploaded), so a notification failure must never
+    # surface as a false upload error.
+    try:
+        # Send push notifications to team followers
+        teams = await db.teams.find({"tournament_id": tournament_id}, {"_id": 0, "id": 1, "name": 1}).to_list(100)
 
-    for team in teams:
-        await notify_team_followers(
-            team["id"],
-            f"🎬 Nuovi Highlights disponibili!",
-            f"Nuovi Highlights per {team['name']}! Inserisci il codice per visualizzarli su Rival Hub",
-            {"type": "new_highlights", "tournament_id": tournament_id}
-        )
+        for team in teams:
+            await notify_team_followers(
+                team["id"],
+                f"🎬 Nuovi Highlights disponibili!",
+                f"Nuovi Highlights per {team['name']}! Inserisci il codice per visualizzarli su Rival Hub",
+                {"type": "new_highlights", "tournament_id": tournament_id}
+            )
+    except Exception as e:
+        logger.error(f"Failed to send new-highlights notifications for {highlight_id}: {e}")
 
     return {
         "id": highlight_id,
         "message": "Contenuto caricato con successo",
-        "file_url": await get_highlight_signed_url(relative_path)
+        "file_url": await get_highlight_signed_url(highlight_doc)
     }
 
 @api_router.delete("/highlights/{highlight_id}")
@@ -4581,8 +4894,11 @@ async def delete_highlight(
     # Check authorization
     await get_tournament_for_manager(highlight["tournament_id"], current_user)
 
-    # Delete file from Supabase Storage
-    await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove([highlight["file_path"]])
+    # Delete the underlying file, wherever it actually lives
+    if highlight.get("storage") == "drive":
+        await drive_delete(highlight["file_path"])
+    else:
+        await supabase_client.storage.from_(HIGHLIGHTS_BUCKET).remove([highlight["file_path"]])
 
     # Delete from database
     await db.highlights.delete_one({"id": highlight_id})
@@ -4590,11 +4906,18 @@ async def delete_highlight(
     return {"message": "Highlight eliminato"}
 
 @api_router.post("/highlights/cleanup-expired")
-async def manual_cleanup_expired():
-    """Manual endpoint to cleanup expired highlights and send expiry/renewal
-    reminder emails (meant to be pinged periodically by an external cron —
-    Render's own Cron Jobs, or any uptime-pinger — since this app has no
-    in-process scheduler)."""
+async def manual_cleanup_expired(request: Request):
+    """Cleanup expired highlights and send expiry/renewal reminder emails —
+    meant to be pinged periodically by an external cron (Render's own Cron
+    Jobs, or any uptime-pinger), since this app has no in-process scheduler.
+    Guarded by CRON_SECRET the same way the RevenueCat webhook is guarded by
+    its own secret — this endpoint has no other authentication, so without
+    it anyone could call it (harmless — everything it does is idempotent —
+    but there's no reason to leave it open)."""
+    auth_header = request.headers.get("authorization", "")
+    if not CRON_SECRET or auth_header != f"Bearer {CRON_SECRET}":
+        raise HTTPException(status_code=401, detail="Non autorizzato")
+
     count = await cleanup_expired_highlights()
     await send_expiry_warning_notifications()
     await send_subscription_expiry_warnings()

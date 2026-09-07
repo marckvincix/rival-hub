@@ -1,0 +1,28 @@
+name: Highlights & subscription expiry cleanup
+
+# Free stand-in for a Render Cron Job (which needs Render's paid plan) —
+# pings the backend's own cleanup endpoint once a day. That endpoint
+# deletes highlights past their retention date and sends the "highlights
+# expiring in 30 days" (push + email) and "subscription expiring in 7
+# days" (email) reminders. See backend/server.py's manual_cleanup_expired.
+#
+# CRON_SECRET below must match the CRON_SECRET environment variable set
+# on the rival-hub Render service — it's what the endpoint checks instead
+# of leaving itself open to anyone.
+on:
+  schedule:
+    - cron: '0 3 * * *' # 03:00 UTC daily
+  workflow_dispatch: {} # allows a manual "Run workflow" for testing
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call cleanup-expired endpoint
+        run: |
+          curl -sS -f --max-time 90 \
+            -X POST "https://rival-hub.onrender.com/api/highlights/cleanup-expired" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}"
+        # --max-time 90: the backend is on Render's free tier, which spins
+        # down after inactivity — the first request after a while can take
+        # 50+ seconds just to wake it up before it even starts working.

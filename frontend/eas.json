@@ -11,8 +11,9 @@
       },
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://rival-hub.onrender.com",
+        "EXPO_PUBLIC_WEB_URL": "https://www.rivalhub.app",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aCUYOPgmAjhHNWkIWjjukCsGTbQ",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_IyjUYnvNCGGepoapKoFOTLgFFiK",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "536042438061-g23ljan2592dognseq2rfjivgusahtoi.apps.googleusercontent.com"
       }
     },
@@ -23,13 +24,18 @@
       },
       "env": {
         "EXPO_PUBLIC_BACKEND_URL": "https://rival-hub.onrender.com",
+        "EXPO_PUBLIC_WEB_URL": "https://www.rivalhub.app",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "appl_aCUYOPgmAjhHNWkIWjjukCsGTbQ",
-        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "test_cVEqqhjMhFewaClQMKrLuGtgdHd",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "goog_IyjUYnvNCGGepoapKoFOTLgFFiK",
         "EXPO_PUBLIC_GOOGLE_CLIENT_ID": "536042438061-g23ljan2592dognseq2rfjivgusahtoi.apps.googleusercontent.com"
       }
     }
   },
   "submit": {
-    "production": {}
+    "production": {
+      "ios": {
+        "ascAppId": "6773670473"
+      }
+    }
   }
 }

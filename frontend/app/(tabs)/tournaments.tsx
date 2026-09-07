@@ -22,9 +22,10 @@ import { useRouter, useFocusEffect, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../../src/store/authStore';
-import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, TourCoachmark, useTourTarget } from '../../src/components';
+import { Button, EmptyState, Loading, Input, FormationModal, SportSelector, ProductCarousel, TourCoachmark, useTourTarget, SocialGraphicsGenerator, FullPagePaywall, SocialGraphicPreviewCard, SocialGraphicFullPreview, TeamCrestPicker } from '../../src/components';
 import api from '../../src/utils/api';
 import { Tournament, Formation, Player, Sport, SPORTS_CONFIG, getSportConfig, getSportEmoji } from '../../src/types';
+import { NextMatchGraphicData, FullTimeGraphicData, FormationGraphicData, FormationGraphicPlayer } from '../../src/types/socialGraphics';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { BasketballMatchModal, TennisMatchModal, PadelMatchModal, VolleyballMatchModal, RugbyMatchModal, HighlightsUploadModal } from '../../src/components';
@@ -740,6 +741,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const { t, i18n } = useTranslation();
   const pickerLocale = i18n.language === 'en' ? 'en-GB' : i18n.language === 'ar' ? 'ar-SA' : i18n.language + '-' + i18n.language.toUpperCase();
   const { user } = useAuthStore();
+  // Only the organizer manages collaborators and can regenerate the
+  // highlights code — a collaborator can view/copy it but not the rest.
+  const isOrganizer = user?.user_id === tournament.organizer_id;
+  const hasHighlightsPlus = (() => {
+    const expiry = user?.plan_expiry ? new Date(user.plan_expiry) : null;
+    return user?.plan === 'plus' && !!expiry && expiry > new Date();
+  })();
   const [activeTab, setActiveTab] = useState('teams');
   const [teams, setTeams] = useState<any[]>([]);
   const [matches, setMatches] = useState<any[]>([]);
@@ -790,7 +798,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // without teams picked) does the invite actually get created and show up
   // with its copy/share actions. The shield icon on an existing
   // collaborator reuses the same picker in "edit" mode.
-  const [teamPicker, setTeamPicker] = useState<{ mode: 'new' | 'edit'; teamIds: string[]; collaborator?: any; email?: string } | null>(null);
+  const [teamPicker, setTeamPicker] = useState<{ mode: 'new' | 'edit'; teamIds: string[]; collaborator?: any; email?: string; canManagePlayers: boolean } | null>(null);
 
   const loadCollaborators = async () => {
     setLoadingCollaborators(true);
@@ -804,16 +812,67 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     }
   };
 
+  // Highlights code — always shown in Settings for both organizer and
+  // collaborators. The organizer can view/copy/regenerate it, a
+  // collaborator can only view/copy (enforced server-side too: regenerate
+  // is organizer-only).
+  const [highlightsCode, setHighlightsCode] = useState<string | null>(null);
+  const [highlightsCodeLoading, setHighlightsCodeLoading] = useState(false);
+  const [regeneratingHighlightsCode, setRegeneratingHighlightsCode] = useState(false);
+
+  const loadHighlightsCode = async () => {
+    setHighlightsCodeLoading(true);
+    try {
+      const res = await api.get(`/api/tournaments/${tournament.id}/highlights-code`);
+      setHighlightsCode(res.data?.code || null);
+    } catch (error) {
+      console.error('Error loading highlights code:', error);
+    } finally {
+      setHighlightsCodeLoading(false);
+    }
+  };
+
+  const handleRegenerateHighlightsCode = () => {
+    Alert.alert(
+      t('highlights.regenerateCode', 'Rigenera codice'),
+      t('highlights.regenerateCodeConfirm', 'Il vecchio codice smetterà di funzionare. Vuoi continuare?'),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.confirm', 'Conferma'),
+          onPress: async () => {
+            setRegeneratingHighlightsCode(true);
+            try {
+              const res = await api.post(`/api/tournaments/${tournament.id}/highlights-code/regenerate`);
+              setHighlightsCode(res.data?.code || null);
+            } catch (error: any) {
+              Alert.alert(t('common.error'), error?.response?.data?.detail || t('errors.updateFailed', 'Update failed'));
+            } finally {
+              setRegeneratingHighlightsCode(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   useEffect(() => {
-    if (activeTab === 'settings') loadCollaborators();
+    if (activeTab === 'settings') {
+      // Only the organizer can manage collaborators — a collaborator
+      // hitting this endpoint just gets a 404 (see list_collaborators on
+      // the backend), so don't even try for them.
+      if (isOrganizer) loadCollaborators();
+      loadHighlightsCode();
+    }
   }, [activeTab]);
 
-  const handleGenerateInvite = async (teamIds: string[], email?: string) => {
+  const handleGenerateInvite = async (teamIds: string[], email: string | undefined, canManagePlayers: boolean) => {
     setGeneratingInvite(true);
     try {
       await api.post(`/api/tournaments/${tournament.id}/collaborators/invite`, {
         team_ids: teamIds,
         email: email?.trim() || undefined, // if given, the backend also emails the code directly
+        can_manage_players: canManagePlayers,
       });
       await loadCollaborators();
     } catch (error) {
@@ -828,7 +887,10 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     // doesn't have an account yet they can register right from there, and
     // either way they land directly on this tournament as a collaborator —
     // not just a bare code they'd have to go find somewhere to redeem.
-    const base = (process.env.EXPO_PUBLIC_BACKEND_URL || '').replace('/api', '');
+    // Built from the public web domain (Universal Links), NOT the API
+    // host — rival-hub.onrender.com has no Universal Links entitlement,
+    // so a link built from it would just open a browser instead of the app.
+    const base = process.env.EXPO_PUBLIC_WEB_URL || 'https://www.rivalhub.app';
     const joinUrl = `${base}/join?code=${encodeURIComponent(collab.invite_code)}`;
     const teamNames = (collab.team_ids || []).map((id: string) => getTeamName(id)).join(', ');
     const message = teamNames
@@ -871,9 +933,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     );
   };
 
-  const handleToggleCollaboratorTeams = async (collab: any, newTeamIds: string[]) => {
+  const handleUpdateCollaborator = async (collab: any, newTeamIds: string[], canManagePlayers: boolean) => {
     try {
-      const res = await api.put(`/api/tournaments/${tournament.id}/collaborators/${collab.id}`, { team_ids: newTeamIds });
+      const res = await api.put(`/api/tournaments/${tournament.id}/collaborators/${collab.id}`, {
+        team_ids: newTeamIds,
+        can_manage_players: canManagePlayers,
+      });
       setCollaborators(prev => prev.map((c) => (c.id === collab.id ? res.data : c)));
     } catch (error) {
       Alert.alert(t('common.error'));
@@ -883,9 +948,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleSaveTeamPicker = async () => {
     if (!teamPicker) return;
     if (teamPicker.mode === 'new') {
-      await handleGenerateInvite(teamPicker.teamIds, teamPicker.email);
+      await handleGenerateInvite(teamPicker.teamIds, teamPicker.email, teamPicker.canManagePlayers);
     } else {
-      await handleToggleCollaboratorTeams(teamPicker.collaborator, teamPicker.teamIds);
+      await handleUpdateCollaborator(teamPicker.collaborator, teamPicker.teamIds, teamPicker.canManagePlayers);
     }
     setTeamPicker(null);
   };
@@ -936,6 +1001,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const [showAddTeamModal, setShowAddTeamModal] = useState(false);
   const [showAddMatchModal, setShowAddMatchModal] = useState(false);
   const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamLogo, setNewTeamLogo] = useState('');
+  const [showTeamCrestPicker, setShowTeamCrestPicker] = useState(false);
   const [newMatchData, setNewMatchData] = useState({ 
     home_team_id: '', 
     away_team_id: '', 
@@ -1084,10 +1151,23 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   // whole tournament — null means full access (organizer or an
   // unrestricted collaborator), a list means "only these team ids".
   const [myTeamRestriction, setMyTeamRestriction] = useState<string[] | null>(null);
+  // Whether this user may manage teams/players/formations and assign
+  // ratings — always true for the organizer, defaulted to true here too so
+  // the (common) organizer case never flickers while /my-access loads; a
+  // restricted collaborator gets this flipped to false once it resolves.
+  // Enforced server-side regardless (can_manage_players on the collaborator
+  // record), this is just for hiding the relevant UI.
+  const [canManagePlayers, setCanManagePlayers] = useState(true);
   useEffect(() => {
     api.get(`/api/tournaments/${tournament.id}/my-access`)
-      .then((res) => setMyTeamRestriction(res.data?.team_ids ?? null))
-      .catch(() => setMyTeamRestriction(null));
+      .then((res) => {
+        setMyTeamRestriction(res.data?.team_ids ?? null);
+        setCanManagePlayers(res.data?.can_manage_players ?? true);
+      })
+      .catch(() => {
+        setMyTeamRestriction(null);
+        setCanManagePlayers(true);
+      });
   }, [tournament.id]);
   const visibleTeams = myTeamRestriction ? teams.filter((t) => myTeamRestriction.includes(t.id)) : teams;
 
@@ -1414,10 +1494,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleAddTeam = async () => {
     if (!newTeamName.trim()) { Alert.alert(t('common.error'), t('errors.nameRequired', 'Name required')); return; }
     try {
-      const response = await api.post(`/api/tournaments/${tournament.id}/teams`, { name: newTeamName });
+      const response = await api.post(`/api/tournaments/${tournament.id}/teams`, { name: newTeamName, logo: newTeamLogo || null });
       setTeams([...teams, response.data]);
       setShowAddTeamModal(false);
       setNewTeamName('');
+      setNewTeamLogo('');
       if (useTourStore.getState().active && useTourStore.getState().step === 'add-team') {
         useTourStore.getState().goTo('add-player');
       }
@@ -1427,35 +1508,112 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
   };
 
+  // Team logo — camera/gallery like the player-photo picker, plus a third
+  // option opening the standard crest gallery for teams that don't have
+  // their own logo. Uses base64 (not the raw local file URI) so the value
+  // is a real, always-loadable image straight away — matching how the
+  // News photo upload already does it, not the bare-URI pattern the
+  // player-photo picker uses.
+  const pickTeamLogo = () => {
+    // Permissions are requested inside each branch (not upfront) — asking
+    // for gallery access before the user has even chosen "Galleria" would
+    // needlessly block the Camera/standard-crest options too if denied.
+    Alert.alert(
+      t('teams.teamLogo', 'Logo squadra'),
+      t('teams.teamLogoChoose', 'Scegli come impostare il logo'),
+      [
+        {
+          text: t('common.camera', 'Camera'),
+          onPress: async () => {
+            try {
+              const cameraStatus = await ImagePicker.requestCameraPermissionsAsync();
+              if (cameraStatus.status !== 'granted') {
+                Alert.alert(t('errors.permissionDenied', 'Permission denied'), 'Serve il permesso per usare la fotocamera');
+                return;
+              }
+              const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true, aspect: [1, 1], quality: 0.8, base64: true,
+              });
+              if (!result.canceled && result.assets[0]?.base64) {
+                setNewTeamLogo(`data:image/jpeg;base64,${result.assets[0].base64}`);
+              }
+            } catch (error) {
+              console.error('Team logo camera error:', error);
+              Alert.alert(t('common.error'));
+            }
+          }
+        },
+        {
+          text: t('common.gallery', 'Galleria'),
+          onPress: async () => {
+            try {
+              const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+              if (status !== 'granted') {
+                Alert.alert(t('errors.permissionDenied', 'Permission denied'), t('errors.galleryPermission', 'Gallery permission required'));
+                return;
+              }
+              const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true, aspect: [1, 1], quality: 0.8, base64: true,
+              });
+              if (!result.canceled && result.assets[0]?.base64) {
+                setNewTeamLogo(`data:image/jpeg;base64,${result.assets[0].base64}`);
+              }
+            } catch (error) {
+              console.error('Team logo gallery error:', error);
+              Alert.alert(t('common.error'));
+            }
+          }
+        },
+        {
+          text: t('teams.noTeamLogo', 'Non ho un logo squadra'),
+          onPress: () => setShowTeamCrestPicker(true),
+        },
+        { text: t('common.cancel'), style: 'cancel' }
+      ]
+    );
+  };
+
   const handleAddMatch = async () => {
     if (!newMatchData.home_team_id || !newMatchData.away_team_id) { Alert.alert(t('common.error'), t('errors.selectBothTeams', 'Select both teams')); return; }
     if (newMatchData.home_team_id === newMatchData.away_team_id) { Alert.alert(t('common.error'), t('errors.differentTeams', 'Different teams required')); return; }
     if (!newMatchData.round) { Alert.alert(t('common.error'), t('errors.selectRound', 'Select a round')); return; }
+    const matchPayload = {
+      home_team_id: newMatchData.home_team_id,
+      away_team_id: newMatchData.away_team_id,
+      round: newMatchData.round,
+      match_date: matchDate ? matchDate.toISOString().split('T')[0] : undefined,
+      match_time: matchTime ? matchTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : undefined,
+      venue_name: newMatchData.venue_name || undefined,
+      venue_address: newMatchData.venue_address || undefined,
+    };
+    // Only the actual creation is allowed to produce the "Aggiunta fallita"
+    // alert. Everything after this succeeds by definition (the match now
+    // exists) — it used to share this try/catch, so a throw anywhere in the
+    // local cleanup below (e.g. the tour-store calls) would surface as a
+    // false "failed" error even though the match had already been created.
+    let response;
     try {
-      const matchPayload = {
-        home_team_id: newMatchData.home_team_id,
-        away_team_id: newMatchData.away_team_id,
-        round: newMatchData.round,
-        match_date: matchDate ? matchDate.toISOString().split('T')[0] : undefined,
-        match_time: matchTime ? matchTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }) : undefined,
-        venue_name: newMatchData.venue_name || undefined,
-        venue_address: newMatchData.venue_address || undefined,
-      };
-      const response = await api.post(`/api/tournaments/${tournament.id}/matches`, matchPayload);
-      setMatches([...matches, response.data]);
-      setShowAddMatchModal(false);
-      setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
-      setMatchDate(null);
-      setMatchTime(null);
-      setShowHomeDropdown(false);
-      setShowAwayDropdown(false);
-      if (useTourStore.getState().active && useTourStore.getState().step === 'add-match') {
-        useTourStore.getState().goTo('open-match');
-      }
-      if (sectionTour?.type === 'matches' && sectionTour.step === 0) {
-        setSectionTour(null);
-      }
-    } catch (error: any) { Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed')); }
+      response = await api.post(`/api/tournaments/${tournament.id}/matches`, matchPayload);
+    } catch (error: any) {
+      Alert.alert(t('common.error'), error.response?.data?.detail || t('errors.addFailed', 'Add failed'));
+      return;
+    }
+
+    setMatches([...matches, response.data]);
+    setShowAddMatchModal(false);
+    setNewMatchData({ home_team_id: '', away_team_id: '', round: '', date: '', time: '', venue_name: '', venue_address: '' });
+    setMatchDate(null);
+    setMatchTime(null);
+    setShowHomeDropdown(false);
+    setShowAwayDropdown(false);
+    if (useTourStore.getState().active && useTourStore.getState().step === 'add-match') {
+      useTourStore.getState().goTo('open-match');
+    }
+    if (sectionTour?.type === 'matches' && sectionTour.step === 0) {
+      setSectionTour(null);
+    }
   };
 
   const handleDeleteTeam = async (teamId: string) => {
@@ -1648,6 +1806,155 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     }
   };
 
+  // "Sub In" must only offer players who are actually on the bench, not
+  // the whole roster — a starter who's still on the field isn't a valid
+  // substitute. Falls back to the full roster if the team never saved a
+  // formation: without starters/bench there's no way to tell who's on it.
+  // Always keeps anyone already picked as a sub-in included too (even if
+  // they're no longer on the bench, e.g. the formation changed since) —
+  // EventDropdown looks up a selected player's tag in this same `players`
+  // list, so dropping them here would make their tag vanish rather than
+  // just stop offering them for a NEW pick.
+  const getAvailableSubInPlayers = (team: 'home' | 'away') => {
+    const teamId = team === 'home' ? selectedMatch?.home_team_id : selectedMatch?.away_team_id;
+    const allPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+    const formation = teamId ? teamFormations[teamId] : null;
+    if (!formation?.bench) return allPlayers;
+
+    const benchIds = new Set(formation.bench.map((b) => b.player_id));
+    const alreadySelected = new Set(extraEvents[team].sostEntra);
+    return allPlayers.filter((p) => benchIds.has(p.id) || alreadySelected.has(p.id));
+  };
+
+  // Same restriction, mirrored: "Sub Out" must only offer starters, not a
+  // bench player who was never on the field to begin with. Deliberately
+  // NOT also excluding players already subbed out this match, for the
+  // same reason getAvailableSubInPlayers doesn't exclude already-subbed-in
+  // ones — starter membership is static (from the formation), so this
+  // stays free of the tag-lookup issue without needing that extra layer.
+  const getAvailableSubOutPlayers = (team: 'home' | 'away') => {
+    const teamId = team === 'home' ? selectedMatch?.home_team_id : selectedMatch?.away_team_id;
+    const allPlayers = team === 'home' ? homeTeamPlayers : awayTeamPlayers;
+    const formation = teamId ? teamFormations[teamId] : null;
+    if (!formation?.starters) return allPlayers;
+
+    const starterIds = new Set(formation.starters.map((s) => s.player_id));
+    return allPlayers.filter((p) => starterIds.has(p.id));
+  };
+
+  // "Grafiche Social" — export match/formation data as a branded graphic
+  // (see SocialGraphicsGenerator). Data builders live here since they read
+  // straight from state already loaded for this screen (teams,
+  // matchEventsMap, teamFormations) rather than re-fetching anything.
+  const [socialGraphics, setSocialGraphics] = useState<
+    | null
+    | { template: 'next_match'; data: NextMatchGraphicData }
+    | { template: 'full_time'; data: FullTimeGraphicData }
+    | { template: 'formation'; data: FormationGraphicData }
+  >(null);
+  // "Grafiche Social" is its own subscription, independent from Highlights
+  // Plus — unlike the Highlights upload button (which is simply hidden
+  // without a plan, since its paywall already ran at login), this button
+  // stays visible and opens the paywall in place, because it's a
+  // discoverable feature nobody was prompted about at signup.
+  const [pendingSocialGraphic, setPendingSocialGraphic] = useState<typeof socialGraphics>(null);
+  const [showSocialGraphicsPaywall, setShowSocialGraphicsPaywall] = useState(false);
+  const hasSocialGraphicsPlan = (() => {
+    const expiry = user?.social_graphics_plan_expiry ? new Date(user.social_graphics_plan_expiry) : null;
+    return user?.social_graphics_plan === 'plus' && !!expiry && expiry > new Date();
+  })();
+  const requestSocialGraphic = (payload: NonNullable<typeof socialGraphics>) => {
+    if (hasSocialGraphicsPlan) {
+      setSocialGraphics(payload);
+    } else {
+      setPendingSocialGraphic(payload);
+      setShowSocialGraphicsPaywall(true);
+    }
+  };
+
+  // Tapping a SocialGraphicPreviewCard: unlocked users go straight to the
+  // real generator (same as requestSocialGraphic), locked users see the
+  // bigger full-screen teaser first instead of jumping straight to the
+  // paywall — its own "Sblocca" button is what opens the paywall.
+  const [fullPreview, setFullPreview] = useState<typeof socialGraphics>(null);
+  const handleGraphicCardPress = (payload: NonNullable<typeof socialGraphics>) => {
+    if (hasSocialGraphicsPlan) {
+      setSocialGraphics(payload);
+    } else {
+      setFullPreview(payload);
+    }
+  };
+
+  const buildNextMatchGraphicData = (match: any): NextMatchGraphicData => {
+    const homeTeam = teams.find((t) => t.id === match.home_team_id);
+    const awayTeam = teams.find((t) => t.id === match.away_team_id);
+    return {
+      homeTeamName: homeTeam?.name || getTeamName(match.home_team_id),
+      homeTeamLogo: homeTeam?.logo,
+      awayTeamName: awayTeam?.name || getTeamName(match.away_team_id),
+      awayTeamLogo: awayTeam?.logo,
+      venueName: match.venue_name || tournament.venue_name,
+      venueAddress: match.venue_address || tournament.venue_address,
+      dateTimeLabel: formatMatchDateTime(match) || t('matches.dateTBD', 'Data da definire'),
+    };
+  };
+
+  const buildFullTimeGraphicData = (match: any): FullTimeGraphicData => {
+    const matchEvents = matchEventsMap[match.id] || [];
+    const scorerNames = (teamId: string) =>
+      matchEvents
+        .filter((e: any) => e.team_id === teamId && (e.event_type === 'goal' || e.event_type === 'penalty_goal'))
+        .map((e: any) => e.player_name);
+    return {
+      homeTeamName: getTeamName(match.home_team_id),
+      awayTeamName: getTeamName(match.away_team_id),
+      homeGoals: match.home_goals ?? 0,
+      awayGoals: match.away_goals ?? 0,
+      homeScorers: scorerNames(match.home_team_id),
+      awayScorers: scorerNames(match.away_team_id),
+    };
+  };
+
+  const buildFormationGraphicData = (team: any, formation: Formation): FormationGraphicData => {
+    // formation.starters/bench carry player_name/number/photo/role only
+    // when they came from the enriched GET /teams/{id}/formation — right
+    // after saving, handleFormationSave stores the raw POST response
+    // instead (just player_id/position/slot_index), so those fields are
+    // missing then. Falling back to a lookup in teamPlayers makes this
+    // work either way instead of silently rendering blank names.
+    const players = teamPlayers[team.id] || [];
+    const findPlayer = (playerId: string) => players.find((p: any) => p.id === playerId);
+
+    const starters: FormationGraphicPlayer[] = (formation.starters || [])
+      .slice()
+      .sort((a, b) => a.slot_index - b.slot_index)
+      .map((s) => {
+        const player = findPlayer(s.player_id);
+        return {
+          number: s.player_number ?? player?.number,
+          name: s.player_name || player?.full_name || '',
+          // The slot's own tactical position (goalkeeper/defender/
+          // midfielder/forward) — NOT the player's general role, which is
+          // a different concept (can differ from how they're deployed
+          // here) and, more importantly, is one of the fields missing
+          // right after a save. position comes straight from the base
+          // Formation model, so it's always present either way.
+          role: (s.position as FormationGraphicPlayer['role']) || 'midfielder',
+          photo: s.player_photo || player?.photo,
+        };
+      });
+
+    const bench: FormationGraphicData['bench'] = (formation.bench || []).map((b) => {
+      const player = findPlayer(b.player_id);
+      return {
+        number: b.player_number ?? player?.number,
+        name: b.player_name || player?.full_name || '',
+      };
+    });
+
+    return { teamName: team.name, teamLogo: team.logo, module: formation.module, starters, bench };
+  };
+
   // "Voti" shortcut: straight to the player rating list for this match,
   // any status included — the same accordion layout as inside Extra, just
   // without the score card / events editor around it.
@@ -1687,7 +1994,15 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
   const handleOpenExtraModal = async () => {
     if (selectedMatch) {
       await loadPlayersForExtraModal(selectedMatch.home_team_id, selectedMatch.away_team_id);
-      
+      // Needed so "Sub In" can be limited to bench players only (see
+      // getAvailableSubInPlayers below) — not loaded by
+      // loadPlayersForExtraModal itself since the ratings-only shortcut
+      // also calls that and has no use for formations.
+      await Promise.all([
+        loadTeamFormation(selectedMatch.home_team_id),
+        loadTeamFormation(selectedMatch.away_team_id),
+      ]);
+
       // Load existing events for this match
       try {
         const eventsRes = await api.get(`/api/matches/${selectedMatch.id}/events`);
@@ -1817,10 +2132,13 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         playerRatings
       });
       
-      // Send batch request to backend
+      // Send batch request to backend. Ratings are omitted entirely (not
+      // just hidden in the UI) for a collaborator without can_manage_players
+      // — the backend would 403 the whole save otherwise, since it can't
+      // tell an unchanged resend of existing ratings from an actual edit.
       const response = await api.post(`/api/matches/${selectedMatch.id}/events/batch`, {
         events,
-        ratings: playerRatings,
+        ratings: canManagePlayers ? playerRatings : {},
         home_goals: homeGoals,
         away_goals: awayGoals
       });
@@ -2251,6 +2569,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
     { id: 'results', label: t('matches.results'), icon: 'create' },
     { id: 'news', label: t('home.featureNews', 'News'), icon: 'newspaper' },
     { id: 'highlights', label: t('highlights.title'), icon: 'film' },
+    { id: 'social_graphics', label: t('social.tabTitle', 'Grafiche Social'), icon: 'share-social' },
     { id: 'settings', label: t('profile.settings'), icon: 'settings' }
   ];
 
@@ -2298,8 +2617,9 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <View>
                 {/* A collaborator restricted to specific teams manages only
                     those — adding a whole new team is an organizer/full-access
-                    action. */}
-                {!myTeamRestriction && (
+                    action. A collaborator without can_manage_players can't
+                    add one either, regardless of team restriction. */}
+                {!myTeamRestriction && canManagePlayers && (
                   <TouchableOpacity ref={addTeamTarget.ref} style={styles.addTeamBtn} onPress={() => setShowAddTeamModal(true)}>
                     <Ionicons name="add" size={22} color="#FFF" />
                     <Text style={styles.addTeamBtnText}>{t('common.add', 'Add')} {getTeamLabel()}</Text>
@@ -2321,7 +2641,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           <Text style={styles.teamNameNew}>{getTeamDisplayName(team)}</Text>
                           <Ionicons name={expandedTeamId === team.id ? "chevron-down" : "chevron-forward"} size={20} color="#000" />
                         </TouchableOpacity>
-                        {/* Right: Action Buttons */}
+                        {/* Right: Action Buttons — hidden for a collaborator
+                            without can_manage_players, who can only view the
+                            roster (e.g. to reference it while entering
+                            match events). */}
+                        {canManagePlayers && (
                         <View style={styles.teamActionBtns}>
                           {/* For Tennis singles, hide add player button after 1 player, for doubles after 2 */}
                           {(!isTennisSport || (teamPlayers[team.id]?.length || 0) < (isDoubles ? 2 : 1)) && (
@@ -2344,13 +2668,28 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                             <Ionicons name="trash" size={18} color="#FFF" />
                           </TouchableOpacity>
                         </View>
+                        )}
                       </View>
-                      {/* Formation Badge */}
+                      {/* Formation Badge + Grafiche Social teaser — same
+                          preview card as the centralized tab, shown here
+                          too since this is where the formation actually is. */}
                       {teamFormations[team.id] && (
-                        <View style={styles.formationBadge}>
-                          <Ionicons name="grid" size={14} color="#2D8A2E" />
-                          <Text style={styles.formationBadgeText}>{teamFormations[team.id]?.module}</Text>
-                        </View>
+                        <>
+                          <View style={styles.formationBadge}>
+                            <Ionicons name="grid" size={14} color="#2D8A2E" />
+                            <Text style={styles.formationBadgeText}>{teamFormations[team.id]?.module}</Text>
+                          </View>
+                          <View style={styles.matchPillGraphicPreview}>
+                            <SocialGraphicPreviewCard
+                              template="formation"
+                              data={buildFormationGraphicData(team, teamFormations[team.id]!)}
+                              title={team.name}
+                              subtitle={t('social.templateFormation', 'Formazione')}
+                              locked={!hasSocialGraphicsPlan}
+                              onPress={() => handleGraphicCardPress({ template: 'formation', data: buildFormationGraphicData(team, teamFormations[team.id]!) })}
+                            />
+                          </View>
+                        </>
                       )}
                       {/* Players Accordion */}
                       {expandedTeamId === team.id && (
@@ -2377,18 +2716,20 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                 </View>
                                 {/* Right Section: Stats + Delete + Number */}
                                 <View style={styles.playerRightSection}>
-                                  <TouchableOpacity 
+                                  <TouchableOpacity
                                     style={styles.playerStatsBtn}
                                     onPress={() => handleOpenPlayerStats(player)}
                                   >
                                     <Ionicons name="stats-chart" size={18} color="#666" />
                                   </TouchableOpacity>
-                                  <TouchableOpacity 
-                                    style={styles.playerDeleteBtn} 
-                                    onPress={() => handleDeletePlayer(team.id, player.id)}
-                                  >
-                                    <Ionicons name="trash-outline" size={18} color="#666" />
-                                  </TouchableOpacity>
+                                  {canManagePlayers && (
+                                    <TouchableOpacity
+                                      style={styles.playerDeleteBtn}
+                                      onPress={() => handleDeletePlayer(team.id, player.id)}
+                                    >
+                                      <Ionicons name="trash-outline" size={18} color="#666" />
+                                    </TouchableOpacity>
+                                  )}
                                   <View style={styles.playerNumberBox}>
                                     <Text style={styles.playerNumberLabel}>Nº</Text>
                                     <Text style={styles.playerNumberValue}>{player.number || '-'}</Text>
@@ -2495,11 +2836,33 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                 organizer often wants to score players once the game is
                                 over and there's time to review it, not just while live.
                                 Not calcio-specific: TeamRatingsAccordion and the ratings
-                                endpoints already take a sport for correct role labels. */}
-                            <TouchableOpacity style={styles.matchPillRatingsBtn} onPress={() => handleOpenRatingsOnly(match)}>
-                              <Ionicons name="star-outline" size={16} color="#000" />
-                              <Text style={styles.matchPillRatingsBtnText}>{t('soccer.ratings', 'Voti')}</Text>
-                            </TouchableOpacity>
+                                endpoints already take a sport for correct role labels.
+                                Hidden for a collaborator without can_manage_players. */}
+                            {canManagePlayers && (
+                              <TouchableOpacity style={styles.matchPillRatingsBtn} onPress={() => handleOpenRatingsOnly(match)}>
+                                <Ionicons name="star-outline" size={16} color="#000" />
+                                <Text style={styles.matchPillRatingsBtnText}>{t('soccer.ratings', 'Voti')}</Text>
+                              </TouchableOpacity>
+                            )}
+                            {/* "Grafiche Social" — same preview card as the
+                                centralized tab, shown here too as a teaser
+                                right where the match already is. */}
+                            {(() => {
+                              const cardPayload = match.status === 'completed'
+                                ? { template: 'full_time' as const, data: buildFullTimeGraphicData(match) }
+                                : { template: 'next_match' as const, data: buildNextMatchGraphicData(match) };
+                              return (
+                                <View style={styles.matchPillGraphicPreview}>
+                                  <SocialGraphicPreviewCard
+                                    {...cardPayload}
+                                    title={`${getTeamName(match.home_team_id)} - ${getTeamName(match.away_team_id)}`}
+                                    subtitle={match.status === 'completed' ? t('social.templateFullTime', 'Risultato Finale') : t('social.templateNextMatch', 'Prossima Partita')}
+                                    locked={!hasSocialGraphicsPlan}
+                                    onPress={() => handleGraphicCardPress(cardPayload)}
+                                  />
+                                </View>
+                              );
+                            })()}
                             {tournament?.sport && (
                               <View style={styles.matchPillCarouselWrap}>
                                 <ProductCarousel sport={tournament.sport} title={t('products.sponsoredTitle', 'Prodotti consigliati')} />
@@ -2624,28 +2987,26 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
             )}
 
-            {/* Highlights Tab */}
-            {activeTab === 'highlights' && (
+            {/* Highlights Tab — gated behind Highlights Plus entirely: a
+                non-subscriber sees the full-page paywall instead of the
+                tab content (not just a hidden upload button as before). */}
+            {activeTab === 'highlights' && !hasHighlightsPlus && (
+              <FullPagePaywall
+                visible
+                variant="highlights"
+                onClose={() => setActiveTab('teams')}
+                onSubscribed={() => { /* hasHighlightsPlus recomputes from the refreshed user, tab content shows on its own */ }}
+              />
+            )}
+            {activeTab === 'highlights' && hasHighlightsPlus && (
               <View style={styles.highlightsTabContent}>
-                {/* Shown only with an active Highlights Plus subscription —
-                    the paywall for getting one lives elsewhere (right after
-                    registration/login, and again from the Highlights tab
-                    itself), so gating this button too would just be a
-                    third, redundant prompt instead of just hiding it. */}
-                {(() => {
-                  const expiry = user?.plan_expiry ? new Date(user.plan_expiry) : null;
-                  const hasHighlightsPlus = user?.plan === 'plus' && !!expiry && expiry > new Date();
-                  if (!hasHighlightsPlus) return null;
-                  return (
-                    <TouchableOpacity
-                      style={styles.addNewsButton}
-                      onPress={() => setShowHighlightsModal(true)}
-                    >
-                      <Ionicons name="film" size={20} color="#FFF" />
-                      <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
-                    </TouchableOpacity>
-                  );
-                })()}
+                <TouchableOpacity
+                  style={styles.addNewsButton}
+                  onPress={() => setShowHighlightsModal(true)}
+                >
+                  <Ionicons name="film" size={20} color="#FFF" />
+                  <Text style={styles.addNewsButtonText}>{t('highlights.upload', 'Upload Highlights')}</Text>
+                </TouchableOpacity>
 
                 {highlightsLoading ? (
                   <View style={styles.highlightsLoadingContainer}>
@@ -2710,6 +3071,60 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               </View>
             )}
 
+            {/* "Grafiche Social" tab — centralizes every "Condividi Grafica"
+                entry point (previously scattered under Squadre/Partite) in
+                one place. Cards render a real, live-scaled preview of the
+                actual graphic (same Layer components the generator uses),
+                blurred for non-subscribers as a teaser; tapping any card
+                goes through requestSocialGraphic, which already opens the
+                paywall or the real generator depending on the plan. */}
+            {activeTab === 'social_graphics' && (
+              <View>
+                <Text style={styles.socialGraphicsIntro}>
+                  {hasSocialGraphicsPlan
+                    ? t('social.tabIntroUnlocked', 'Tocca una grafica per generarla e scaricarla in alta qualità.')
+                    : t('social.tabIntroLocked', "Anteprima con i dati reali del tuo torneo. Sblocca l'abbonamento per scaricarle in alta qualità.")}
+                </Text>
+
+                {matches.length === 0 && teams.every((tm: any) => !teamFormations[tm.id]) ? (
+                  <EmptyState icon="share-social-outline" title={t('social.tabEmpty', 'Aggiungi partite o formazioni per generare grafiche')} />
+                ) : (
+                  <View style={styles.socialGraphicsGrid}>
+                    {matches.map((match: any) => {
+                      // Built once so template+data stay a single
+                      // discriminated-union value — passing them as two
+                      // separate props from the same ternary doesn't let
+                      // TS narrow the union the same way.
+                      const cardPayload = match.status === 'completed'
+                        ? { template: 'full_time' as const, data: buildFullTimeGraphicData(match) }
+                        : { template: 'next_match' as const, data: buildNextMatchGraphicData(match) };
+                      return (
+                        <SocialGraphicPreviewCard
+                          key={`match-${match.id}`}
+                          {...cardPayload}
+                          title={`${getTeamName(match.home_team_id)} - ${getTeamName(match.away_team_id)}`}
+                          subtitle={match.status === 'completed' ? t('social.templateFullTime', 'Risultato Finale') : t('social.templateNextMatch', 'Prossima Partita')}
+                          locked={!hasSocialGraphicsPlan}
+                          onPress={() => handleGraphicCardPress(cardPayload)}
+                        />
+                      );
+                    })}
+                    {teams.filter((tm: any) => teamFormations[tm.id]).map((tm: any) => (
+                      <SocialGraphicPreviewCard
+                        key={`formation-${tm.id}`}
+                        template="formation"
+                        data={buildFormationGraphicData(tm, teamFormations[tm.id]!)}
+                        title={tm.name}
+                        subtitle={t('social.templateFormation', 'Formazione')}
+                        locked={!hasSocialGraphicsPlan}
+                        onPress={() => handleGraphicCardPress({ template: 'formation', data: buildFormationGraphicData(tm, teamFormations[tm.id]!) })}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
             {activeTab === 'settings' && (
               <View>
                 <View style={styles.settingsCard}>
@@ -2766,6 +3181,38 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 </View>
 
                 <View style={styles.settingsCard}>
+                  <Text style={styles.settingsLabel}>{t('highlights.codeTitle', 'Codice Highlights')}</Text>
+                  {highlightsCodeLoading ? (
+                    <Loading />
+                  ) : (
+                    <>
+                      <View style={styles.linkContainer}>
+                        <View>
+                          <Text style={styles.linkText}>{highlightsCode || '—'}</Text>
+                        </View>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <TouchableOpacity
+                            onPress={() => highlightsCode && Clipboard.setStringAsync(highlightsCode)}
+                            style={isOrganizer ? { marginRight: 16 } : undefined}
+                          >
+                            <Ionicons name="copy-outline" size={20} color="#000" />
+                          </TouchableOpacity>
+                          {isOrganizer && (
+                            <TouchableOpacity onPress={handleRegenerateHighlightsCode} disabled={regeneratingHighlightsCode}>
+                              <Ionicons name="refresh-outline" size={20} color="#000" />
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
+                      <Text style={styles.settingsHint}>
+                        {t('highlights.codeShareHint', 'Condividi questo codice con chi vuoi far vedere foto e video del torneo.')}
+                      </Text>
+                    </>
+                  )}
+                </View>
+
+                {isOrganizer && (
+                <View style={styles.settingsCard}>
                   <View style={styles.collabHeader}>
                     <Ionicons name="people-outline" size={20} color="#000" />
                     <Text style={styles.settingsLabel}>{t('collaborators.title', 'Gestione Collaboratori')}</Text>
@@ -2773,7 +3220,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
 
                   <TouchableOpacity
                     style={styles.collabGenerateBtn}
-                    onPress={() => setTeamPicker({ mode: 'new', teamIds: [] })}
+                    onPress={() => setTeamPicker({ mode: 'new', teamIds: [], canManagePlayers: true })}
                     disabled={generatingInvite}
                   >
                     <Ionicons name="add-circle-outline" size={18} color="#FFF" />
@@ -2838,8 +3285,16 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                                       : `${c.team_ids.length} ${c.team_ids.length === 1 ? t('teams.team', 'squadra') : t('teams.title', 'squadre')}`}
                                   </Text>
                                 </View>
+                                <View style={styles.collabTeamBadge}>
+                                  <Ionicons name={c.can_manage_players === false ? 'lock-closed-outline' : 'people-outline'} size={12} color="#666" />
+                                  <Text style={styles.collabTeamBadgeText}>
+                                    {c.can_manage_players === false
+                                      ? t('collaborators.cannotManagePlayers', 'Non gestisce la squadra')
+                                      : t('collaborators.canManagePlayers', 'Gestisce la squadra')}
+                                  </Text>
+                                </View>
                               </View>
-                              <TouchableOpacity onPress={() => setTeamPicker({ mode: 'edit', teamIds: c.team_ids || [], collaborator: c })}>
+                              <TouchableOpacity onPress={() => setTeamPicker({ mode: 'edit', teamIds: c.team_ids || [], collaborator: c, canManagePlayers: c.can_manage_players ?? true })}>
                                 <Ionicons name="shield-outline" size={20} color="#000" />
                               </TouchableOpacity>
                               <TouchableOpacity onPress={() => handleRemoveCollaborator(c)} style={{ marginLeft: 12 }}>
@@ -2852,8 +3307,11 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     );
                   })()}
                 </View>
+                )}
 
-                <Button title={t('tournaments.deleteTournament')} onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
+                {isOrganizer && (
+                  <Button title={t('tournaments.deleteTournament')} onPress={onDelete} variant="outline" icon="trash-outline" fullWidth />
+                )}
               </View>
             )}
           </>
@@ -2892,6 +3350,29 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 onChangeText={setNewTeamName}
               />
             </View>
+
+            {/* Applies to every sport, singles included (isTennisSport
+                "teams" are really just a player/pair) — an optional crest
+                is harmless either way and the request was explicit about
+                covering every sport uniformly. */}
+            <Text style={styles.inputLabelSimple}>{t('teams.teamLogo', 'Logo squadra')}</Text>
+            <TouchableOpacity style={styles.teamLogoPicker} onPress={pickTeamLogo}>
+              {newTeamLogo ? (
+                <Image source={{ uri: newTeamLogo }} style={styles.teamLogoPickerImage} />
+              ) : (
+                <View style={styles.teamLogoPickerPlaceholder}>
+                  <Ionicons name="shield-outline" size={26} color="#999" />
+                </View>
+              )}
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.teamLogoPickerText}>
+                  {newTeamLogo ? t('teams.changeLogo', 'Cambia logo') : t('teams.addLogo', 'Aggiungi logo')}
+                </Text>
+                <Text style={styles.settingsHint}>{t('teams.noTeamLogoHint', "Oppure scegli uno stemma standard se non ne hai uno")}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#666" />
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.addBtnBlack} onPress={handleAddTeam}>
               <Ionicons name="add" size={20} color="#FFF" />
               <Text style={styles.addBtnBlackText}>{t('common.add')}</Text>
@@ -2899,6 +3380,12 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
           </View>
         </SafeAreaView>
       </Modal>
+
+      <TeamCrestPicker
+        visible={showTeamCrestPicker}
+        onClose={() => setShowTeamCrestPicker(false)}
+        onSelect={(uri) => setNewTeamLogo(uri)}
+      />
 
       {/* Add Player Modal - Full Screen */}
       <Modal visible={showAddPlayerModal} animationType="slide" presentationStyle="fullScreen" onRequestClose={() => setShowAddPlayerModal(false)}>
@@ -3478,6 +3965,23 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                 );
               })}
             </ScrollView>
+
+            {/* Whether this collaborator can manage teams/players/formations
+                and assign match ratings, or only matches, results (minus
+                ratings), news, highlights and settings-view. */}
+            <TouchableOpacity
+              style={styles.collabManagePlayersRow}
+              onPress={() => teamPicker && setTeamPicker({ ...teamPicker, canManagePlayers: !teamPicker.canManagePlayers })}
+            >
+              <Ionicons name={teamPicker?.canManagePlayers ? 'checkbox' : 'square-outline'} size={22} color="#000" />
+              <View style={{ flex: 1, marginLeft: 10 }}>
+                <Text style={styles.collabPickerRowText}>{t('collaborators.canManagePlayersLabel', 'Può gestire la squadra')}</Text>
+                <Text style={styles.settingsHint}>
+                  {t('collaborators.canManagePlayersHint', 'Giocatori, formazioni e voti. Se disattivato, gestisce solo partite, risultati, news, highlights e impostazioni.')}
+                </Text>
+              </View>
+            </TouchableOpacity>
+
             <Button
               title={teamPicker?.mode === 'new' ? t('collaborators.generateCode', 'Genera nuovo codice') : t('common.save', 'Salva')}
               onPress={handleSaveTeamPicker}
@@ -3626,7 +4130,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
               <View style={styles.newGiornataRow}>
                 <TextInput
                   style={styles.newGiornataInput}
-                  placeholder={t('matches.roundPlaceholder', `Round ${nextRoundNumber}`)}
+                  placeholder={t('matches.roundNumber', { number: nextRoundNumber, defaultValue: `Round ${nextRoundNumber}` })}
                   placeholderTextColor="#999"
                   value={newRoundInput}
                   onChangeText={setNewRoundInput}
@@ -4076,31 +4580,31 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           home: { ...prev.home, rosso: prev.home.rosso.filter((_, i) => i !== index) }
                         }))}
                       />
-                      <EventDropdown 
-                        icon="arrow-back" 
+                      <EventDropdown
+                        icon="arrow-back"
                         label={t('soccer.subOut', 'Sub Out')}
-                        players={homeTeamPlayers}
+                        players={getAvailableSubOutPlayers('home')}
                         selectedIds={extraEvents.home.sostEsce}
                         onAdd={(id) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           home: { ...prev.home, sostEsce: [...prev.home.sostEsce, id] }
                         }))}
                         onRemoveAt={(index) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           home: { ...prev.home, sostEsce: prev.home.sostEsce.filter((_, i) => i !== index) }
                         }))}
                       />
-                      <EventDropdown 
-                        icon="arrow-forward" 
+                      <EventDropdown
+                        icon="arrow-forward"
                         label={t('soccer.subIn', 'Sub In')}
-                        players={homeTeamPlayers}
+                        players={getAvailableSubInPlayers('home')}
                         selectedIds={extraEvents.home.sostEntra}
                         onAdd={(id) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           home: { ...prev.home, sostEntra: [...prev.home.sostEntra, id] }
                         }))}
                         onRemoveAt={(index) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           home: { ...prev.home, sostEntra: prev.home.sostEntra.filter((_, i) => i !== index) }
                         }))}
                       />
@@ -4169,38 +4673,41 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                           away: { ...prev.away, rosso: prev.away.rosso.filter((_, i) => i !== index) }
                         }))}
                       />
-                      <EventDropdown 
-                        icon="arrow-back" 
+                      <EventDropdown
+                        icon="arrow-back"
                         label={t('soccer.subOut', 'Sub Out')}
-                        players={awayTeamPlayers}
+                        players={getAvailableSubOutPlayers('away')}
                         selectedIds={extraEvents.away.sostEsce}
                         onAdd={(id) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           away: { ...prev.away, sostEsce: [...prev.away.sostEsce, id] }
                         }))}
                         onRemoveAt={(index) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           away: { ...prev.away, sostEsce: prev.away.sostEsce.filter((_, i) => i !== index) }
                         }))}
                       />
-                      <EventDropdown 
-                        icon="arrow-forward" 
+                      <EventDropdown
+                        icon="arrow-forward"
                         label={t('soccer.subIn', 'Sub In')}
-                        players={awayTeamPlayers}
+                        players={getAvailableSubInPlayers('away')}
                         selectedIds={extraEvents.away.sostEntra}
                         onAdd={(id) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           away: { ...prev.away, sostEntra: [...prev.away.sostEntra, id] }
                         }))}
                         onRemoveAt={(index) => setExtraEvents(prev => ({
-                          ...prev, 
+                          ...prev,
                           away: { ...prev.away, sostEntra: prev.away.sostEntra.filter((_, i) => i !== index) }
                         }))}
                       />
                     </View>
                   </View>
 
-                  {/* Voti Section */}
+                  {/* Voti Section — hidden for a collaborator without
+                      can_manage_players (see the ratings:{} guard on the
+                      batch save above). */}
+                  {canManagePlayers && (
                   <View style={styles.votiSection}>
                     <View style={styles.votiHeader}>
                       <Ionicons name="checkbox-outline" size={20} color="#FFF" />
@@ -4208,8 +4715,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     </View>
 
                     {/* Home Team Ratings */}
-                    <TeamRatingsAccordion 
-                      teamName={getTeamName(selectedMatch.home_team_id)} 
+                    <TeamRatingsAccordion
+                      teamName={getTeamName(selectedMatch.home_team_id)}
                       teamLetter={getTeamName(selectedMatch.home_team_id).charAt(0)}
                       players={homeTeamPlayers}
                       ratings={playerRatings}
@@ -4218,8 +4725,8 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                     />
 
                     {/* Away Team Ratings */}
-                    <TeamRatingsAccordion 
-                      teamName={getTeamName(selectedMatch.away_team_id)} 
+                    <TeamRatingsAccordion
+                      teamName={getTeamName(selectedMatch.away_team_id)}
                       teamLetter={getTeamName(selectedMatch.away_team_id).charAt(0)}
                       players={awayTeamPlayers}
                       ratings={playerRatings}
@@ -4227,6 +4734,7 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
                       sport={tournament?.sport || 'calcio'}
                     />
                   </View>
+                  )}
 
                   {/* Auto-save indicator only - no button needed */}
                   <View style={styles.extraFooterButtons}>
@@ -4540,36 +5048,73 @@ function TournamentDetail({ tournament, onBack, onDelete, onUpdateStatus, onRefr
         text={t('tour.stepStandings', 'Ultimo passo: tocca qui per vedere la pagina pubblica del torneo con la classifica.')}
         onSkip={skipTour}
       />
+
+      {/* "Grafiche Social" generator — one instance, driven by whichever
+          template was requested (see socialGraphics state above). */}
+      {socialGraphics?.template === 'next_match' && (
+        <SocialGraphicsGenerator visible onClose={() => setSocialGraphics(null)} template="next_match" data={socialGraphics.data} />
+      )}
+      {socialGraphics?.template === 'full_time' && (
+        <SocialGraphicsGenerator visible onClose={() => setSocialGraphics(null)} template="full_time" data={socialGraphics.data} />
+      )}
+      {socialGraphics?.template === 'formation' && (
+        <SocialGraphicsGenerator visible onClose={() => setSocialGraphics(null)} template="formation" data={socialGraphics.data} />
+      )}
+
+      <FullPagePaywall
+        visible={showSocialGraphicsPaywall}
+        variant="social_graphics"
+        onClose={() => { setShowSocialGraphicsPaywall(false); setPendingSocialGraphic(null); }}
+        onSubscribed={() => {
+          setShowSocialGraphicsPaywall(false);
+          if (pendingSocialGraphic) setSocialGraphics(pendingSocialGraphic);
+          setPendingSocialGraphic(null);
+        }}
+      />
+
+      {fullPreview && (
+        <SocialGraphicFullPreview
+          {...fullPreview}
+          visible
+          onClose={() => setFullPreview(null)}
+          onUnlock={() => { requestSocialGraphic(fullPreview); setFullPreview(null); }}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
-// Helper Component: Event Dropdown with Multi-Select (allows duplicates)
-function EventDropdown({ 
-  icon, 
-  iconColor = '#000', 
-  label, 
+// Helper Component: Event Assignment Picker — a centered modal popup
+// (rather than an inline dropdown expanding under the field) for
+// assigning players to a match event (scorer, assist, cards, subs).
+// Multi-select with duplicates allowed throughout: the same player can be
+// picked more than once (e.g. multiple goals), same as before.
+function EventDropdown({
+  icon,
+  iconColor = '#000',
+  label,
   players = [],
   selectedIds = [],
   onAdd,
   onRemoveAt
-}: { 
-  icon: string; 
-  iconColor?: string; 
+}: {
+  icon: string;
+  iconColor?: string;
   label: string;
   players?: any[];
   selectedIds?: string[];
   onAdd?: (playerId: string) => void;
   onRemoveAt?: (index: number) => void;
 }) {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
-  
+
   // Get player info for each selected ID (allows duplicates)
   const selectedEntries = selectedIds.map((id, index) => {
     const player = players.find(p => p.id === id);
     return { index, playerId: id, player };
   }).filter(e => e.player);
-  
+
   const handleAddPlayer = (playerId: string) => {
     if (onAdd) {
       onAdd(playerId);
@@ -4581,11 +5126,30 @@ function EventDropdown({
       onRemoveAt(index);
     }
   };
-  
+
+  const renderTags = (keyPrefix: string) => (
+    <View style={styles.selectedTagsContainer}>
+      {selectedEntries.map((entry) => (
+        <View key={`${keyPrefix}-${entry.playerId}-${entry.index}`} style={styles.selectedTag}>
+          <Text style={styles.selectedTagText} numberOfLines={1}>
+            {entry.player.number ? `#${entry.player.number} ` : ''}{entry.player.name}
+          </Text>
+          <TouchableOpacity
+            style={styles.selectedTagRemove}
+            onPress={() => handleRemoveEntry(entry.index)}
+          >
+            <Ionicons name="close" size={14} color="#FFF" />
+          </TouchableOpacity>
+        </View>
+      ))}
+    </View>
+  );
+
   return (
     <View style={styles.multiDropdownContainer}>
-      {/* Dropdown Header */}
-      <TouchableOpacity style={styles.eventDropdown} onPress={() => setIsOpen(!isOpen)}>
+      {/* Tapping this opens the picker as a centered popup below, instead
+          of expanding a list inline under it. */}
+      <TouchableOpacity style={styles.eventDropdown} onPress={() => setIsOpen(true)}>
         {icon === 'square' ? (
           <View style={[styles.cardIcon2, { backgroundColor: iconColor }]} />
         ) : (
@@ -4594,60 +5158,63 @@ function EventDropdown({
         <Text style={styles.eventDropdownLabel}>
           {label} {selectedIds.length > 0 && `(${selectedIds.length})`}
         </Text>
-        <Ionicons name={isOpen ? "chevron-up" : "chevron-down"} size={16} color="#000" />
+        <Ionicons name="chevron-forward" size={16} color="#000" />
       </TouchableOpacity>
 
-      {/* Selected Players Tags (shows all entries including duplicates) */}
-      {selectedEntries.length > 0 && (
-        <View style={styles.selectedTagsContainer}>
-          {selectedEntries.map((entry) => (
-            <View key={`${entry.playerId}-${entry.index}`} style={styles.selectedTag}>
-              <Text style={styles.selectedTagText} numberOfLines={1}>
-                {entry.player.number ? `#${entry.player.number} ` : ''}{entry.player.name}
-              </Text>
-              <TouchableOpacity 
-                style={styles.selectedTagRemove}
-                onPress={() => handleRemoveEntry(entry.index)}
-              >
-                <Ionicons name="close" size={14} color="#FFF" />
+      {/* Selected players stay visible here too, so what's already
+          assigned is visible at a glance without opening the popup. */}
+      {selectedEntries.length > 0 && renderTags('collapsed')}
+
+      <Modal visible={isOpen} transparent animationType="fade" onRequestClose={() => setIsOpen(false)}>
+        <View style={styles.eventPickerOverlay}>
+          <View style={styles.eventPickerContent}>
+            <View style={styles.eventPickerHeader}>
+              {icon === 'square' ? (
+                <View style={[styles.cardIcon2, { backgroundColor: iconColor, marginRight: 8 }]} />
+              ) : (
+                <Ionicons name={icon as any} size={18} color={iconColor} style={{ marginRight: 8 }} />
+              )}
+              <Text style={styles.eventPickerTitle}>{label}</Text>
+              <TouchableOpacity onPress={() => setIsOpen(false)}>
+                <Ionicons name="close" size={22} color="#000" />
               </TouchableOpacity>
             </View>
-          ))}
-        </View>
-      )}
 
-      {/* Dropdown List - always allows adding (no toggle) */}
-      {isOpen && players.length > 0 && (
-        <View style={styles.eventDropdownList}>
-          <ScrollView style={styles.dropdownScrollView} nestedScrollEnabled>
-            {players.map((player) => {
-              const count = selectedIds.filter(id => id === player.id).length;
-              return (
-                <TouchableOpacity 
-                  key={player.id} 
-                  style={styles.eventDropdownItem}
-                  onPress={() => handleAddPlayer(player.id)}
-                >
-                  <Text style={styles.eventDropdownItemText}>
-                    {player.number ? `#${player.number} ` : ''}{player.name}
-                  </Text>
-                  {count > 0 && (
-                    <View style={styles.selectedCountBadge}>
-                      <Text style={styles.selectedCountText}>{count}</Text>
-                    </View>
-                  )}
-                  <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
-                </TouchableOpacity>
-              );
-            })}
-          </ScrollView>
+            {selectedEntries.length > 0 && renderTags('modal')}
+
+            {players.length > 0 ? (
+              <ScrollView style={styles.eventPickerScrollView} nestedScrollEnabled>
+                {players.map((player) => {
+                  const count = selectedIds.filter(id => id === player.id).length;
+                  return (
+                    <TouchableOpacity
+                      key={player.id}
+                      style={styles.eventDropdownItem}
+                      onPress={() => handleAddPlayer(player.id)}
+                    >
+                      <Text style={styles.eventDropdownItemText}>
+                        {player.number ? `#${player.number} ` : ''}{player.name}
+                      </Text>
+                      {count > 0 && (
+                        <View style={styles.selectedCountBadge}>
+                          <Text style={styles.selectedCountText}>{count}</Text>
+                        </View>
+                      )}
+                      <Ionicons name="add-circle-outline" size={18} color="#4CAF50" />
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            ) : (
+              <Text style={styles.eventDropdownItemTextEmpty}>{t('teams.noPlayers')}</Text>
+            )}
+
+            <TouchableOpacity style={styles.eventPickerDoneBtn} onPress={() => setIsOpen(false)}>
+              <Text style={styles.eventPickerDoneBtnText}>{t('common.done', 'Fatto')}</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-      )}
-      {isOpen && players.length === 0 && (
-        <View style={styles.eventDropdownList}>
-          <Text style={styles.eventDropdownItemTextEmpty}>{t('teams.noPlayers')}</Text>
-        </View>
-      )}
+      </Modal>
     </View>
   );
 }
@@ -5048,6 +5615,7 @@ const styles = StyleSheet.create({
   collabPickerTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 4 },
   collabPickerRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
   collabPickerRowText: { fontSize: 15, color: '#000', fontWeight: '600' },
+  collabManagePlayersRow: { flexDirection: 'row', alignItems: 'flex-start', paddingVertical: 12, borderTopWidth: 1, borderTopColor: '#EEE', marginTop: 4 },
   teamSelector: { marginBottom: 16 },
   teamSelectorItem: { padding: 14, borderRadius: 10, borderWidth: 2, borderColor: '#000', marginBottom: 8 },
   teamSelectorItemActive: { backgroundColor: '#000' },
@@ -5203,7 +5771,6 @@ const styles = StyleSheet.create({
   cardIcon2: { width: 12, height: 16, borderRadius: 2, marginRight: 6 },
   eventDropdownLabel: { flex: 1, fontSize: 12, color: '#000', marginLeft: 6 },
   eventDropdownLabelSelected: { fontWeight: '600' },
-  eventDropdownList: { backgroundColor: '#FFF', borderWidth: 1.5, borderColor: '#000', borderRadius: 12, marginTop: -6, marginBottom: 12, maxHeight: 160 },
   eventDropdownItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
   eventDropdownItemSelected: { backgroundColor: '#F0FFF0' },
   eventDropdownItemText: { fontSize: 12, color: '#000' },
@@ -5217,7 +5784,16 @@ const styles = StyleSheet.create({
   selectedTagRemove: { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.3)', alignItems: 'center', justifyContent: 'center' },
   selectedCountBadge: { backgroundColor: '#4CAF50', borderRadius: 10, paddingHorizontal: 6, paddingVertical: 2, marginRight: 6 },
   selectedCountText: { fontSize: 11, fontWeight: '700', color: '#FFF' },
-  dropdownScrollView: { maxHeight: 150 },
+  // Event assignment popup (Scorer/Assist/Cards/Subs) — centered modal
+  // replacing the old inline dropdown, same visual language as the
+  // collaborator team-picker popup (collabPicker* below).
+  eventPickerOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', alignItems: 'center', padding: 24 },
+  eventPickerContent: { backgroundColor: '#FFF', borderRadius: 20, padding: 20, width: '100%', maxWidth: 380, maxHeight: '80%' },
+  eventPickerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+  eventPickerTitle: { flex: 1, fontSize: 17, fontWeight: '800', color: '#000' },
+  eventPickerScrollView: { maxHeight: 320 },
+  eventPickerDoneBtn: { backgroundColor: '#000', borderRadius: 12, paddingVertical: 12, alignItems: 'center', marginTop: 12 },
+  eventPickerDoneBtnText: { fontSize: 14, fontWeight: '700', color: '#FFF' },
   // Live Score styles
   liveScoreCard: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#F5F5F5', borderRadius: 16, padding: 16, marginBottom: 16 },
   liveScoreTeam: { flex: 1, fontSize: 12, fontWeight: '600', color: '#000', textAlign: 'center' },
@@ -5280,6 +5856,13 @@ const styles = StyleSheet.create({
   formationBtn: { width: 44, height: 44, backgroundColor: '#2D8A2E', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   formationBadge: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: '#E8F5E9', borderTopWidth: 1, borderTopColor: '#C8E6C9' },
   formationBadgeText: { fontSize: 13, color: '#2D8A2E', fontWeight: '600' },
+  formationShareBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
+  socialGraphicsIntro: { fontSize: 13, color: '#666', marginBottom: 16, lineHeight: 18 },
+  socialGraphicsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
+  // Centered (not flex-start) — the card is full-width but the thumbnail
+  // itself is small and fixed-size, so left-aligning it left a large,
+  // lopsided empty gap on the right instead of even space on both sides.
+  matchPillGraphicPreview: { marginTop: 24, marginBottom: 20, alignItems: 'center' },
   playersAccordion: { borderTopWidth: 2, borderTopColor: '#000', padding: 12 },
   noPlayersText: { fontSize: 14, color: '#999', textAlign: 'center', paddingVertical: 12 },
   playerRow: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#EEE' },
@@ -5294,6 +5877,10 @@ const styles = StyleSheet.create({
   modalContentSimple: { padding: 24 },
   inputLabelSimple: { fontSize: 16, fontWeight: '700', color: '#000', marginBottom: 10 },
   inputBoxSimple: { borderWidth: 2, borderColor: '#000', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, marginBottom: 20 },
+  teamLogoPicker: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#000', borderRadius: 16, padding: 12, marginBottom: 20 },
+  teamLogoPickerImage: { width: 48, height: 48, borderRadius: 24 },
+  teamLogoPickerPlaceholder: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#F2F2F2', alignItems: 'center', justifyContent: 'center' },
+  teamLogoPickerText: { fontSize: 15, fontWeight: '700', color: '#000' },
   inputTextSimple: { fontSize: 16, color: '#000' },
   addBtnBlack: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#000', paddingVertical: 16, borderRadius: 16, gap: 8 },
   addBtnBlackText: { fontSize: 16, fontWeight: '700', color: '#FFF' },

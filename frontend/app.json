@@ -11,9 +11,11 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "app.emergent.profilisquadretestfb21fa61",
+      "buildNumber": "3",
       "infoPlist": {
         "NSCameraUsageDescription": "To take photos to upload in your tournaments",
-        "NSPhotoLibraryUsageDescription": "To select photos and videos from your library to upload in your tournaments"
+        "NSPhotoLibraryUsageDescription": "To select photos and videos from your library to upload in your tournaments",
+        "ITSAppUsesNonExemptEncryption": false
       },
       "associatedDomains": [
         "applinks:rivalhub.app",
@@ -31,7 +33,7 @@
     },
     "android": {
       "package": "app.emergent.torneolive4d62a32b",
-      "versionCode": 1029,
+      "versionCode": 1030,
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -91,6 +93,21 @@
         }
       ],
       "expo-localization",
+      [
+        "expo-calendar",
+        {
+          "calendarPermission": "Rival Hub usa il calendario per aggiungere le partite dei tuoi tornei",
+          "remindersPermission": "Rival Hub non utilizza i promemoria"
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "To select photos and videos from your library to upload in your tournaments",
+          "savePhotosPermission": "To save the social graphics you generate to your photo library",
+          "isAccessMediaLocationEnabled": false
+        }
+      ],
       "./plugins/withAndroidLintFix.js"
     ],
     "experiments": {

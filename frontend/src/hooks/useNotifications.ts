@@ -6,10 +6,15 @@ import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import api from '../utils/api';
 
-// Configure notification handler
+// Configure notification handler — shouldShowBanner/shouldShowList are the
+// current API (shouldShowAlert is deprecated but kept too for older
+// clients); without them a foreground notification's banner may not
+// actually show on current iOS/expo-notifications versions.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
   }),
@@ -18,8 +23,8 @@ Notifications.setNotificationHandler({
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
   const [notification, setNotification] = useState<Notifications.Notification | null>(null);
-  const notificationListener = useRef<Notifications.Subscription>();
-  const responseListener = useRef<Notifications.Subscription>();
+  const notificationListener = useRef<Notifications.Subscription | undefined>(undefined);
+  const responseListener = useRef<Notifications.Subscription | undefined>(undefined);
   const router = useRouter();
 
   useEffect(() => {

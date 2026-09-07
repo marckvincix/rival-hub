@@ -147,6 +147,9 @@ export interface User {
   plan?: 'free' | 'plus';
   plan_expiry?: string | null;
   plan_type?: 'monthly' | 'annual' | null;
+  social_graphics_plan?: 'free' | 'plus';
+  social_graphics_plan_expiry?: string | null;
+  social_graphics_plan_type?: 'monthly' | 'annual' | null;
 }
 
 export interface Tournament {
@@ -171,6 +174,11 @@ export interface Tournament {
   is_public: boolean;
   access_code?: string;
   created_at: string;
+  // Only ever set by GET /tournaments/slug/{slug} (the public endpoint) —
+  // whether the organizer's own account has an active "Grafiche Social"
+  // plan, used to gate the public standings page's share button without
+  // ever checking the current visitor's own plan.
+  organizer_has_social_graphics_plan?: boolean;
 }
 
 export interface Team {

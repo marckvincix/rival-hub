@@ -1,0 +1,2 @@
+NSCameraUsageDescription = "لالتقاط صور لتحميلها في بطولاتك";
+NSPhotoLibraryUsageDescription = "لتحديد الصور والفيديوهات من مكتبتك لتحميلها في بطولاتك";
